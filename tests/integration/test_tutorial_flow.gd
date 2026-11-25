@@ -145,6 +145,19 @@ func test_replay_is_always_available_and_never_gated() -> void:
 	assert_eq(root.director().current_step(), 0)
 
 
+func test_autoplay_walks_the_real_scene_to_the_completion_plaque() -> void:
+	var root := _spawn()
+	var director := root.director()
+	director.autoplay = true
+	for _i in range(600):
+		director._process(0.05)
+		if not director.is_active():
+			break
+	assert_false(director.is_active(), "autoplay must clear all seven gates")
+	assert_true(root.overlay().is_completion_open())
+	assert_eq(root.overlay().chip_step_text(), "PASO 7/7")
+
+
 # --- Real washer integration (pending until the M4 merge) -------------------
 
 
