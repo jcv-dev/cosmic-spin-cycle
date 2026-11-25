@@ -21,10 +21,10 @@ const USE_POINT_LIGHTS := false
 ## Washer pool radius in world pixels (UX_BIBLE §3.5).
 const WASHER_RADIUS := 220.0
 ## Washer pool energy and its pulse amplitude (0.42…0.58).
-const WASHER_ENERGY := 0.34
+const WASHER_ENERGY := 0.30
 const WASHER_PULSE := 0.07
 ## Chute light energy (UX_BIBLE §3.5).
-const CHUTE_ENERGY := 0.45
+const CHUTE_ENERGY := 0.55
 ## Cold overhead lamp energy and radius.
 const COLD_ENERGY := 0.18
 const COLD_RADIUS := 260.0

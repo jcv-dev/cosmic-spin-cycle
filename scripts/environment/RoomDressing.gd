@@ -19,6 +19,9 @@ const GRIME_COUNT := 6
 ## Puddle centres in art pixels (`data/layout.json` space).
 const PUDDLES := [Vector2(112, 62), Vector2(206, 130)]
 
+## Albedo multiplier for the display machines: the cabinets must stay secondary to the chute.
+const MACHINE_ALBEDO := Color(0.87, 0.88, 0.93)
+
 ## 4×5 pixel font for the wall sign. Only the six glyphs the sign needs.
 const GLYPHS := {
 	"T": ["1111", "0010", "0010", "0010", "0010"],
@@ -231,6 +234,8 @@ func _draw_spec(spec: Dictionary) -> void:
 			_draw_bucket(spec["rect"] as Rect2)
 		&"baskets":
 			_draw_baskets(spec["rect"] as Rect2)
+		&"readout":
+			_draw_readout(spec["rect"] as Rect2)
 
 
 # --- floor story (§3.6.2) ---------------------------------------------------
@@ -661,6 +666,26 @@ func _draw_baskets(rect: Rect2) -> void:
 		)
 
 
+## Small status display in the washer's dark panel. The shipped sheet bakes a bright LED
+## square there; this plate replaces it with a deliberate recessed readout (three dim bars)
+## so it reads as a display instead of a missing-sprite artefact.
+func _draw_readout(rect: Rect2) -> void:
+	draw_rect(rect, Color(Palette.SPACE_VOID.r, Palette.SPACE_VOID.g, Palette.SPACE_VOID.b, 0.96))
+	draw_rect(
+		rect, Color(Palette.METAL_0.r, Palette.METAL_0.g, Palette.METAL_0.b, 0.55), false, 2.0
+	)
+	var inks := [Palette.FUNK_CYAN, Palette.CLEAN_GREEN, Palette.METAL_2]
+	var widths := [0.75, 0.5, 0.62]
+	var alphas := [0.5, 0.4, 0.45]
+	for index in range(3):
+		var bar := Rect2(
+			rect.position + Vector2(4.0, 4.0 + float(index) * 8.0),
+			Vector2(rect.size.x * float(widths[index]) - 8.0, 4.0)
+		)
+		var ink: Color = inks[index]
+		draw_rect(bar, Color(ink.r, ink.g, ink.b, float(alphas[index])))
+
+
 # --- foreground (§3.6.6) ----------------------------------------------------
 
 
@@ -705,6 +730,11 @@ static func build_machines_for_display(root: Node2D) -> Dictionary:
 	machines.name = "Machines"
 	machines.z_index = 0
 	root.add_child(machines)
+	var readouts := RoomDressing.new()
+	readouts.name = "PanelReadouts"
+	readouts.z_index = 2
+	root.add_child(readouts)
+	var readout_specs: Array[Dictionary] = []
 	var washers := {}
 	for washer: Dictionary in RoomBuilder.layout().get("washers", []):
 		var washer_id := String(washer.get("id", "washer"))
@@ -713,7 +743,18 @@ static func build_machines_for_display(root: Node2D) -> Dictionary:
 		sprite.name = washer_id
 		sprite.position = Vector2(rect.get_center().x, rect.end.y)
 		sprite.z_index = 0
+		# The cabinets are large bright shapes; 13 % down keeps them secondary to the chute.
+		sprite.self_modulate = MACHINE_ALBEDO
 		machines.add_child(sprite)
+		(
+			readout_specs
+			. append(
+				{
+					"kind": &"readout",
+					"rect": Rect2(rect.position.x + 28.0, rect.position.y + 28.0, 32.0, 32.0),
+				}
+			)
+		)
 		if not SpriteSheet.configure(sprite, "mach_washer", &"idle"):
 			_placeholder_rect(machines, rect, Palette.METAL_1)
 		washers[StringName(washer_id)] = sprite
@@ -725,6 +766,7 @@ static func build_machines_for_display(root: Node2D) -> Dictionary:
 	machines.add_child(chute)
 	if not SpriteSheet.configure(chute, "env_chute", &"open"):
 		_placeholder_rect(machines, chute_rect, Palette.METAL_2)
+	readouts.setup(readout_specs)
 	return {"washers": washers, "chute": chute}
 
 
