@@ -214,20 +214,39 @@ def scene() -> Path:
     return out
 
 
+def blit_nine(canvas: pxlib.Canvas, tile: pxlib.Canvas, x: int, y: int, w: int, h: int,
+              margin: int = 8) -> None:
+    """Stretch a 9-slice panel like Godot's NinePatchRect does (preview only)."""
+    m = margin
+    canvas.blit(tile.crop(0, 0, m, m), x, y)
+    canvas.blit(tile.crop(tile.w - m, 0, m, m), x + w - m, y)
+    canvas.blit(tile.crop(0, tile.h - m, m, m), x, y + h - m)
+    canvas.blit(tile.crop(tile.w - m, tile.h - m, m, m), x + w - m, y + h - m)
+    for ty in range(y + m, y + h - m, m):
+        canvas.blit(tile.crop(m, 0, tile.w - 2 * m, m), x + m, ty)
+        canvas.blit(tile.crop(m, tile.h - m, tile.w - 2 * m, m), x + m, ty + h - 2 * m - (ty - y - m))
+    for tx in range(x + m, x + w - m, m):
+        canvas.blit(tile.crop(0, m, m, tile.h - 2 * m), tx, y + m)
+        canvas.blit(tile.crop(tile.w - m, m, m, tile.h - 2 * m), tx + w - 2 * m - (tx - x - m), y + m)
+    for ty in range(y + m, y + h - m, m):
+        for tx in range(x + m, x + w - m, m):
+            canvas.blit(tile.crop(m, m, tile.w - 2 * m, tile.h - 2 * m), tx, ty)
+
+
 def hud() -> Path:
     bar = first_anim("ui_bar_stability", "bar")
-    canvas = pxlib.Canvas(160, 40)
-    canvas.blit(first_anim("ui_panel", "panel"), 0, 0)
-    canvas.blit(bar, 4, 4)
+    canvas = pxlib.Canvas(196, 44)
+    blit_nine(canvas, first_anim("ui_panel", "panel"), 0, 0, 196, 44, margin=8)
+    canvas.blit(bar, 6, 6)
     fill = first_anim("ui_bar_stability_fill", "fill")
-    for x in range(6, 62, 8):
-        canvas.blit(fill, x, 6)
+    for x in range(8, 8 + 8 * 8, 8):
+        canvas.blit(fill, x, 8)
     for index, name in enumerate(("clock", "stability", "combo")):
-        canvas.blit(first_anim("ui_icons", name), 4 + index * 12, 18)
-    canvas.blit(first_anim("ui_holo_icons", "red"), 44, 16)
-    canvas.blit(first_anim("ui_reticle", "aim"), 96, 14)
-    canvas.blit(first_anim("fx_burst_perfect", "play"), 116, 12)
-    zoom(canvas.image(), 8, grid=True).save(PREVIEW / "hud.png")
+        canvas.blit(first_anim("ui_icons", name), 8 + index * 14, 22)
+    for index, name in enumerate(("red", "blue", "yellow", "solid", "ringed", "spotted", "wild")):
+        canvas.blit(first_anim("ui_holo_icons", name), 58 + index * 14, 20)
+    canvas.blit(first_anim("ui_reticle", "aim"), 168, 22)
+    zoom(canvas.image(), 6, grid=True).save(PREVIEW / "hud.png")
     return PREVIEW / "hud.png"
 
 
