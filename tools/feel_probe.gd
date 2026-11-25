@@ -20,6 +20,8 @@ const CRUISE_FRAMES := 180
 const THROW_COUNT := 10
 const ITEM_SPAWN_AHEAD := 40.0
 const THROW_SETTLE_FRAMES := 4
+## Ignore the first two seconds: GDScript compiles lazily and the first frame is not a cost.
+const COST_WARMUP_FRAMES := 120
 
 var _player: Node = null
 var _game_state: Node = null
@@ -41,6 +43,7 @@ var _throw_speed_min := INF
 var _process_cost_sum := 0.0
 var _physics_cost_sum := 0.0
 var _cost_samples := 0
+var _cost_steady := 0
 var _last_physics_frame := -1
 var _saw_nan := false
 var _booted := false
@@ -88,8 +91,10 @@ func _process(_delta: float) -> bool:
 
 
 func _sample_cost() -> void:
-	_process_cost_sum += Performance.get_monitor(Performance.TIME_PROCESS)
-	_physics_cost_sum += Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS)
+	if _cost_samples >= COST_WARMUP_FRAMES:
+		_process_cost_sum += Performance.get_monitor(Performance.TIME_PROCESS)
+		_physics_cost_sum += Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS)
+		_cost_steady += 1
 	_cost_samples += 1
 
 
@@ -230,8 +235,8 @@ func _physics_delta() -> float:
 
 
 func _print_results() -> void:
-	var frame_cost := (_process_cost_sum / maxf(float(_cost_samples), 1.0)) * 1000.0
-	var physics_cost := (_physics_cost_sum / maxf(float(_cost_samples), 1.0)) * 1000.0
+	var frame_cost := (_process_cost_sum / maxf(float(_cost_steady), 1.0)) * 1000.0
+	var physics_cost := (_physics_cost_sum / maxf(float(_cost_steady), 1.0)) * 1000.0
 	var throw_avg := _throw_speed_sum / maxf(float(_throw_index), 1.0)
 	print("FEEL_PROBE accel_90_ms=%.1f" % (_accel_time * 1000.0))
 	print("FEEL_PROBE stop_ms=%.1f" % (_stop_time * 1000.0))
@@ -242,4 +247,5 @@ func _print_results() -> void:
 	print("FEEL_PROBE process_ms=%.3f" % frame_cost)
 	print("FEEL_PROBE physics_ms=%.3f" % physics_cost)
 	print("FEEL_PROBE samples=%d" % _cost_samples)
+	print("FEEL_PROBE steady_samples=%d" % _cost_steady)
 	print("FEEL_PROBE nan=false")
