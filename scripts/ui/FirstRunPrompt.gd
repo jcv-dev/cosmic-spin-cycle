@@ -80,6 +80,8 @@ func _build() -> void:
 	_tutorial_button.name = "TutorialButton"
 	_tutorial_button.position = Vector2(CONTENT_X, BUTTON_Y) - PLAQUE.position
 	_tutorial_button.custom_minimum_size = Vector2(BUTTON_W, BUTTON_H)
+	_tutorial_button.add_theme_stylebox_override("normal", _primary_box(0.12))
+	_tutorial_button.add_theme_stylebox_override("hover", _primary_box(0.2))
 	_tutorial_button.pressed.connect(_on_tutorial_pressed)
 	_tutorial_button.mouse_entered.connect(_tutorial_button.grab_focus)
 	plaque.add_child(_tutorial_button)
@@ -98,6 +100,20 @@ func _build() -> void:
 	hint.name = "Hint"
 	hint.position = Vector2(CONTENT_X, HINT_Y) - PLAQUE.position
 	plaque.add_child(hint)
+
+
+## Primary action: accent border + a 12 % accent wash, flat (no gradient).
+func _primary_box(alpha: float) -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(UITheme.ACCENT, alpha)
+	box.border_color = UITheme.ACCENT
+	box.set_border_width_all(2)
+	box.set_corner_radius_all(0)
+	box.content_margin_left = 16.0
+	box.content_margin_right = 16.0
+	box.content_margin_top = 8.0
+	box.content_margin_bottom = 8.0
+	return box
 
 
 func _on_tutorial_pressed() -> void:
