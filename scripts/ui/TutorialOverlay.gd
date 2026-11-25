@@ -30,6 +30,7 @@ const PROMPT_GAP_Y := 24.0
 const PROMPT_PAD_X := 10
 const PROMPT_HEIGHT := 28
 const PROMPT_MIN_Y := 108.0
+const FOOTER_Y := 664.0
 const FADE_IN_S := 0.12
 const FADE_OUT_S := 0.12
 const PULSE_S := 0.26
@@ -45,6 +46,7 @@ var _chip: Panel
 var _step_label: Label
 var _sep_label: Label
 var _title_label: Label
+var _skip_hint: Label
 var _underline_track: ColorRect
 var _underline_fill: ColorRect
 var _prompt_layer: Control
@@ -65,6 +67,9 @@ var _prompt_active := false
 var _hint_world := Vector2.ZERO
 var _hint_radius := 0.0
 var _hint_active := false
+var _beat_world := Vector2.ZERO
+var _beat_phase := 0.0
+var _beat_active := false
 var _beacon_world := Vector2.ZERO
 var _beacon_active := false
 var _beacon_t := 0.0
@@ -92,7 +97,7 @@ func _process(delta: float) -> void:
 		for pulse in _pulses:
 			pulse["t"] = float(pulse["t"]) + delta
 		_pulses = _pulses.filter(_pulse_alive)
-	if _prompt_active or _hint_active or _beacon_active or not _pulses.is_empty():
+	if _prompt_active or _hint_active or _beacon_active or _beat_active or not _pulses.is_empty():
 		_fx_layer.queue_redraw()
 		_update_prompt_position()
 
@@ -173,6 +178,14 @@ func show_hint_circle(world_pos: Vector2, radius: float) -> void:
 func hide_hint_circle() -> void:
 	_hint_active = false
 	_fx_layer.queue_redraw()
+
+
+## Gates 4 and 6 teach the beat: a ring that contracts into the next beat and flashes on
+## it. Reduce motion freezes the radius and keeps the alpha step (docs/UX_BIBLE.md §11).
+func set_beat_marker(world_pos: Vector2, active: bool, phase: float = 0.0) -> void:
+	_beat_world = world_pos
+	_beat_active = active
+	_beat_phase = clampf(phase, 0.0, 1.0)
 
 
 ## Gate 7 fail-forward: the chute beacon pulses every 2 s.
@@ -303,6 +316,11 @@ func _build_chip() -> void:
 	_title_label = UITheme.label("MUÉVETE", UITheme.FONT_H2, UITheme.INK, true)
 	_title_label.name = "TitleLabel"
 	_chip.add_child(_title_label)
+	_skip_hint = UITheme.label("TAB · SALTAR PASO", UITheme.FONT_MICRO, UITheme.INK_DIM)
+	_skip_hint.name = "SoftSkipHint"
+	_skip_hint.visible = false
+	# Screen-space footer: it must not inherit the chip's local origin (it sits off the chip).
+	_root.add_child(_skip_hint)
 	_underline_track = ColorRect.new()
 	_underline_track.name = "UnderlineTrack"
 	_underline_track.color = Palette.SPACE_MID
@@ -458,6 +476,11 @@ func _layout_chip() -> void:
 	_sep_label.size = Vector2(sep_w, 18)
 	_title_label.position = Vector2(_sep_label.position.x + sep_w + CHIP_GAP, mid - 15)
 	_title_label.size = Vector2(title_w, 30)
+	# A footer hint, not a second chip: keeps the y 0-104 band free of a second line.
+	# Right-aligned inside a wide box so glyph rounding can never push it off-screen.
+	_skip_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_skip_hint.position = Vector2(view_w - 540.0, FOOTER_Y)
+	_skip_hint.size = Vector2(514, 14)
 	_underline_track.position = Vector2(0, CHIP_HEIGHT - UNDERLINE_H)
 	_underline_track.size = Vector2(width, UNDERLINE_H)
 	_layout_underline()
@@ -468,6 +491,20 @@ func _layout_underline() -> void:
 		return
 	_underline_fill.position = _underline_track.position
 	_underline_fill.size = Vector2(_underline_track.size.x * _progress, UNDERLINE_H)
+
+
+## The TAB safety net only becomes visible once it is actually legal (12 s stuck).
+func set_soft_skip_available(available: bool) -> void:
+	if _skip_hint != null:
+		_skip_hint.visible = available
+
+
+func soft_skip_hint_visible() -> bool:
+	return _skip_hint != null and _skip_hint.visible
+
+
+func _skip_hint_text_width() -> float:
+	return _text_width(_skip_hint.text, UITheme.FONT_MICRO, false)
 
 
 func _size_prompt() -> void:
@@ -539,20 +576,44 @@ func _on_skip_no() -> void:
 func _draw_fx(canvas: CanvasItem) -> void:
 	if _hint_active:
 		_draw_dotted_circle(canvas, to_screen(_hint_world), _hint_radius, UITheme.INK_DIM)
+	if _beat_active:
+		var beat_centre := to_screen(_beat_world)
+		var hot := _beat_phase < 0.12
+		var beat_radius := 40.0 + 32.0 * (1.0 - _beat_phase)
+		if Settings.reduce_motion:
+			beat_radius = 56.0
+		var beat_alpha := 0.95 if hot else 0.35
+		canvas.draw_arc(
+			beat_centre, beat_radius, 0.0, TAU, 36, Color(UITheme.ACCENT, beat_alpha), 2.0
+		)
+		if hot:
+			canvas.draw_arc(beat_centre, 40.0, 0.0, TAU, 28, Color(UITheme.ACCENT, 0.5), 1.0)
 	if _beacon_active:
 		var pulse := _beacon_t / TutorialSteps.BEACON_PERIOD_S
 		var radius := BEACON_RADIUS + 10.0 * pulse
 		var alpha := 1.0 - pulse * 0.7
-		canvas.draw_arc(
-			to_screen(_beacon_world), radius, 0.0, TAU, 40, Color(UITheme.SUCCESS, alpha), 2.0
-		)
-		_draw_ticks(canvas, to_screen(_beacon_world), radius + 6.0, UITheme.SUCCESS)
+		var beacon_centre := to_screen(_beacon_world)
+		canvas.draw_arc(beacon_centre, radius, 0.0, TAU, 40, Color(UITheme.SUCCESS, alpha), 2.0)
+		_draw_corner_brackets(canvas, beacon_centre, radius + 16.0, UITheme.SUCCESS)
 	for pulse_entry in _pulses:
 		var t := clampf(float(pulse_entry["t"]) / PULSE_S, 0.0, 1.0)
 		var color: Color = pulse_entry["color"]
 		canvas.draw_arc(
 			to_screen(pulse_entry["pos"]), 16.0 + 30.0 * t, 0.0, TAU, 28, Color(color, 1.0 - t), 2.0
 		)
+
+
+## Four L-brackets around the chute: reads as "put it here", not just "something pulses".
+func _draw_corner_brackets(
+	canvas: CanvasItem, centre: Vector2, radius: float, color: Color
+) -> void:
+	var arm := 10.0
+	var quadrants: Array[Vector2] = [Vector2(-1, -1), Vector2(1, -1), Vector2(-1, 1), Vector2(1, 1)]
+	for quadrant in quadrants:
+		var corner: Vector2 = centre + quadrant * radius
+		# Both arms grow toward the centre of the reticle, forming an L per corner.
+		canvas.draw_rect(Rect2(corner.x, corner.y - 1.0, arm, 2.0), color)
+		canvas.draw_rect(Rect2(corner.x - 1.0, corner.y, 2.0, arm), color)
 
 
 func _draw_dotted_circle(canvas: CanvasItem, centre: Vector2, radius: float, color: Color) -> void:

@@ -379,7 +379,7 @@ func test_soft_skip_only_after_the_stuck_grace() -> void:
 	var started := _start(level)
 	var director: TutorialDirector = started[0]
 	assert_false(director.can_soft_skip())
-	director.debug_set_elapsed(Config.TUTORIAL_SOFT_SKIP_S + 0.1)
+	director.debug_set_elapsed(TutorialSteps.STRIKE_ASSIST_AFTER_S + 0.1)
 	assert_true(director.can_soft_skip())
 	director.soft_skip()
 	assert_true(_until_step(director, 1))

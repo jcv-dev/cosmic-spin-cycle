@@ -23,6 +23,7 @@ const ITEM_OFFSET := Vector2(200, 0)
 const PLAYER_HEAD_OFFSET := Vector2(0, -96)
 const CLEAN_FALLBACK_S := 8.0
 const WASHER_FORCE_FINISH_S := 4.0
+const PROMPT_AVOID_X := 170.0
 
 ## Debug/evidence hook: walk the gates on a timer so a screenshot can be deterministic.
 @export var autoplay := false
@@ -303,6 +304,7 @@ func _finish() -> void:
 
 func _update_gate(delta: float) -> void:
 	if bool(state.get("granted", false)):
+		overlay.set_beat_marker(Vector2.ZERO, false)
 		return
 	match TutorialSteps.kind_for(_step_index):
 		&"travel":
@@ -319,6 +321,7 @@ func _update_gate(delta: float) -> void:
 			_update_deliver(delta)
 		_:
 			pass
+	_sync_beat_marker()
 
 
 func _update_travel() -> void:
@@ -344,6 +347,25 @@ func _update_grab(delta: float) -> void:
 		return
 	var dir := (player_pos - item_pos).normalized()
 	(_gate_item as Node2D).global_position = item_pos + dir * 90.0 * delta
+
+
+## Gates 4 and 6 are the only places the beat matters, so they own the pulse marker.
+func _sync_beat_marker() -> void:
+	if TutorialSteps.is_rhythm_gate(_step_index) and not bool(state.get("granted", false)):
+		# On the floor under Pip for the throw gate, on the drum for the strike gate.
+		var anchor := _player_body()
+		if TutorialSteps.kind_for(_step_index) == &"strike":
+			anchor = _washer_anchor(_target_washer)
+		overlay.set_beat_marker(anchor, true, float(BeatConductor.call("get_beat_phase")))
+	else:
+		overlay.set_beat_marker(Vector2.ZERO, false)
+
+
+## Feet-centre of Pip: diegetic rings belong on the floor, not on the character sprite.
+func _player_body() -> Vector2:
+	if _player is Node2D:
+		return (_player as Node2D).global_position
+	return Vector2(640, 512)
 
 
 func _update_grade(delta: float) -> void:
@@ -436,6 +458,7 @@ func _on_granted() -> void:
 	overlay.set_progress(1.0)
 	overlay.hide_hint_circle()
 	overlay.hide_beacon()
+	overlay.set_beat_marker(Vector2.ZERO, false)
 	var anchor := _success_anchor()
 	overlay.pulse_at(anchor, UITheme.SUCCESS)
 	if (
@@ -557,8 +580,19 @@ func _player_anchor() -> Vector2:
 
 func _item_anchor() -> Vector2:
 	if _gate_item != null and is_instance_valid(_gate_item) and _gate_item is Node2D:
-		return (_gate_item as Node2D).global_position + Vector2(0, -24)
+		return _prompt_safe((_gate_item as Node2D).global_position + Vector2(0, -24))
 	return _anchor_in_front()
+
+
+## Never let the world prompt sit on Pip's head: when the anchor is over the sprite, slide
+## the prompt sideways instead of up (the room always has more room to the right).
+func _prompt_safe(world_pos: Vector2) -> Vector2:
+	if not (_player is Node2D):
+		return world_pos
+	var body := (_player as Node2D).global_position
+	if absf(world_pos.x - body.x) < 120.0 and absf(world_pos.y - (body.y - 48.0)) < 150.0:
+		return Vector2(body.x + PROMPT_AVOID_X, world_pos.y)
+	return world_pos
 
 
 func _anchor_in_front() -> Vector2:
@@ -788,8 +822,10 @@ func _track_travel() -> void:
 
 
 func _update_overlay() -> void:
+	var granted := bool(state.get("granted", false))
 	overlay.set_step(_step_index, TutorialSteps.progress(state))
-	if bool(state.get("granted", false)):
+	overlay.set_soft_skip_available(not granted and bool(state.get("soft_skip_ready", false)))
+	if granted:
 		return
 	match TutorialSteps.kind_for(_step_index):
 		&"grab", &"throw", &"grade", &"deliver":

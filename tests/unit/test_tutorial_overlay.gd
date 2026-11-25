@@ -141,6 +141,19 @@ func test_world_to_screen_matches_the_fixed_camera() -> void:
 	assert_almost_eq(overlay.to_screen(Vector2(0, 0)).x, 0.0, 0.5)
 
 
+func test_soft_skip_hint_only_shows_when_tab_is_legal() -> void:
+	var overlay := _spawn()
+	assert_false(overlay.soft_skip_hint_visible())
+	overlay.set_soft_skip_available(true)
+	assert_true(overlay.soft_skip_hint_visible())
+	var hint := overlay.get_node("Root/SoftSkipHint") as Label
+	assert_eq(hint.text, "TAB · SALTAR PASO")
+	assert_lte(
+		hint.position.x + hint.size.x, 1280.0, "the footer hint must stay inside the viewport"
+	)
+	assert_gte(hint.position.y, 600.0, "and out of the top safe band")
+
+
 func test_hint_circle_and_beacon_are_transient_state_only() -> void:
 	var overlay := _spawn()
 	overlay.show_hint_circle(Vector2(640, 500), 120.0)
