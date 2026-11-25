@@ -36,6 +36,8 @@ const LAST_GRADE_HOLD_S := 1.5
 var conductor: Node
 
 var _song_time := 0.0
+var _bpm := 0
+var _stem_offset_ms := 0.0
 var _beat_index := 0
 var _measure_index := 0
 var _beat_in_bar := 0
@@ -64,6 +66,12 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("toggle_debug"):
+		toggle_debug()
+		get_viewport().set_input_as_handled()
+
+
 func toggle_debug() -> void:
 	visible = not visible
 	set_process(visible)
@@ -77,6 +85,8 @@ func refresh() -> Dictionary:
 	if conductor == null or not is_instance_valid(conductor):
 		return {}
 	_song_time = float(conductor.call("get_song_time"))
+	_bpm = int(conductor.get("bpm"))
+	_stem_offset_ms = float(conductor.get("stem_first_beat_offset")) * 1000.0
 	_beat_index = int(conductor.call("get_beat_index"))
 	_measure_index = int(conductor.call("get_measure_index"))
 	_beat_in_bar = _beat_index % Config.BEATS_PER_MEASURE
@@ -87,6 +97,8 @@ func refresh() -> Dictionary:
 		_reported_grade = _live_grade
 	return {
 		"song_time": _song_time,
+		"bpm": _bpm,
+		"stem_offset_ms": _stem_offset_ms,
 		"beat": _beat_index,
 		"measure": _measure_index,
 		"delta_ms": _delta_ms,
@@ -167,7 +179,7 @@ func _draw() -> void:
 		(
 			"BPM %d    beat %d    measure %d    beat %d/%d"
 			% [
-				int(conductor.call("bpm")),
+				_bpm,
 				_beat_index,
 				_measure_index,
 				_beat_in_bar,
@@ -217,7 +229,7 @@ func _draw() -> void:
 			"calibration %+.1f ms    stem offset %+.0f ms    beat %.3f s"
 			% [
 				Settings.calibration_offset_ms(),
-				float(conductor.call("stem_first_beat_offset")) * 1000.0,
+				_stem_offset_ms,
 				float(conductor.call("beat_seconds")),
 			]
 		),

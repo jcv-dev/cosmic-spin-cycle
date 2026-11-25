@@ -39,10 +39,18 @@ func test_refresh_reports_song_time_beat_and_delta() -> void:
 	BeatConductor.advance_clock(0.52)
 	var state := _overlay.refresh()
 	assert_almost_eq(state["song_time"], 0.52, 0.000001)
+	assert_eq(state["bpm"], 120)
 	assert_eq(state["beat"], 1)
 	assert_eq(state["measure"], 0)
 	assert_almost_eq(state["delta_ms"], 20.0, 0.01, "0.52 s is 20 ms past beat 1")
 	assert_almost_eq(_overlay.get_signed_delta_ms(), 20.0, 0.01)
+
+
+func test_refresh_reports_the_stem_offset() -> void:
+	BeatConductor.set_stream(null, 0.25)
+	_overlay.refresh()
+	assert_almost_eq(_overlay.refresh()["stem_offset_ms"], 250.0, 0.001)
+	BeatConductor.set_stream(null, 0.0)
 
 
 func test_signed_delta_is_negative_before_the_beat() -> void:
