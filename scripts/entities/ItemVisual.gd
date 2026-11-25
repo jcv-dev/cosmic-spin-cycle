@@ -6,6 +6,10 @@ extends Node2D
 ## the requested variant cell as a sprite. When it does not (greybox, CI, screenshots on a
 ## fresh clone) it falls back to a distinct flat silhouette per item id. The owner keeps
 ## this node unrotated: pixel art must never spin with the RigidBody2D.
+##
+## Feel layer: a fake-height shadow (rotates and grows with altitude while the sprite stays
+## upright), a 60 ms magnet pull on grab, a landing squash/ring, a 2-frame throw smear and
+## the on-beat dotted guide toward the assisted washer mouth.
 
 const OUTLINE_WIDTH := 2.0
 const OUTLINE_MIX := 0.55
@@ -13,6 +17,23 @@ const PATTERN_SHIFT := 0.3
 const SPARKLE_COLOR := Color("#5CFF8A")
 const SPARKLE_COUNT := 3
 const SPRITE_DIR := "res://assets/sprites/"
+const SHADOW_COLOR := Color(0.043, 0.047, 0.063, 0.5)
+## Light comes from the top-left, so the ground shadow sits down-right of the body.
+const SHADOW_OFFSET := Vector2(3.0, 5.0)
+const SHADOW_RADIUS_SCALE := 0.85
+const SHADOW_FLATTEN := 0.38
+const PULL_DURATION_S := 0.06
+const PULL_MAX_PX := 14.0
+const SQUASH_DURATION_S := 0.04
+const GUIDE_DURATION_S := 0.18
+const GUIDE_DOT_STEP := 14.0
+const GUIDE_DOT_SIZE := 2.0
+const GUIDE_COLOR := Color(0.098, 0.890, 0.819, 0.7)
+const LANDING_RING_RADIUS := 26.0
+const SMEAR_LIFETIME := 0.04
+const SMEAR_OFFSET_PX := 3.0
+const SMEAR_ALPHA := 0.35
+const TICK_STREAM := "res://assets/audio/sfx/ui_click.ogg"
 
 static var _sheet_cache: Dictionary = {}
 
@@ -22,6 +43,22 @@ var _pattern_id: StringName = &"solid"
 var _clean := false
 var _has_sprite := false
 var _sprite: AnimatedSprite2D = null
+var _shadow: Polygon2D = null
+var _tick_player: AudioStreamPlayer = null
+var _height := 0.0
+var _pull_start := Vector2.ZERO
+var _pull_left := 0.0
+var _squash_left := 0.0
+var _landing_frames := 0
+var _guide_target := Vector2.ZERO
+var _guide_left := 0.0
+var _smears: Array[Dictionary] = []
+var _last_draw_offset := Vector2.INF
+
+
+func _ready() -> void:
+	_build_shadow()
+	_build_tick_player()
 
 
 ## Rebinds the visual to a data row and a world variant. Safe before the node enters the tree.
@@ -43,6 +80,97 @@ func set_clean(value: bool) -> void:
 
 func is_clean() -> bool:
 	return _clean
+
+
+## Altitude above the floor in world px, owned by `LaundryItem`.
+func set_height(value: float) -> void:
+	_height = maxf(value, 0.0)
+	if _sprite != null:
+		_sprite.position = _sprite_position()
+	if not _has_sprite:
+		queue_redraw()
+
+
+func get_height() -> float:
+	return _height
+
+
+## 60 ms magnet yank: the sprite leads toward the hold point, then eases back.
+func play_grab_pull(hold_position: Vector2) -> void:
+	var towards := hold_position - global_position
+	_pull_start = towards.limit_length(PULL_MAX_PX)
+	_pull_left = PULL_DURATION_S
+
+
+## 2-frame additive smear behind a throw, never scaling the real sprite.
+func play_smear(direction: Vector2) -> void:
+	if direction.length() < 0.0001 or _sprite == null or _sprite.sprite_frames == null:
+		return
+	var texture := _sprite.sprite_frames.get_frame_texture(_sprite.animation, _sprite.frame)
+	if texture == null:
+		return
+	var back := -direction.normalized()
+	for index in range(2):
+		var ghost := Sprite2D.new()
+		ghost.texture = texture
+		ghost.centered = _sprite.centered
+		ghost.offset = _sprite.offset
+		ghost.scale = _sprite.scale
+		ghost.flip_h = _sprite.flip_h
+		ghost.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		var material := CanvasItemMaterial.new()
+		material.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+		ghost.material = material
+		ghost.modulate = Color(1.0, 1.0, 1.0, SMEAR_ALPHA)
+		add_child(ghost)
+		var smear := _visual_offset() + back * (SMEAR_OFFSET_PX * float(index + 1))
+		ghost.position = Vector2(roundf(smear.x), roundf(smear.y))
+		_smears.append({"node": ghost, "left": SMEAR_LIFETIME})
+
+
+## Dotted guide for 180 ms after a non-MISS throw. `target` may be null (no washer).
+func show_throw_guide(target: Variant, grade: int) -> void:
+	if grade == RhythmEvaluator.Grade.MISS:
+		return
+	if not (target is Vector2):
+		return
+	_guide_target = target as Vector2
+	_guide_left = GUIDE_DURATION_S
+
+
+func play_landing(on_beat: bool, heavy: bool) -> void:
+	_squash_left = SQUASH_DURATION_S
+	_landing_frames = 1 if on_beat else 0
+	queue_redraw()
+	var dust := Color("#9AA4C4")
+	if heavy:
+		dust = Color("#FF7A1A")
+	FootFX.burst(self, global_position, dust, 5)
+	_play_tick(heavy)
+
+
+func is_guide_visible() -> bool:
+	return _guide_left > 0.0
+
+
+func _process(delta: float) -> void:
+	_tick_pull(delta)
+	if _squash_left > 0.0:
+		_squash_left = maxf(_squash_left - delta, 0.0)
+	if _landing_frames > 0:
+		_landing_frames -= 1
+		queue_redraw()
+	if _guide_left > 0.0:
+		_guide_left = maxf(_guide_left - delta, 0.0)
+		queue_redraw()
+	_tick_smears(delta)
+	if _sprite != null:
+		_sprite.position = _sprite_position()
+	_update_shadow()
+	var offset := _visual_offset()
+	if not _has_sprite and offset != _last_draw_offset:
+		_last_draw_offset = offset
+		queue_redraw()
 
 
 ## Builds an AtlasTexture for one animation/frame of an imported sheet, or null when the
@@ -102,11 +230,105 @@ func _setup_sprite() -> void:
 		animation = StringName("%s_%s" % [_color_id, _pattern_id])
 	_has_sprite = SpriteSheet.configure(_sprite, _data.sprite_id, animation)
 	_sprite.visible = _has_sprite
+	if _has_sprite:
+		_sprite.position = _visual_offset()
+
+
+func _build_shadow() -> void:
+	_shadow = Polygon2D.new()
+	_shadow.name = "Shadow"
+	_shadow.show_behind_parent = true
+	_shadow.color = SHADOW_COLOR
+	var points := PackedVector2Array()
+	for index in range(20):
+		var angle := TAU * float(index) / 20.0
+		points.append(Vector2(cos(angle), sin(angle)))
+	_shadow.polygon = points
+	add_child(_shadow)
+
+
+func _build_tick_player() -> void:
+	_tick_player = AudioStreamPlayer.new()
+	_tick_player.name = "LandTick"
+	_tick_player.volume_db = -15.0
+	if AudioServer.get_bus_index("SFX") >= 0:
+		_tick_player.bus = "SFX"
+	if ResourceLoader.exists(TICK_STREAM):
+		_tick_player.stream = load(TICK_STREAM) as AudioStream
+	add_child(_tick_player)
+
+
+func _play_tick(heavy: bool) -> void:
+	if _tick_player == null or _tick_player.stream == null:
+		return
+	_tick_player.pitch_scale = 0.8 if heavy else 1.25
+	_tick_player.play()
+
+
+func _tick_pull(delta: float) -> void:
+	if _pull_left <= 0.0:
+		return
+	_pull_left = maxf(_pull_left - delta, 0.0)
+
+
+func _tick_smears(delta: float) -> void:
+	if _smears.is_empty():
+		return
+	for index in range(_smears.size() - 1, -1, -1):
+		var entry := _smears[index]
+		var node: Variant = entry["node"]
+		if not (node is Node) or not is_instance_valid(node):
+			_smears.remove_at(index)
+			continue
+		entry["left"] = float(entry["left"]) - delta
+		if float(entry["left"]) <= 0.0:
+			(node as Node).queue_free()
+			_smears.remove_at(index)
+			continue
+		(node as CanvasItem).modulate.a = SMEAR_ALPHA * (float(entry["left"]) / SMEAR_LIFETIME)
+
+
+## The art is x4; snapping the sprite's *global* position to that grid keeps texels crisp
+## while `ItemVisual.global_position` still tracks the rigid body exactly (contract test).
+func _sprite_position() -> Vector2:
+	var art := float(Config.ART_SCALE)
+	var snapped := (global_position / art).round() * art
+	return snapped - global_position + _visual_offset()
+
+
+func _visual_offset() -> Vector2:
+	var offset := Vector2.ZERO
+	var art := float(Config.ART_SCALE)
+	offset.y -= roundf(_height / art) * art
+	if _squash_left > 0.0:
+		offset.y += art
+	if _pull_left > 0.0:
+		var ratio := 1.0 - clampf(_pull_left / PULL_DURATION_S, 0.0, 1.0)
+		offset += _pull_start * (1.0 - ratio) * (1.0 - ratio)
+	return Vector2(roundf(offset.x), roundf(offset.y))
+
+
+func _update_shadow() -> void:
+	if _shadow == null:
+		return
+	var parent := get_parent() as Node2D
+	var angle := parent.rotation if parent != null else 0.0
+	var radius := _radius()
+	var lift := 1.0 + _height / 48.0
+	var squash := 1.25 if _squash_left > 0.0 else 1.0
+	_shadow.position = SHADOW_OFFSET
+	_shadow.rotation = angle
+	_shadow.scale = Vector2(
+		radius * SHADOW_RADIUS_SCALE * lift * squash, radius * SHADOW_FLATTEN * lift
+	)
+	var alpha := clampf(SHADOW_COLOR.a - _height / 96.0, 0.16, SHADOW_COLOR.a)
+	_shadow.color = Color(SHADOW_COLOR.r, SHADOW_COLOR.g, SHADOW_COLOR.b, alpha)
 
 
 func _draw() -> void:
 	if _data == null:
 		return
+	draw_set_transform(_visual_offset(), 0.0, Vector2.ONE)
 	if not _has_sprite:
 		match _data.id:
 			&"sock":
@@ -122,6 +344,11 @@ func _draw() -> void:
 		_draw_pattern()
 	if _clean:
 		_draw_sparkles()
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	if _landing_frames > 0:
+		_draw_landing_ring()
+	if _guide_left > 0.0:
+		_draw_guide()
 
 
 func _body_color() -> Color:
@@ -138,6 +365,30 @@ func _radius() -> float:
 	if _data == null:
 		return 8.0 * float(Config.ART_SCALE)
 	return maxf(_data.radius, 6.0) * float(Config.ART_SCALE)
+
+
+func _draw_landing_ring() -> void:
+	draw_arc(Vector2.ZERO, LANDING_RING_RADIUS, 0.0, TAU, 24, GUIDE_COLOR, 2.0)
+
+
+## Dotted 2 px path from the item to the assisted mouth, in local space.
+func _draw_guide() -> void:
+	var local := _guide_target - global_position
+	var length := local.length()
+	if length < 1.0:
+		return
+	var direction := local / length
+	var travelled := 10.0
+	while travelled < length:
+		var center := direction * travelled
+		draw_rect(
+			Rect2(
+				center - Vector2(GUIDE_DOT_SIZE, GUIDE_DOT_SIZE) * 0.5,
+				Vector2(GUIDE_DOT_SIZE, GUIDE_DOT_SIZE)
+			),
+			GUIDE_COLOR
+		)
+		travelled += GUIDE_DOT_STEP
 
 
 func _draw_rocky() -> void:

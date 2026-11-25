@@ -4,17 +4,39 @@ extends RigidBody2D
 ##
 ## Ownership: the grabber decides *who* is held, the player decides *when* it is thrown,
 ## and this body owns *how* it moves. All game-feel numbers come from Config or ItemData;
-## the two greybox-only tunables (sock slide delay/speed) are named constants below until
-## the lead promotes them to Config.
+## the greybox-only tunables (sock slide delay/speed, throw follow-through, fake height,
+## landing feedback) are named constants below until the lead promotes them to Config.
 
 signal fell_off_belt
 signal delivered
 signal squelched
+signal landed
 
 ## GDD §6: a sock dropped un-thrown slides randomly after a short grace period.
 const SOCK_SLIDE_DELAY_S := 0.4
 const SOCK_SLIDE_SPEED := 120.0
 const MIN_INPUT_LENGTH := 0.0001
+
+# --- Feel tunables (owned here until promoted) -----------------------------------------
+## Fraction of the player's velocity carried into the throw, and its cap in px/s.
+const FOLLOW_THROUGH_SCALE := 0.35
+const FOLLOW_THROUGH_MAX := 120.0
+## The carried component bleeds off over this window so the aim line wins long-term.
+const FOLLOW_THROUGH_DECAY_S := 0.05
+## Fake 2.5D height: 0 on the ground, `sin` arc peaking at 24 px.
+const AIR_ARC_PX := 24.0
+const AIR_TIME_S := 0.34
+## The sock gets a tiny arc on every throw; the moon keeps its GDD boomerang.
+const SOCK_ARC_ACCEL := 120.0
+const SOCK_ARC_DURATION_S := 0.22
+const HEAVY_IDS: Array[StringName] = [&"gas_giant", &"galaxy_core"]
+const THROW_PITCH_HEAVY := 0.85
+const THROW_PITCH_SOCK := 1.1
+const THROW_STREAM := "res://assets/audio/sfx/throw_whoosh.ogg"
+const GUIDE_RANGE_PX := 700.0
+const GUIDE_DURATION_S := 0.18
+const HEAVY_SHAKE := 0.58
+const HEAVY_SHAKE_S := 0.09
 
 @export var item_id: StringName = &"rocky"
 @export var color: StringName = &"red"
@@ -24,6 +46,8 @@ var data: ItemData = null
 var is_held := false
 var is_clean := false
 var throw_count := 0
+## Fake 2.5D height above the floor in world px; read by `ItemVisual` for the shadow.
+var height := 0.0
 
 var _holder: Node2D = null
 var _throw_armed := false
@@ -31,7 +55,15 @@ var _shape_owned := false
 var _sock_slide_timer := 0.0
 var _boomerang_time := 0.0
 var _boomerang_direction := Vector2.ZERO
+var _boomerang_accel := Config.BOOMERANG_ACCEL
+var _boomerang_duration := Config.BOOMERANG_DURATION_S
+var _carry_velocity := Vector2.ZERO
+var _carry_time := 0.0
+var _air_time := 0.0
+var _air_active := false
+var _throw_grade := -1
 var _rng := RandomNumberGenerator.new()
+var _throw_player: AudioStreamPlayer2D = null
 
 @onready var visual: ItemVisual = get_node_or_null("Visual") as ItemVisual
 @onready
@@ -52,6 +84,7 @@ func _ready() -> void:
 		data = _lookup(item_id)
 	_apply_data()
 	_ensure_squelch_stream()
+	_ensure_feel_players()
 	_sync_visual()
 
 
@@ -78,6 +111,11 @@ func begin_hold(holder: Node) -> void:
 	_throw_armed = false
 	_sock_slide_timer = 0.0
 	_boomerang_time = 0.0
+	_air_active = false
+	_air_time = 0.0
+	height = 0.0
+	_carry_time = 0.0
+	_carry_velocity = Vector2.ZERO
 	collision_mask = Config.CollisionLayer.WORLD
 	# A carried item is not a physical obstacle for other laundry: the core's gravity
 	# field must pull socks in, not shove them away. It still collides with walls via mask.
@@ -102,7 +140,13 @@ func end_hold() -> void:
 
 ## Applies exactly one throw impulse. Returns false when there is nothing to throw, which
 ## is what makes a second call in the same action a no-op (no double impulses).
-func throw_with_impulse(direction: Vector2, grade: int) -> bool:
+##
+## `carrier_velocity` is the thrower's velocity: a capped fraction joins the launch for a
+## short follow-through and then bleeds off, so aim stays readable. The hold-spring speed
+## is cancelled first, which is what makes every throw leave at the same base speed.
+func throw_with_impulse(
+	direction: Vector2, grade: int, carrier_velocity: Vector2 = Vector2.ZERO
+) -> bool:
 	if direction.length() < MIN_INPUT_LENGTH:
 		return false
 	if is_held:
@@ -116,7 +160,13 @@ func throw_with_impulse(direction: Vector2, grade: int) -> bool:
 	var multiplier := RhythmEvaluator.force_multiplier(grade)
 	if data != null and data.id == &"gas_giant" and grade == RhythmEvaluator.Grade.MISS:
 		multiplier *= Config.THROW_GAS_OFFBEAT_SCALE
-	apply_central_impulse(dir * Config.THROW_SPEED * multiplier * mass)
+	linear_velocity = Vector2.ZERO
+	var carry := carrier_velocity * FOLLOW_THROUGH_SCALE
+	carry = carry.limit_length(FOLLOW_THROUGH_MAX)
+	apply_central_impulse((dir * Config.THROW_SPEED * multiplier + carry) * mass)
+	_carry_velocity = carry
+	_carry_time = FOLLOW_THROUGH_DECAY_S
+	_boomerang_accel = Config.BOOMERANG_ACCEL
 	if (
 		data != null
 		and data.special == ItemData.Special.BOOMERANG
@@ -124,6 +174,14 @@ func throw_with_impulse(direction: Vector2, grade: int) -> bool:
 	):
 		_boomerang_direction = Vector2(-dir.y, dir.x)
 		_boomerang_time = Config.BOOMERANG_DURATION_S
+		_boomerang_duration = Config.BOOMERANG_DURATION_S
+	elif data != null and data.special == ItemData.Special.SQUELCH:
+		_boomerang_direction = Vector2(-dir.y, dir.x)
+		_boomerang_time = SOCK_ARC_DURATION_S
+		_boomerang_duration = SOCK_ARC_DURATION_S
+		_boomerang_accel = SOCK_ARC_ACCEL
+	_start_air(grade)
+	_play_throw_feedback(dir, grade)
 	throw_count += 1
 	return true
 
@@ -146,10 +204,15 @@ func get_item_id() -> StringName:
 	return item_id
 
 
+func is_airborne() -> bool:
+	return _air_active
+
+
 func _process(_delta: float) -> void:
 	if visual != null:
 		visual.global_position = global_position
 		visual.rotation = 0.0
+		visual.set_height(height)
 
 
 func _physics_process(delta: float) -> void:
@@ -161,8 +224,10 @@ func _physics_process(delta: float) -> void:
 			_apply_sock_slide()
 	if _boomerang_time > 0.0:
 		_boomerang_time = maxf(_boomerang_time - delta, 0.0)
-		var falloff := _boomerang_time / Config.BOOMERANG_DURATION_S
-		apply_central_force(_boomerang_direction * Config.BOOMERANG_ACCEL * mass * falloff)
+		var falloff := _boomerang_time / maxf(_boomerang_duration, 0.001)
+		apply_central_force(_boomerang_direction * _boomerang_accel * mass * falloff)
+	if _air_active:
+		_tick_air(delta)
 	if is_held and data != null and data.special == ItemData.Special.GRAVITY_FIELD:
 		_attract_socks()
 
@@ -174,6 +239,12 @@ func _integrate_forces(state: PhysicsDirectBodyState2D) -> void:
 			desired += (_holder as CharacterBody2D).velocity
 		state.linear_velocity = desired.limit_length(Config.HOLD_MAX_SPEED)
 		return
+	if _carry_time > 0.0:
+		var step := maxf(state.step, 0.0)
+		var decay := minf(step / FOLLOW_THROUGH_DECAY_S, 1.0)
+		state.linear_velocity -= _carry_velocity * decay
+		_carry_velocity *= 1.0 - decay
+		_carry_time = maxf(_carry_time - step, 0.0)
 	# Throws queue an impulse; clamp after the solver has applied it (no tunnelling at speed).
 	if state.linear_velocity.length() > Config.MAX_ITEM_SPEED:
 		state.linear_velocity = state.linear_velocity.normalized() * Config.MAX_ITEM_SPEED
@@ -187,6 +258,121 @@ func _hold_target() -> Vector2:
 		if value is Vector2:
 			return value
 	return _holder.global_position
+
+
+func _start_air(_grade: int) -> void:
+	_air_time = 0.0
+	_air_active = true
+	height = 0.0
+
+
+func _tick_air(delta: float) -> void:
+	_air_time += delta
+	var ratio := clampf(_air_time / AIR_TIME_S, 0.0, 1.0)
+	height = AIR_ARC_PX * sin(PI * ratio)
+	if ratio >= 1.0:
+		_air_active = false
+		height = 0.0
+		_land()
+
+
+func _land() -> void:
+	var on_beat := (
+		BeatConductor.delta_to_nearest_beat(BeatConductor.get_song_time()) <= Config.WINDOW_GOOD_S
+	)
+	var heavy := data != null and HEAVY_IDS.has(data.id)
+	if visual != null:
+		visual.play_landing(on_beat, heavy)
+	else:
+		FootFX.burst(self, global_position, Color("#9AA4C4"), 5)
+	landed.emit()
+
+
+func _play_throw_feedback(direction: Vector2, grade: int) -> void:
+	if visual != null:
+		visual.play_smear(direction)
+		visual.show_throw_guide(_nearest_compatible_mouth(), grade)
+	_play_throw_sound()
+	if data != null and HEAVY_IDS.has(data.id):
+		_juice_shake(HEAVY_SHAKE, HEAVY_SHAKE_S)
+
+
+func _nearest_compatible_mouth() -> Variant:
+	var tree := get_tree()
+	if tree == null:
+		return null
+	var best: Node2D = null
+	var best_distance := GUIDE_RANGE_PX
+	for node in tree.get_nodes_in_group(Config.GROUP_WASHERS):
+		var washer := node as Node2D
+		if washer == null or not is_instance_valid(washer):
+			continue
+		if not _washer_accepts(washer):
+			continue
+		var mouth := _mouth_position(washer)
+		var distance := global_position.distance_to(mouth)
+		if distance < best_distance:
+			best_distance = distance
+			best = washer
+	if best == null:
+		return null
+	return _mouth_position(best)
+
+
+func _washer_accepts(washer: Node2D) -> bool:
+	var requirement := &""
+	if washer.has_method("get_requirement"):
+		var value: Variant = washer.call("get_requirement")
+		if value is StringName or value is String:
+			requirement = StringName(value)
+	else:
+		var property: Variant = washer.get("requirement")
+		if property is StringName or property is String:
+			requirement = StringName(property)
+	if requirement == &"" or requirement == &"wild":
+		return true
+	return Compatibility.item_fits(item_id, color, pattern, requirement)
+
+
+func _mouth_position(washer: Node2D) -> Vector2:
+	if washer.has_method("get_mouth_position"):
+		var value: Variant = washer.call("get_mouth_position")
+		if value is Vector2:
+			return value
+	var property: Variant = washer.get("mouth_position")
+	if property is Vector2:
+		return property
+	return washer.global_position
+
+
+func _ensure_feel_players() -> void:
+	if _throw_player == null:
+		_throw_player = AudioStreamPlayer2D.new()
+		_throw_player.name = "ThrowPlayer"
+		_throw_player.volume_db = -7.0
+		if AudioServer.get_bus_index("SFX") >= 0:
+			_throw_player.bus = "SFX"
+		add_child(_throw_player)
+	if _throw_player.stream == null and ResourceLoader.exists(THROW_STREAM):
+		_throw_player.stream = load(THROW_STREAM) as AudioStream
+
+
+func _play_throw_sound() -> void:
+	if _throw_player == null or _throw_player.stream == null:
+		return
+	var pitch := 1.0
+	if data != null and HEAVY_IDS.has(data.id):
+		pitch = THROW_PITCH_HEAVY
+	elif data != null and data.special == ItemData.Special.SQUELCH:
+		pitch = THROW_PITCH_SOCK
+	_throw_player.pitch_scale = pitch
+	_throw_player.play()
+
+
+func _juice_shake(amount: float, duration: float) -> void:
+	var juice := get_node_or_null("/root/Juice")
+	if juice != null and juice.has_method("shake"):
+		juice.call("shake", amount, duration)
 
 
 func _apply_sock_slide() -> void:
