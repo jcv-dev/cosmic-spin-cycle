@@ -94,7 +94,8 @@ func _ready() -> void:
 	UITheme.wire_audio(self)
 	Settings.settings_changed.connect(_refresh_record)
 	_refresh_record.call_deferred()
-	focus_first.call_deferred()
+	# Focus is taken on the first frame, not the second: the screen is interactive at once.
+	focus_first()
 
 
 ## Default focus: the primary action, never a destructive one.

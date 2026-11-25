@@ -78,7 +78,8 @@ func _ready() -> void:
 	_refresh()
 	UITheme.wire_audio(self)
 	_refresh_caption()
-	focus_first.call_deferred()
+	# Focus is taken on the first frame, not the second: the screen is interactive at once.
+	focus_first()
 
 
 ## Called by `App` when it wants the screen to re-read the current values.
@@ -139,7 +140,7 @@ func _build() -> void:
 	calibrate.custom_minimum_size = Vector2(LEFT_W, float(BUTTON_H))
 	calibrate.pressed.connect(_on_calibrate_pressed)
 	calibrate.mouse_entered.connect(calibrate.grab_focus)
-	calibrate.add_theme_stylebox_override("focus", _empty_box())
+	_style_action(calibrate)
 	plaque.add_child(calibrate)
 	_focus_ring(calibrate, Vector2(LEFT_W, float(BUTTON_H)))
 	_focusables.append(calibrate)
@@ -153,7 +154,7 @@ func _build() -> void:
 
 	var rule := ColorRect.new()
 	rule.name = "Rule"
-	rule.color = Color(Palette.METAL_0, 0.9)
+	rule.color = Color(Palette.METAL_1, 0.9)
 	rule.position = Vector2(CONTENT_X, RULE_Y) - PLAQUE.position
 	rule.size = Vector2(CONTENT_RIGHT - CONTENT_X, 2)
 	rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -175,7 +176,7 @@ func _build() -> void:
 	reset.custom_minimum_size = Vector2(float(BUTTON_W), float(BUTTON_H))
 	reset.pressed.connect(_on_reset_pressed)
 	reset.mouse_entered.connect(reset.grab_focus)
-	reset.add_theme_stylebox_override("focus", _empty_box())
+	_style_action(reset)
 	plaque.add_child(reset)
 	_focus_ring(reset, Vector2(float(BUTTON_W), float(BUTTON_H)))
 	_focusables.append(reset)
@@ -186,7 +187,7 @@ func _build() -> void:
 	back.custom_minimum_size = Vector2(float(BUTTON_W), float(BUTTON_H))
 	back.pressed.connect(close)
 	back.mouse_entered.connect(back.grab_focus)
-	back.add_theme_stylebox_override("focus", _empty_box())
+	_style_action(back)
 	plaque.add_child(back)
 	_focus_ring(back, Vector2(float(BUTTON_W), float(BUTTON_H)))
 	_focusables.append(back)
@@ -204,7 +205,7 @@ func _section(parent: Control, caption: String, x: float, y: float, width: float
 	label.position = Vector2(x, y) - PLAQUE.position
 	parent.add_child(label)
 	var line := ColorRect.new()
-	line.color = Color(Palette.METAL_0, 0.8)
+	line.color = Color(Palette.METAL_1, 0.8)
 	line.position = Vector2(x, y + 18) - PLAQUE.position
 	line.size = Vector2(width, 1)
 	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -315,6 +316,34 @@ func _draw_focus_ring(ring: Control, control: Control) -> void:
 	var full := Rect2(Vector2.ZERO, ring.size)
 	ring.draw_rect(full.grow(-(RING_WIDTH + RING_GAP)), Palette.SPACE_VOID, false, RING_GAP)
 	ring.draw_rect(full.grow(-1.0), UITheme.ACCENT, false, RING_WIDTH)
+
+
+## Action-button chrome with a `metal_1` border: the shared theme's `metal_0` border measures
+## 2.34:1 on `space_deep` and fails the 3:1 non-text floor.
+func _action_box(fill: Color, alpha: float, border: Color, width: int) -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(fill.r, fill.g, fill.b, alpha)
+	box.border_color = border
+	box.set_border_width_all(width)
+	box.set_corner_radius_all(0)
+	box.content_margin_left = 16.0
+	box.content_margin_right = 16.0
+	box.content_margin_top = 8.0
+	box.content_margin_bottom = 8.0
+	return box
+
+
+func _style_action(button: Button) -> void:
+	button.add_theme_stylebox_override(
+		"normal", _action_box(Palette.SPACE_VOID, 0.55, Palette.METAL_1, 2)
+	)
+	button.add_theme_stylebox_override(
+		"hover", _action_box(Palette.SPACE_MID, 0.85, Palette.METAL_1, 2)
+	)
+	button.add_theme_stylebox_override(
+		"pressed", _action_box(Palette.SPACE_MID, 1.0, UITheme.ACCENT, 2)
+	)
+	button.add_theme_stylebox_override("focus", _empty_box())
 
 
 func _empty_box() -> StyleBoxFlat:
@@ -468,7 +497,7 @@ func _style_slider(slider: HSlider) -> void:
 func _bar_box(color: Color, border: int) -> StyleBoxFlat:
 	var box := StyleBoxFlat.new()
 	box.bg_color = color
-	box.border_color = Palette.METAL_0
+	box.border_color = Palette.METAL_1
 	box.set_border_width_all(border)
 	box.set_corner_radius_all(0)
 	box.content_margin_top = 2.0

@@ -90,7 +90,8 @@ func _ready() -> void:
 	theme = UITheme.theme()
 	_build()
 	UITheme.wire_audio(self)
-	focus_first.call_deferred()
+	# Focus is taken on the first frame, not the second: the screen is interactive at once.
+	focus_first()
 
 
 ## Called by `App` before the screen enters the tree; also safe to call while shown.
@@ -192,7 +193,7 @@ func _build() -> void:
 	retry.custom_minimum_size = Vector2(200, float(BUTTON_H))
 	retry.pressed.connect(_on_retry_pressed)
 	retry.mouse_entered.connect(retry.grab_focus)
-	retry.add_theme_stylebox_override("focus", _empty_box())
+	_style_action(retry)
 	plaque.add_child(retry)
 	_focus_ring(retry, Vector2(200, float(BUTTON_H)))
 	_buttons.append(retry)
@@ -203,7 +204,7 @@ func _build() -> void:
 	menu.custom_minimum_size = Vector2(160, float(BUTTON_H))
 	menu.pressed.connect(_on_menu_pressed)
 	menu.mouse_entered.connect(menu.grab_focus)
-	menu.add_theme_stylebox_override("focus", _empty_box())
+	_style_action(menu)
 	plaque.add_child(menu)
 	_focus_ring(menu, Vector2(160, float(BUTTON_H)))
 	_buttons.append(menu)
@@ -214,7 +215,7 @@ func _build() -> void:
 	new_seed.custom_minimum_size = Vector2(240, float(BUTTON_H))
 	new_seed.pressed.connect(_on_new_seed_pressed)
 	new_seed.mouse_entered.connect(new_seed.grab_focus)
-	new_seed.add_theme_stylebox_override("focus", _empty_box())
+	_style_action(new_seed)
 	plaque.add_child(new_seed)
 	_focus_ring(new_seed, Vector2(240, float(BUTTON_H)))
 	_buttons.append(new_seed)
@@ -267,6 +268,34 @@ func _draw_focus_ring(ring: Control, control: Control) -> void:
 	ring.draw_rect(full.grow(-1.0), UITheme.ACCENT, false, RING_WIDTH)
 
 
+## Action-button chrome with a `metal_1` border: the shared theme's `metal_0` border measures
+## 2.34:1 on `space_deep` and fails the 3:1 non-text floor.
+func _action_box(fill: Color, alpha: float, border: Color, width: int) -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(fill.r, fill.g, fill.b, alpha)
+	box.border_color = border
+	box.set_border_width_all(width)
+	box.set_corner_radius_all(0)
+	box.content_margin_left = 16.0
+	box.content_margin_right = 16.0
+	box.content_margin_top = 8.0
+	box.content_margin_bottom = 8.0
+	return box
+
+
+func _style_action(button: Button) -> void:
+	button.add_theme_stylebox_override(
+		"normal", _action_box(Palette.SPACE_VOID, 0.55, Palette.METAL_1, 2)
+	)
+	button.add_theme_stylebox_override(
+		"hover", _action_box(Palette.SPACE_MID, 0.85, Palette.METAL_1, 2)
+	)
+	button.add_theme_stylebox_override(
+		"pressed", _action_box(Palette.SPACE_MID, 1.0, UITheme.ACCENT, 2)
+	)
+	button.add_theme_stylebox_override("focus", _empty_box())
+
+
 func _empty_box() -> StyleBoxFlat:
 	var box := StyleBoxFlat.new()
 	box.bg_color = Color(0, 0, 0, 0)
@@ -286,7 +315,7 @@ func _text_width(text: String) -> float:
 
 func _rule(parent: Control, y: float) -> void:
 	var rule := ColorRect.new()
-	rule.color = Color(Palette.METAL_0, 0.9)
+	rule.color = Color(Palette.METAL_1, 0.9)
 	rule.position = Vector2(CONTENT_X, y) - PLAQUE.position
 	rule.size = Vector2(CONTENT_RIGHT - CONTENT_X, 2)
 	rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -310,7 +339,7 @@ func _build_rank_ladder(parent: Control, rank: String) -> void:
 			. label(
 				letter,
 				UITheme.FONT_LABEL if achieved else UITheme.FONT_SMALL,
-				color if achieved else Palette.METAL_0,
+				color if achieved else Color(Palette.METAL_2, 0.82),
 				achieved,
 			)
 		)

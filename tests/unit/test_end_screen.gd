@@ -136,6 +136,8 @@ func test_buttons_carry_the_measured_ring() -> void:
 	for name in ["RetryButton", "MenuButton", "NewSeedButton"]:
 		var button := _screen.get_node("Plaque/%s" % name) as Button
 		assert_not_null(button.get_node_or_null("FocusRing"), "%s needs a focus ring" % name)
+		var box := button.get_theme_stylebox("normal") as StyleBoxFlat
+		assert_eq(box.border_color, Palette.METAL_1, "%s border must clear 3:1" % name)
 
 
 func test_no_text_below_the_type_floor() -> void:

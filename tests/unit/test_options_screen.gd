@@ -152,6 +152,9 @@ func test_panel_border_uses_metal_1() -> void:
 	var plaque := _screen.get_node("Plaque") as Panel
 	var box := plaque.get_theme_stylebox("panel") as StyleBoxFlat
 	assert_eq(box.border_color, Palette.METAL_1, "metal_0 borders fail the 3:1 non-text floor")
+	var button := _screen.get_node("Plaque/CalibrateButton") as Button
+	var button_box := button.get_theme_stylebox("normal") as StyleBoxFlat
+	assert_eq(button_box.border_color, Palette.METAL_1, "action buttons use the same border")
 
 
 func test_every_row_draws_the_measured_ring() -> void:

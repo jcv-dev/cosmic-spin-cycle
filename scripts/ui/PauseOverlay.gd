@@ -53,7 +53,8 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_build()
 	UITheme.wire_audio(self)
-	focus_first.call_deferred()
+	# Focus is taken on the first frame, not the second: the screen is interactive at once.
+	focus_first()
 
 
 ## Resume owns the default focus: the safe action is one press away.
@@ -81,7 +82,7 @@ func _build() -> void:
 
 	var rule := ColorRect.new()
 	rule.name = "Rule"
-	rule.color = Color(Palette.METAL_0, 0.9)
+	rule.color = Color(Palette.METAL_1, 0.9)
 	rule.position = Vector2(CONTENT_X, RULE_Y) - PLAQUE.position
 	rule.size = Vector2(CONTENT_W, 2)
 	rule.mouse_filter = Control.MOUSE_FILTER_IGNORE

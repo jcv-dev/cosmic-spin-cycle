@@ -43,7 +43,8 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_build()
 	UITheme.wire_audio(self)
-	focus_first.call_deferred()
+	# Focus is taken on the first frame, not the second: the screen is interactive at once.
+	focus_first()
 
 
 ## The recommended action owns the default focus, never the skip.
@@ -97,7 +98,7 @@ func _build() -> void:
 		Vector2(CONTENT_X + float(BUTTON_W) + BUTTON_GAP, BUTTON_Y) - PLAQUE.position
 	)
 	_skip_button.custom_minimum_size = Vector2(BUTTON_W, BUTTON_H)
-	_skip_button.add_theme_stylebox_override("focus", _empty_box())
+	_style_action(_skip_button)
 	_skip_button.pressed.connect(_on_skip_pressed)
 	_skip_button.mouse_entered.connect(_skip_button.grab_focus)
 	plaque.add_child(_skip_button)
@@ -124,14 +125,42 @@ func _build() -> void:
 func _primary_box(alpha: float) -> StyleBoxFlat:
 	var box := StyleBoxFlat.new()
 	box.bg_color = Color(UITheme.ACCENT, alpha)
-	box.border_color = Color(0, 0, 0, 0)
-	box.set_border_width_all(0)
+	box.border_color = UITheme.ACCENT
+	box.set_border_width_all(1)
 	box.set_corner_radius_all(0)
 	box.content_margin_left = 16.0
 	box.content_margin_right = 16.0
 	box.content_margin_top = 8.0
 	box.content_margin_bottom = 8.0
 	return box
+
+
+## Action-button chrome with a `metal_1` border: the shared theme's `metal_0` border measures
+## 2.34:1 on `space_deep` and fails the 3:1 non-text floor.
+func _action_box(fill: Color, alpha: float, border: Color, width: int) -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(fill.r, fill.g, fill.b, alpha)
+	box.border_color = border
+	box.set_border_width_all(width)
+	box.set_corner_radius_all(0)
+	box.content_margin_left = 16.0
+	box.content_margin_right = 16.0
+	box.content_margin_top = 8.0
+	box.content_margin_bottom = 8.0
+	return box
+
+
+func _style_action(button: Button) -> void:
+	button.add_theme_stylebox_override(
+		"normal", _action_box(Palette.SPACE_VOID, 0.55, Palette.METAL_1, 2)
+	)
+	button.add_theme_stylebox_override(
+		"hover", _action_box(Palette.SPACE_MID, 0.85, Palette.METAL_1, 2)
+	)
+	button.add_theme_stylebox_override(
+		"pressed", _action_box(Palette.SPACE_MID, 1.0, UITheme.ACCENT, 2)
+	)
+	button.add_theme_stylebox_override("focus", _empty_box())
 
 
 func _empty_box() -> StyleBoxFlat:

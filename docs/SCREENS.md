@@ -32,13 +32,15 @@ because the tree is paused behind them.
 |---|---|---|
 | Focus = 2 px `funk_cyan` ring + 1 px `space_void` gap (10.9:1 on `space_deep`) | `_focus_ring()` in each screen; menu rows keep the §12.1 caret + underline on top of it | `test_*_carry_the_measured_ring`, `test_focused_row_draws_the_measured_ring` |
 | No text below 12 px; captions 14 px; menu rows 20–28 px | `FONT_SMALL` / `FONT_LABEL` / per-row sizes | `test_no_text_below_the_type_floor` (all five suites) |
-| Panels and toggles use `metal_1` borders, never `metal_0` (2.34:1 fails 3:1) | `_panel()` per screen | `test_panel_border_uses_metal_1` |
+| Panels, action buttons and slider tracks use `metal_1` borders, never `metal_0` (2.34:1 fails 3:1) | `_panel()` / `_style_action()` / `_bar_box()` per screen | `test_panel_border_uses_metal_1`, `test_buttons_carry_the_measured_ring` |
 | Title hierarchy from presentation, not omission: one 28 px primary, two 20 px secondary, two dimmed 16 px tertiary rows | `MENU_SIZES` / `MENU_INKS` | `test_type_tiers_descend_from_primary_to_tertiary` |
 | Options shows ≤ 5 rows per column (4 + 4) plus a 2-button footer, one linear focus order | two fixed columns + footer row | `test_no_column_shows_more_than_five_rows` |
 | End: four primary stats first, ENTREGADAS and SEMILLA inline as a footnote; rank 96 px | `LEDGER_SLOTS` | `test_four_primary_stats_are_bigger_than_the_secondary_pair`, `test_secondary_stats_sit_inline_with_their_caption` |
 
-Focus ring, verified at 1:1 on the title's first row: `funk_cyan` 2 px, then one
-`space_void` pixel, then the row fill.
+Focus ring, verified at 1:1 by sampling the captures: `funk_cyan` 2 px (y = 489–490 on the end
+screen's REPETIR button), then exactly one `space_void` pixel (y = 491), then the control's own
+border. Structural dividers and the rank ladder's inactive letters use `metal_1` / dimmed
+`metal_2` so no line or letter falls under the contrast floor.
 
 ## Input behaviour
 
