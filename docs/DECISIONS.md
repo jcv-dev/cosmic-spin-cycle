@@ -347,3 +347,19 @@ Change: `ScoreRules` + `DeliveryChute` + `HUD._on_combo`.
    `CelestialNames` (exoplanets for rocky, gas giants for gas, moons for moon, comets for the
    light one, galaxy cores for the unique one), drawn 10 px under the sprite: KEPLER-452b,
    TRAPPIST-1e, EUROPA, TITÁN, HALLEY, SAGITARIO A*…
+
+## D043 — Dash is movement; stabilising is a 3 s hold; broken lasts 10 s
+2026-11-25 · Owner change of technique.
+1. `rhythm_strike`/Shift is now **dash only**: no grade, no washer interaction, no `struck`
+   signal. `Player.do_dash()` replaces `do_strike()` (alias kept), and the strike arc/sound
+   are gone.
+2. Stabilising a turbulent washer is a **hold of the new `interact` action (E / gamepad X) for
+   `Config.INTERACT_HOLD_S` = 3 s**, anywhere within `INTERACT_RANGE_PX` = 170 px of the
+   cabinet. While the hold is active the explosion countdown is frozen, so arriving at the
+   machine is the skill, not winning a sprint. The washer shows `MANTÉN E` / a countdown and
+   grants `ESTABILIZADA` on success.
+3. **Broken lasts 10 s** (`WasherFSM.REPAIR_COOLDOWN_S`), shown as `AVERIADA 9s…` on the holo;
+   a jam still costs −12 and ejects the load.
+4. **Metronome louder again**: −6 dB downbeat / −9 dB beat (was −9/−12).
+5. Tutorial gate 6 is now `Mantén E para calmarla`; the director polls the machine state
+   instead of listening for a strike, and its fail-forward completes the hold.

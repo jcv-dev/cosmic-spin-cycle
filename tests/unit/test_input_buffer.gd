@@ -78,23 +78,15 @@ func test_buffer_does_not_survive_pause() -> void:
 	assert_null(_player.held_item)
 
 
-func test_strike_pressed_during_dash_cooldown_fires_once_it_is_ready() -> void:
-	var washer := Node2D.new()
-	washer.add_to_group(Config.GROUP_WASHERS)
-	add_child_autofree(washer)
-	washer.global_position = _player.global_position + Vector2(50.0, 0.0)
+func test_dash_pressed_during_cooldown_fires_once_it_is_ready() -> void:
 	watch_signals(_player)
 	_player.dash_cooldown_left = 0.05
 	_press(&"rhythm_strike")
-	assert_eq(_player.get_buffered_action(), &"rhythm_strike", "strike is buffered on cooldown")
-	assert_eq(GameState.rhythm_actions, 1, "the press is still graded immediately")
+	assert_eq(_player.get_buffered_action(), &"rhythm_strike", "dash is buffered on cooldown")
 	await wait_physics_frames(5)
-	assert_eq(_player.get_buffered_action(), &"", "strike fired when the dash became ready")
-	assert_true(_player.is_dashing, "the buffered strike started its dash")
-	assert_signal_emitted_with_parameters(
-		_player, "struck", [washer, RhythmEvaluator.Grade.PERFECT]
-	)
-	assert_eq(GameState.rhythm_actions, 1, "firing the buffer does not grade a second time")
+	assert_eq(_player.get_buffered_action(), &"", "dash fired when it became ready")
+	assert_true(_player.is_dashing, "the buffered dash started")
+	assert_eq(GameState.rhythm_actions, 0, "dashing is movement, not a graded beat action")
 
 
 func test_buffered_grab_never_double_grabs() -> void:

@@ -92,7 +92,7 @@ static func steps() -> Array[Dictionary]:
 		{
 			"id": &"strike",
 			"title": "LAVADORA AGITADA",
-			"prompt": "Golpéala para que no explote",
+			"prompt": "Mantén E para calmarla",
 			"kind": &"strike",
 			"max_words": 6,
 			"hint_after_s": STRIKE_HINT_AFTER_S,
@@ -176,10 +176,9 @@ static func grade_throw(delta_t: float, misses: int) -> int:
 	return RhythmEvaluator.evaluate(delta_t, window_scale(misses))
 
 
-## Gate 6 grades with the flat tutorial tolerance (no fail-forward widening needed: the
-## washer cannot explode and the director rescues a stalled player).
-static func grade_strike(delta_t: float) -> int:
-	return RhythmEvaluator.evaluate(delta_t, STRIKE_WINDOW_SCALE)
+## Kept for older tests: the hold has no timing grade.
+static func grade_strike(_delta_t: float) -> int:
+	return RhythmEvaluator.Grade.GOOD
 
 
 ## 0..1 fill for the 2 px cyan underline under the chip.
@@ -297,16 +296,10 @@ static func _apply_insert(state: Dictionary, ev: StringName, event: Dictionary) 
 	_grant(state)
 
 
-## Gate 6: one strike at GOOD or better resolves the scripted turbulence.
-static func _apply_strike(state: Dictionary, ev: StringName, event: Dictionary) -> void:
-	if ev != &"strike":
-		return
-	var grade := int(event.get("grade", RhythmEvaluator.Grade.MISS))
-	if grade <= RhythmEvaluator.Grade.GOOD:
+## Gate 6: holding the interact action next to the machine calms it.
+static func _apply_strike(state: Dictionary, ev: StringName, _event: Dictionary) -> void:
+	if ev == &"interact" or ev == &"stabilized":
 		_grant(state, &"stabilized")
-		return
-	state["misses"] = int(state.get("misses", 0)) + 1
-	state["feedback"] = &"miss"
 
 
 ## Gate 7: only a clean item counts; a dirty one bounces off the hatch.

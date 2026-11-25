@@ -1,6 +1,6 @@
 class_name Player
 extends CharacterBody2D
-## Pip: 8-way top-down movement, dash, magnetic grab/throw and the rhythm strike.
+## Pip: 8-way top-down movement, dash, magnetic grab/throw. Stabilising a washer is a hold.
 ##
 ## Rhythm is graded in `_input()` only (AGENTS §A2.7): a 60 Hz `_physics_process` would
 ## quantise Δt by 16.7 ms against a ±65 ms PERFECT window. Every player action that the
@@ -13,7 +13,6 @@ extends CharacterBody2D
 
 signal grabbed(item: Node)
 signal thrown(item: Node, grade: int)
-signal struck(washer: Node, grade: int)
 signal aim_changed(dir: Vector2)
 
 ## A/B tuning profiles. Change `FEEL_PRESET` below to compare them by hand; `SNAPPY` is
@@ -23,10 +22,6 @@ enum FeelPreset { SNAPPY, WEIGHTED, FLOATY }
 const AIM_EPSILON := 0.0001
 const AIM_TURN_DOT := 0.9999
 const STICK_DEADZONE := 0.2
-const STRIKE_CONE_DOT := 0.5
-## Rhythm strike reaches a little further than the GDD's 96 px and never misses a machine
-## that is plainly in range; pressing Shift must always produce visible feedback.
-const STRIKE_ARC_S := 0.16
 const ART_SPRITE_ID := "char_pip"
 
 # --- Feel tunables (owned here until the lead promotes them to Config) -----------------
@@ -63,7 +58,7 @@ const FEEL_PROFILES := {
 	{"reversal_boost": 1.15, "brake_gain": 0.8, "turn_boost_s": 0.08, "accel_scale": 0.78},
 }
 
-## A cooldown keeps dash from being spammed while a strike is already the beat action.
+## A cooldown keeps the dash from being spammed.
 ## Config has no constant for it yet, so it is an exported tunable instead of a literal.
 @export var dash_cooldown_s := 0.24
 ## Below this fraction of max speed the idle friction snaps to rest (sub-pixel drift).
@@ -90,8 +85,6 @@ var _has_aim_override := false
 var _pip: AnimatedSprite2D
 var _art_action := ""
 var _art_time := 0.0
-var _strike_arc_left := 0.0
-var _strike_player: AudioStreamPlayer
 var _anim_clock := 0.0
 var _shadow_polygon: Polygon2D = null
 var _shadow_frames: Array[PackedVector2Array] = []
@@ -177,13 +170,18 @@ func grab_or_throw() -> void:
 	_try_grab_or_throw()
 
 
-func do_strike() -> void:
+## Dash-only action (docs/DECISIONS.md D043). The old rhythm strike used to grade and hit
+## washers; stabilising a machine is now a 3 s hold of the interact action next to it.
+func do_dash() -> void:
 	if GameState.is_ended:
 		return
-	var grade := get_throw_grade()
-	GameState.register_grade(grade)
-	last_grade = grade
-	_perform_strike(grade)
+	_play_action_art("strike")
+	dash(aim_direction)
+
+
+## Kept as an alias so older sandboxes and tests still compile.
+func do_strike() -> void:
+	do_dash()
 
 
 ## Starts a collision-safe dash. Travel is done by `move_and_slide`, so walls stop it early.
@@ -299,15 +297,7 @@ func _request_action(action: StringName) -> void:
 	if _try_action(action):
 		_clear_buffer()
 		return
-	if action == &"rhythm_strike":
-		# Grade at press time so the buffer never steals rhythm accuracy; only the
-		# dash/strike body of the action is deferred until it becomes legal.
-		var grade := get_throw_grade()
-		GameState.register_grade(grade)
-		last_grade = grade
-		_buffered_grade = grade
-	else:
-		_buffered_grade = -1
+	_buffered_grade = -1
 	_buffered_action = action
 	_buffer_left = FEEL_BUFFER_S
 
@@ -319,10 +309,8 @@ func _try_action(action: StringName) -> bool:
 		&"rhythm_strike":
 			if not is_dash_ready():
 				return false
-			var grade := get_throw_grade()
-			GameState.register_grade(grade)
-			last_grade = grade
-			_perform_strike(grade)
+			_play_action_art("strike")
+			dash(aim_direction)
 			return true
 	return false
 
@@ -344,7 +332,8 @@ func _fire_buffered_action() -> void:
 	if _buffered_action == &"rhythm_strike":
 		if not is_dash_ready():
 			return
-		_perform_strike(_buffered_grade)
+		_play_action_art("strike")
+		dash(aim_direction)
 		_clear_buffer()
 		return
 	if _try_action(_buffered_action):
@@ -355,87 +344,6 @@ func _clear_buffer() -> void:
 	_buffered_action = &""
 	_buffer_left = 0.0
 	_buffered_grade = -1
-
-
-func _perform_strike(grade: int) -> void:
-	_play_action_art("strike")
-	_strike_arc_left = STRIKE_ARC_S
-	_play_strike_sound(false)
-	queue_redraw()
-	dash(aim_direction)
-	var best: Node2D = null
-	var best_distance := INF
-	for node in get_tree().get_nodes_in_group(Config.GROUP_WASHERS):
-		var washer := node as Node2D
-		if washer == null:
-			continue
-		if washer.has_method("is_locked") and bool(washer.call("is_locked")):
-			continue
-		var offset := washer.global_position - global_position
-		var distance := offset.length()
-		if distance > Config.STRIKE_RANGE_PX:
-			continue
-		# A rhythm strike is an assist, not a precision test: inside a wider range the nearest
-		# machine in front wins, even if the aim is a little off.
-		if distance > AIM_EPSILON and offset.normalized().dot(aim_direction) < STRIKE_CONE_DOT:
-			continue
-		if distance < best_distance:
-			best_distance = distance
-			best = washer
-	if best != null:
-		_play_strike_sound(true)
-		struck.emit(best, grade)
-
-
-## Cyan arc in front of Pip + a whoosh. A strike on empty air still reads as an action.
-func _draw() -> void:
-	if _strike_arc_left <= 0.0:
-		return
-	var alpha := clampf(_strike_arc_left / STRIKE_ARC_S, 0.0, 1.0)
-	var base := aim_direction.angle()
-	draw_arc(
-		Vector2.ZERO,
-		66.0,
-		base - 0.9,
-		base + 0.9,
-		18,
-		Color(Palette.FUNK_CYAN, 0.85 * alpha),
-		4.0,
-		true
-	)
-	draw_arc(
-		Vector2.ZERO,
-		52.0,
-		base - 0.6,
-		base + 0.6,
-		12,
-		Color(Palette.METAL_4, 0.55 * alpha),
-		2.0,
-		true
-	)
-
-
-func _ensure_strike_audio() -> void:
-	if _strike_player != null:
-		return
-	var path := "res://assets/audio/sfx/throw_whoosh.ogg"
-	if not ResourceLoader.exists(path):
-		return
-	_strike_player = AudioStreamPlayer.new()
-	_strike_player.name = "StrikeSfx"
-	_strike_player.stream = load(path) as AudioStream
-	_strike_player.volume_db = -10.0
-	if AudioServer.get_bus_index("SFX") >= 0:
-		_strike_player.bus = "SFX"
-	add_child(_strike_player)
-
-
-func _play_strike_sound(hit: bool) -> void:
-	if _strike_player == null or _strike_player.stream == null:
-		return
-	_strike_player.pitch_scale = 0.85 if hit else 1.45
-	_strike_player.volume_db = -7.0 if hit else -12.0
-	_strike_player.play()
 
 
 func _update_aim() -> void:
@@ -727,9 +635,6 @@ func _play_action_art(action: String) -> void:
 
 
 func _update_art(delta: float) -> void:
-	if _strike_arc_left > 0.0:
-		_strike_arc_left = maxf(_strike_arc_left - delta, 0.0)
-		queue_redraw()
 	if _pip == null:
 		return
 	if _art_time > 0.0:

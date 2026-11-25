@@ -131,6 +131,8 @@ var _turbulence_elapsed := 0.0
 var _start_pending := false
 var _bell_repeat := 0.0
 var _buzz_left := 0.0
+var _interact_time := 0.0
+var _interacting := false
 
 
 func _ready() -> void:
@@ -154,7 +156,74 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	_tick_interact(delta)
+
+
+## Holding the interact action next to the machine calms turbulence in 3 s (D043). While the
+## player holds it, the explosion countdown is frozen, so arriving at the machine is the
+## skill, not winning a pixel-perfect race.
+func _tick_interact(delta: float) -> void:
+	if _fsm.get_state() == WasherFSM.State.TURBULENT and _interact_held():
+		_interacting = true
+		_interact_time = minf(_interact_time + delta, Config.INTERACT_HOLD_S)
+		tick(0.0)
+		_update_visuals(delta)
+		queue_redraw()
+		if _interact_time >= Config.INTERACT_HOLD_S:
+			_interact_time = 0.0
+			_interacting = false
+			if _fsm.stabilise():
+				_handle_events(_fsm.take_events())
+				_sync_state()
+				_update_visuals(0.0)
+				WasherFX.make_chip(self, tr("ESTABILIZADA"), true, Palette.CLEAN_GREEN)
+				_flash_rim(Palette.CLEAN_GREEN)
+				GameState.emit_feedback(tr("LAVADORA ESTABILIZADA"), &"success")
+		return
+	if _interacting:
+		_interacting = false
+		_interact_time = 0.0
 	tick(delta)
+
+
+## True when the player is close to the cabinet (any side) and holding the interact action.
+func _interact_held() -> bool:
+	if GameState.is_ended:
+		return false
+	if not Input.is_action_pressed("interact"):
+		return false
+	var player := get_tree().get_first_node_in_group(Config.GROUP_PLAYER) as Node2D
+	if player == null:
+		return false
+	return player.global_position.distance_to(get_center_world()) <= Config.INTERACT_RANGE_PX
+
+
+## Test/QA hook: advances the hold without a real input device.
+func interact_step(delta: float) -> bool:
+	if _fsm.get_state() != WasherFSM.State.TURBULENT:
+		return false
+	_interacting = true
+	_interact_time = maxf(_interact_time + delta, 0.0)
+	tick(0.0)
+	queue_redraw()
+	if _interact_time < Config.INTERACT_HOLD_S:
+		return false
+	_interact_time = 0.0
+	_interacting = false
+	var resolved := _fsm.stabilise()
+	if resolved:
+		_handle_events(_fsm.take_events())
+		_sync_state()
+		_update_visuals(0.0)
+	return resolved
+
+
+func interact_progress() -> float:
+	return clampf(_interact_time / Config.INTERACT_HOLD_S, 0.0, 1.0)
+
+
+func is_interacting() -> bool:
+	return _interacting
 
 
 ## Mouth rim: a 1-frame clean-green flash on a correct load, orange on a wrong one.
@@ -476,7 +545,7 @@ func _sync_state() -> void:
 	var old_state := _last_state
 	_last_state = new_state
 	if new_state == WasherFSM.State.TURBULENT and old_state == WasherFSM.State.WASHING:
-		GameState.emit_feedback(tr("¡LAVADORA AGITADA! GOLPE"), &"danger")
+		GameState.emit_feedback(tr("¡AGITADA! MANTÉN E JUNTO A ELLA"), &"danger")
 	_apply_animation()
 	state_changed.emit(old_state, new_state)
 
@@ -628,7 +697,7 @@ func _update_visuals(delta: float) -> void:
 	_buzz_left = maxf(_buzz_left - delta, 0.0)
 	if _buzz_left <= 0.0 and _buzz_player != null and _buzz_player.playing:
 		_buzz_player.stop()
-	if _fsm.get_state() == WasherFSM.State.TURBULENT:
+	if _fsm.get_state() == WasherFSM.State.TURBULENT and not _interacting:
 		_turbulence_elapsed += delta
 	if bell_due:
 		_play_oneshot("done", DONE_DB)
@@ -683,7 +752,7 @@ func _refresh_holo() -> void:
 				holo_state = HoloState.BROKEN
 				alpha = 1.0
 				tint = Palette.HAZARD_ORANGE
-				text = tr("AVERIADA")
+				text = "%s %.0fs" % [tr("AVERIADA"), maxf(10.0 - _fsm.get_progress() * 10.0, 0.0)]
 			WasherFSM.State.DONE:
 				holo_state = HoloState.DONE
 				alpha = 1.0
@@ -693,7 +762,13 @@ func _refresh_holo() -> void:
 				holo_state = HoloState.TURBULENT
 				alpha = 1.0
 				tint = Palette.HAZARD_ORANGE
-				text = tr("TURBULENTO")
+				if _interacting:
+					text = (
+						"%s %.1fs"
+						% [tr("MANTÉN E"), maxf(Config.INTERACT_HOLD_S - _interact_time, 0.0)]
+					)
+				else:
+					text = tr("¡MANTÉN E!")
 			WasherFSM.State.WASHING:
 				holo_state = HoloState.WASHING
 				alpha = 1.0
@@ -743,7 +818,7 @@ func _refresh_ring() -> void:
 	ring_color = color
 	_ring.visible = mode != 0 or _porthole_flash_left > 0.0
 	_ring.set(&"mode", mode)
-	_ring.set(&"progress", _fsm.get_progress())
+	_ring.set(&"progress", interact_progress() if _interacting else _fsm.get_progress())
 	_ring.set(&"ring_color", color)
 	_ring.set(&"turbulent", state == WasherFSM.State.TURBULENT)
 	_ring.set(&"time_left", maxf(_turbulence_limit_s - _turbulence_elapsed, 0.0))

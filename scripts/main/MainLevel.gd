@@ -367,8 +367,6 @@ func _wire_player() -> void:
 		_player.connect("grabbed", _on_player_grabbed)
 	if _player.has_signal("thrown"):
 		_player.connect("thrown", _on_player_thrown)
-	if _player.has_signal("struck"):
-		_player.connect("struck", _on_player_struck)
 	if _player.has_signal("aim_changed"):
 		_player.connect("aim_changed", _on_player_aim_changed)
 
@@ -382,16 +380,6 @@ func _on_player_thrown(_item: Node, grade: int) -> void:
 	_update_carry_hints()
 	_show_grade(grade)
 	_set_objective_for_carry()
-
-
-func _on_player_struck(washer: Node, grade: int) -> void:
-	_show_grade(grade)
-	if washer != null and washer.has_method("strike"):
-		var mattered := bool(washer.call("strike", grade))
-		if mattered:
-			Juice.shake(0.18)
-			Juice.hitstop(0.04)
-			GameState.emit_feedback(tr("ESTABILIZADA"), &"success")
 
 
 func _on_player_aim_changed(_direction: Vector2) -> void:

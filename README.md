@@ -77,7 +77,8 @@ export XDG_DATA_HOME="$PWD/.work/xdg/data" XDG_CACHE_HOME="$PWD/.work/xdg/cache"
 | Move | WASD / arrows | left stick |
 | Aim | mouse | right stick |
 | Grab / throw | Space / left click | A / south |
-| Rhythm strike (dash) | Shift / right click | B / east |
+| Dash (movement) | Shift / right click | B / east |
+| Stabilise washer (hold 3 s) | E | X / west |
 | Pause / back | Esc | Start |
 | Beat debug overlay | F10 | Back |
 | Debug cheats | F1 +60 s · F2 +stability · F3 +score · F4 spawn item | — |

@@ -183,22 +183,19 @@ func test_correct_insert_grants_the_match_gate() -> void:
 	assert_true(state["granted"])
 
 
-# --- Gate 6: strike ---------------------------------------------------------
+# --- Gate 6: 3 s interact hold ---------------------------------------------
 
 
-func test_strike_gate_needs_good_or_better() -> void:
+func test_interact_gate_grants_when_the_hold_resolves() -> void:
 	var state := _state_at(&"strike")
-	_advance(state, {"kind": &"strike", "grade": MISS})
-	assert_false(state["granted"])
-	assert_eq(state["misses"], 1)
-	_advance(state, {"kind": &"strike", "grade": GOOD})
+	_advance(state, {"kind": &"interact"})
 	assert_true(state["granted"])
 
 
-func test_perfect_strike_also_resolves_the_turbulence_gate() -> void:
+func test_interact_gate_ignores_throwing() -> void:
 	var state := _state_at(&"strike")
-	_advance(state, {"kind": &"strike", "grade": PERFECT})
-	assert_true(state["granted"])
+	_advance(state, {"kind": &"throw", "delta_t": 0.0})
+	assert_false(state["granted"], "throwing never calms a washer")
 
 
 # --- Gate 7: clean delivery -------------------------------------------------

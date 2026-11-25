@@ -37,7 +37,6 @@ const HOLD_DISTANCE := 48.0
 const GRAB_RADIUS := 64.0
 const DASH_DISTANCE := 120.0
 const DASH_DURATION_S := 0.18
-const STRIKE_RANGE_PX := 96.0
 
 # --- Rhythm (GDD §5.1) ------------------------------------------------------
 ## Windows widened after playtest #3: +-65/130 ms was only perceptible for players with
@@ -93,7 +92,10 @@ const MAX_ITEM_SPEED := 1600.0
 
 # --- Washers, chute and the M4 loop (AGENTS §A5, §A6 #3-#11) -----------------
 const WASHER_MOUTH_RADIUS_PX := 60.0
-const WASHER_REPAIR_S := 6.0
+const WASHER_REPAIR_S := 10.0
+## Stabilising a turbulent machine is a hold, not a rhythm strike (D043).
+const INTERACT_RANGE_PX := 170.0
+const INTERACT_HOLD_S := 3.0
 ## UX override of AGENTS §A6 #4: a single loaded item starts washing after this delay, so a
 ## one-item throw visibly does something. A rhythm strike still starts it instantly.
 const WASHER_AUTO_START_S := 1.2

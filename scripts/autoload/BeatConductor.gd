@@ -91,7 +91,7 @@ func _ensure_click() -> void:
 	_click = AudioStreamPlayer.new()
 	_click.name = "Click"
 	_click.stream = load(path) as AudioStream
-	_click.volume_db = -12.0
+	_click.volume_db = -7.0
 	if AudioServer.get_bus_index("SFX") >= 0:
 		_click.bus = "SFX"
 	add_child(_click)
@@ -101,7 +101,7 @@ func _play_click(downbeat: bool) -> void:
 	if _click == null or _click.stream == null:
 		return
 	_click.pitch_scale = 1.0 if downbeat else 1.35
-	_click.volume_db = -9.0 if downbeat else -12.0
+	_click.volume_db = -6.0 if downbeat else -9.0
 	_click.play()
 
 

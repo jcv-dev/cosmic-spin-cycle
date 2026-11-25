@@ -591,7 +591,7 @@ punishing. Total ≈150 s at average pace, hard cap 240 s.
 | 3 | Throw | `Lanza para lavar la ropa` | one throw leaves the hold radius | aim assist ×1.5 until first success |
 | 4 | Beat | `Lanza al cerrarse el anillo` | two throws ≥ GOOD | window widens to ±195 ms after 2 misses; granted after 3 |
 | 5 | Match | `Tira a la roja: lava lo ROJO` | one correct-colour insert (only the compatible washer is lit) | the wrong mouth bounces with `NO`, no penalty |
-| 6 | Strike | `Golpéala para que no explote` | one strike ≥ GOOD on a scripted turbulent washer | turbulence cannot explode in the tutorial |
+| 6 | Hold E | `Mantén E para calmarla` | one strike ≥ GOOD on a scripted turbulent washer | turbulence cannot explode in the tutorial |
 | 7 | Deliver | `Lleva la limpia a la tapa verde` | one clean delivery to the chute | beacon pulses every 2 s |
 
 Skip: hold `ESC` 1 s or `START` → immediate skip, `tutorial_skipped = true`. Replay: title → Tutorial,

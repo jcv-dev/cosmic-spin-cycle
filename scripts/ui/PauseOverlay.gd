@@ -17,7 +17,7 @@ const HINT_TEXT := "ESC · REANUDAR"
 ## key, action — two columns, read left to right (mover/apuntar, agarrar/golpe, pausa/calibrar).
 const CONTROLS: Array[Array] = [
 	["WASD · STICK", "MOVER", "RATÓN · STICK", "APUNTAR", "ESPACIO · A", "AGARRAR · LANZAR"],
-	["SHIFT · X", "GOLPE RÍTMICO", "ESC · START", "PAUSA", "OPCIONES", "CALIBRAR AUDIO"],
+	["SHIFT · B", "DASH", "E · X", "MANTÉN: ESTABILIZAR", "ESC · START", "PAUSA"],
 ]
 const ROW_LABELS: Array[String] = ["REANUDAR", "REINICIAR", "OPCIONES", "MENÚ"]
 const ROW_NAMES: Array[StringName] = [

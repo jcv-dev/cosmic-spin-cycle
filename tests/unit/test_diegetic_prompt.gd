@@ -70,7 +70,7 @@ func test_prompt_offers_strike_near_a_turbulent_washer() -> void:
 	washer.state = 2
 	_add_layer()
 	layer.refresh_now()
-	assert_eq(layer.prompt_text(), "SHIFT · GOLPE")
+	assert_eq(layer.prompt_text(), "MANTÉN E")
 
 
 func test_prompt_uses_gamepad_glyphs_when_a_pad_is_active() -> void:

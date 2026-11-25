@@ -174,7 +174,7 @@ Children (names are contract): `Visual` (`Node2D`; sprite must **never rotate**)
 ```gdscript
 signal grabbed(item: Node)
 signal thrown(item: Node, grade: int)
-signal struck(washer: Node, grade: int)
+# `struck` removed in D043; the dash is movement only.
 signal aim_changed(dir: Vector2)
 
 var held_item: Node
@@ -182,7 +182,7 @@ var aim_direction: Vector2
 var is_dashing: bool
 func get_throw_grade() -> int          # evaluates now via BeatConductor + RhythmEvaluator
 func grab_or_throw() -> void            # action `grab_throw`
-func do_strike() -> void                # action `rhythm_strike`; dash + strike
+func do_dash() -> void                  # action `rhythm_strike`; movement only (D043)
 func get_aim_direction() -> Vector2
 ```
 
@@ -384,7 +384,8 @@ Rules:
 ## 10. Washers and chute (M4)
 
 ### `WasherFSM` — `res://scripts/logic/WasherFSM.gd` (pure)
-States `IDLE=0, WASHING=1, TURBULENT=2, DONE=3, BROKEN=4`. Capacity 3 (`galaxy_core`
+States `IDLE=0, WASHING=1, TURBULENT=2, DONE=3, BROKEN=4`. Repair takes 10 s; turbulence is
+cleared by holding `interact` (E / gamepad X) within 170 px of the cabinet for 3 s (D043). Capacity 3 (`galaxy_core`
 takes all 3), compatibility via `Compatibility.item_fits`, cycle time `max(item.wash_s)`
 floored at `MIN_WASH_TIME_S`, beat reductions applied once at insertion, turbulence at
 `turbulence >= 1.0` plus "phase ≥ 3 every 3rd cycle at 50 %", limit
@@ -417,7 +418,10 @@ func get_requirement() -> StringName
 func set_locked(locked: bool) -> void
 func is_locked() -> bool
 func set_carry_hint(item: Node) -> void       # nullable; drives MATCH/MISMATCH holo
-func strike(grade: int) -> bool               # true when it resolved turbulence or started a cycle
+func strike(grade: int) -> bool               # legacy; the hold interaction replaces it
+func stabilise() -> bool                      # resolves TURBULENT after a 3 s interact hold
+func interact_step(delta: float) -> bool      # test/QA hook for the hold
+func interact_progress() -> float
 func try_accept(item: Node) -> bool
 func force_turbulent() -> bool                # tutorial
 func force_finish() -> void                   # tutorial / QA

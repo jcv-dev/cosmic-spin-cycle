@@ -262,7 +262,7 @@ func test_strike_resolves_turbulence() -> void:
 	washer.try_accept(item)
 	assert_true(washer.strike(RhythmEvaluator.Grade.GOOD))
 	assert_true(washer.force_turbulent())
-	assert_eq(washer.holo_label, "TURBULENTO", "persistent 14 px label, not a popup")
+	assert_eq(washer.holo_label, "¡MANTÉN E!", "the hold instruction is persistent")
 	watch_signals(washer)
 	assert_true(washer.strike(RhythmEvaluator.Grade.GOOD))
 	assert_signal_emitted_with_parameters(
@@ -305,7 +305,7 @@ func test_done_and_broken_holo_states() -> void:
 	assert_eq(washer.holo_label, "LISTO")
 	washer.explode_now()
 	assert_eq(washer.holo_state, CosmicWasher.HoloState.BROKEN)
-	assert_eq(washer.holo_label, "AVERIADA")
+	assert_eq(washer.holo_label, "AVERIADA 10s")
 
 
 # --- dev sandbox ------------------------------------------------------------
@@ -320,3 +320,25 @@ func test_sandbox_scene_builds_the_four_washers_and_the_chute() -> void:
 	var chutes := get_tree().get_nodes_in_group(Config.GROUP_CHUTE)
 	assert_true(washers.size() >= 4, "four washers in the sandbox")
 	assert_true(chutes.size() >= 1, "the chute is the goal")
+
+
+func test_holding_interact_for_three_seconds_stabilises() -> void:
+	var item := _make_item()
+	washer.try_accept(item)
+	washer.force_turbulent()
+	assert_eq(washer.get_state(), WasherFSM.State.TURBULENT)
+	assert_false(washer.interact_step(1.0), "one second is not enough")
+	assert_false(washer.interact_step(1.0), "two seconds are not enough")
+	assert_true(washer.interact_step(1.1), "three seconds calm the machine")
+	assert_eq(washer.get_state(), WasherFSM.State.WASHING)
+	assert_almost_eq(washer.interact_progress(), 0.0, 0.001, "the hold resets")
+
+
+func test_broken_repair_takes_ten_seconds() -> void:
+	var item := _make_item(&"sock", &"blue", &"solid")
+	washer.try_accept(item)
+	assert_eq(washer.get_state(), WasherFSM.State.BROKEN)
+	washer.tick(9.5)
+	assert_eq(washer.get_state(), WasherFSM.State.BROKEN, "still broken before 10 s")
+	washer.tick(0.6)
+	assert_eq(washer.get_state(), WasherFSM.State.IDLE, "the repair completes at 10 s")

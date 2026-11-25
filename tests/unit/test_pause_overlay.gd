@@ -93,7 +93,7 @@ func test_controls_block_lists_every_action() -> void:
 	for node in _screen.get_node("Plaque").get_children():
 		if node is Label:
 			texts.append((node as Label).text)
-	for expected in ["MOVER", "APUNTAR", "AGARRAR · LANZAR", "GOLPE RÍTMICO", "PAUSA"]:
+	for expected in ["MOVER", "APUNTAR", "AGARRAR · LANZAR", "DASH", "PAUSA"]:
 		assert_true(texts.has(expected), "controls block must list %s" % expected)
 
 

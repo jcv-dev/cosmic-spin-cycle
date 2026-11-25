@@ -397,7 +397,7 @@ func test_explosion_and_repair_table() -> void:
 	assert_almost_eq(fsm.get_progress(), 0.5, 0.02)
 	fsm.tick(WasherFSM.REPAIR_COOLDOWN_S * 0.46)
 	assert_eq(fsm.get_state(), WasherFSM.State.BROKEN, "still repairing")
-	var repaired := fsm.tick(0.3)
+	var repaired := fsm.tick(0.5)
 	assert_true(_has_type(repaired, &"repaired"))
 	assert_eq(fsm.get_state(), WasherFSM.State.IDLE)
 

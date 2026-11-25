@@ -80,6 +80,7 @@ func _process(delta: float) -> void:
 	_poll_inserts()
 	_feed({"kind": &"tick", "delta": delta})
 	_track_travel()
+	_track_interaction()
 	_update_gate(delta)
 	_update_overlay()
 	if autoplay:
@@ -405,11 +406,11 @@ func _update_strike() -> void:
 		GameState.emit_feedback(tr("SIGUE EL PULSO"), &"info")
 	if _strike_stage == 1 and _gate_time >= TutorialSteps.STRIKE_ASSIST_AFTER_S:
 		_strike_stage = 2
-		# Fail-forward, not a lie: the director lands a GOOD strike on the same washer so
-		# the turbulence resolves and the loop continues. That hit grants the gate.
-		if _target_washer.has_method("strike"):
-			_target_washer.call("strike", RhythmEvaluator.Grade.GOOD)
-		_feed({"kind": &"strike", "grade": RhythmEvaluator.Grade.GOOD, "assisted": true})
+		# Fail-forward, not a lie: the director completes the hold on the same washer so the
+		# turbulence resolves and the loop continues. That resolution grants the gate.
+		if _target_washer.has_method("stabilise"):
+			_target_washer.call("stabilise")
+		_feed({"kind": &"interact", "assisted": true})
 
 
 func _update_deliver(delta: float) -> void:
@@ -485,8 +486,6 @@ func _connect_player() -> void:
 		_player.connect("grabbed", _on_player_grabbed)
 	if _player.has_signal("thrown"):
 		_player.connect("thrown", _on_player_thrown)
-	if _player.has_signal("struck"):
-		_player.connect("struck", _on_player_struck)
 
 
 func _connect_washers() -> void:
@@ -530,11 +529,15 @@ func _on_player_thrown(item: Node, player_grade: int) -> void:
 			pass
 
 
-func _on_player_struck(washer: Node, player_grade: int) -> void:
-	var grade := mini(player_grade, TutorialSteps.grade_strike(_beat_delta()))
-	if washer != null and washer == _target_washer:
-		overlay.pulse_at(_washer_anchor(washer), UITheme.SUCCESS)
-	_feed({"kind": &"strike", "grade": grade})
+## Gate 6 polls the machine: when the 3 s hold resolves turbulence, the gate is granted.
+func _track_interaction() -> void:
+	if TutorialSteps.kind_for(_step_index) != &"strike":
+		return
+	if _target_washer == null or not is_instance_valid(_target_washer):
+		return
+	if int(_target_washer.call("get_state")) != 2:
+		_feed({"kind": &"interact"})
+		overlay.pulse_at(_washer_anchor(_target_washer), UITheme.SUCCESS)
 
 
 func _on_washer_item_loaded(item: Node, washer: Node) -> void:

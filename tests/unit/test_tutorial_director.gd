@@ -77,6 +77,10 @@ class FakeWasher:
 			state = 3
 		return true
 
+	func stabilise() -> bool:
+		state = 3
+		return true
+
 	func set_carry_hint(_item: Variant) -> void:
 		pass
 
@@ -344,11 +348,9 @@ func test_strike_gate_arms_turbulence_and_accepts_a_good_hit() -> void:
 	var red: FakeWasher = level.get_washer(&"washer_nw")
 	assert_eq(red.turbulent_calls, 1)
 	assert_eq(red.state, 2)
-	director.debug_delta_t = 0.5
-	level.player.emit_signal("struck", red, RhythmEvaluator.Grade.MISS)
-	assert_false(bool(director.current_state()["granted"]))
-	director.debug_delta_t = 0.0
-	level.player.emit_signal("struck", red, RhythmEvaluator.Grade.GOOD)
+	# The hold resolves turbulence; the director polls the washer state.
+	red.state = 3
+	director._process(0.016)
 	assert_true(_until_step(director, 6))
 
 
@@ -420,7 +422,7 @@ func test_strike_gate_cannot_explode_and_assists_a_stuck_player() -> void:
 	var red: FakeWasher = level.get_washer(&"washer_nw")
 	director.debug_set_elapsed(TutorialSteps.STRIKE_ASSIST_AFTER_S + 0.1)
 	director._process(0.016)
-	assert_eq(red.state, 3, "the assisted strike resolves the turbulence")
+	assert_eq(red.state, 3, "the assisted hold resolves the turbulence")
 	assert_true(bool(director.current_state()["granted"]))
 
 

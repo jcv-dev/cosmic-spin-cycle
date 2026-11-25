@@ -85,52 +85,14 @@ func test_second_grab_while_holding_throws_instead() -> void:
 	assert_false(second.is_held, "only one item was ever held")
 
 
-func test_strike_hits_washer_in_front_and_grades_once() -> void:
+func test_dash_is_movement_only_and_never_grades() -> void:
 	var player := _add_player(Vector2(400.0, 400.0))
-	var washer := _add_washer(Vector2(470.0, 400.0))
+	_add_washer(Vector2(470.0, 400.0))
 	watch_signals(player)
-	player.do_strike()
-	assert_signal_emitted_with_parameters(player, "struck", [washer, RhythmEvaluator.Grade.PERFECT])
-	assert_eq(GameState.rhythm_actions, 1, "one strike, one grade")
-	assert_eq(GameState.perfect_count, 1)
-	assert_eq(player.last_grade, RhythmEvaluator.Grade.PERFECT)
-
-
-func test_strike_ignores_washer_behind_the_aim() -> void:
-	var player := _add_player(Vector2(400.0, 400.0))
-	_add_washer(Vector2(330.0, 400.0))
-	watch_signals(player)
-	player.do_strike()
-	assert_signal_emit_count(player, "struck", 0)
-	assert_eq(GameState.rhythm_actions, 1, "a whiffed strike still costs a graded action")
-
-
-func test_strike_ignores_washer_out_of_range() -> void:
-	var player := _add_player(Vector2(400.0, 400.0))
-	_add_washer(Vector2(400.0 + Config.STRIKE_RANGE_PX + 20.0, 400.0))
-	watch_signals(player)
-	player.do_strike()
-	assert_signal_emit_count(player, "struck", 0)
-
-
-func test_two_strikes_register_two_grades() -> void:
-	var player := _add_player(Vector2(400.0, 400.0))
-	_add_washer(Vector2(460.0, 400.0))
-	player.do_strike()
-	player.do_strike()
-	assert_eq(GameState.rhythm_actions, 2, "one register_grade per action, never per target")
-
-
-func test_strike_emits_once_per_washer_in_range() -> void:
-	var player := _add_player(Vector2(400.0, 400.0))
-	_add_washer(Vector2(450.0, 400.0))
-	var second := _add_washer(Vector2(400.0, 450.0))
-	player.set_aim_direction(Vector2(0.0, 1.0))
-	watch_signals(player)
-	player.do_strike()
-	assert_eq(GameState.rhythm_actions, 1)
-	assert_signal_emit_count(player, "struck", 1, "only the aimed-at washer is hit")
-	assert_true(is_instance_valid(second))
+	player.do_dash()
+	assert_true(player.is_dashing, "the dash starts")
+	assert_eq(GameState.rhythm_actions, 0, "movement is never a graded action")
+	assert_false(player.has_signal("struck"), "the strike signal is gone")
 
 
 func test_grabbed_item_follows_the_hold_point() -> void:

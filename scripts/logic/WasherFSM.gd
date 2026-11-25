@@ -56,7 +56,7 @@ const AUTO_TURBULENCE_EVERY := 3
 ## play the `done` animation. Provisional; promote to Config if it needs tuning.
 const DONE_SETTLE_S := 0.35
 ## Seconds a broken washer stays out of order. Provisional (brief: "say 6 s").
-const REPAIR_COOLDOWN_S := 6.0
+const REPAIR_COOLDOWN_S := 10.0
 
 ## Slots of a galaxy core: it is a wildcard that fills the whole drum.
 const CAPACITY := Config.WASHER_CAPACITY
@@ -225,6 +225,14 @@ func strike(grade: int) -> bool:
 	if state == State.IDLE and not _load.is_empty():
 		return _start_cycle()
 	return false
+
+
+## Resolves turbulence from a sustained hold (no grade: the player spent 3 s next to the
+## machine instead of timing a press).
+func stabilise() -> bool:
+	if state != State.TURBULENT:
+		return false
+	return _resolve_turbulence(RhythmEvaluator.Grade.GOOD)
 
 
 ## A wrong load jams the machine: it accepts the physical item, then goes BROKEN, drops

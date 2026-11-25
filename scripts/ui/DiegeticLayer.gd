@@ -334,7 +334,7 @@ func _update_prompt() -> void:
 		kind = PROMPT_KIND_THROW
 	elif _nearest_item(Config.GRAB_RADIUS) != null:
 		kind = PROMPT_KIND_GRAB
-	elif _nearest_turbulent(Config.STRIKE_RANGE_PX) != null:
+	elif _nearest_turbulent(Config.INTERACT_RANGE_PX) != null:
 		kind = PROMPT_KIND_STRIKE
 	if kind == _prompt_kind:
 		return
@@ -345,14 +345,14 @@ func _update_prompt() -> void:
 
 func _prompt_for(kind: StringName) -> String:
 	var action := "Ⓐ" if _use_gamepad() else "ESPACIO"
-	var strike := "Ⓧ" if _use_gamepad() else "SHIFT"
+	var hold := "MANTÉN Ⓧ" if _use_gamepad() else "MANTÉN E"
 	match kind:
 		PROMPT_KIND_THROW:
 			return "%s · %s" % [action, tr("LANZAR")]
 		PROMPT_KIND_GRAB:
 			return "%s · %s" % [action, tr("AGARRAR")]
 		PROMPT_KIND_STRIKE:
-			return "%s · %s" % [strike, tr("GOLPE")]
+			return hold
 		_:
 			return ""
 
