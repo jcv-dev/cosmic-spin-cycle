@@ -60,6 +60,8 @@ var _pending_warp := -1.0
 var _starter_spawned := false
 var _finished_emitted := false
 var _last_stability_band := -1
+var _belt_hint_shown := false
+var _shredder_hint_shown := false
 
 
 func _ready() -> void:
@@ -140,6 +142,7 @@ func _process(delta: float) -> void:
 		_spawner.call("advance_to", shift_time)
 	if mode == &"shift":
 		_maybe_spawn_starter_item()
+		_maybe_show_belt_hint()
 	_refresh_low_stability()
 
 
@@ -227,6 +230,8 @@ func _build_environment() -> void:
 		else:
 			_configure_area_fallback(node, RoomBuilder.rect_world(shredder))
 		node.z_index = 6
+		if node.has_signal("item_consumed"):
+			node.connect("item_consumed", _on_shredder_consumed)
 		_environment.add_child(node)
 
 
@@ -276,10 +281,13 @@ func _build_chute() -> void:
 	var entry: Dictionary = layout.get("chute", {})
 	node.name = "DeliveryChute"
 	if node.has_method("configure"):
+		# `configure` takes ART pixels and applies ART_SCALE itself; passing world pixels here
+		# put the chute at (2560, 1440), off-screen, which is why delivery felt impossible.
+		var center_art: Array = entry.get("center", [160, 90])
 		node.call(
 			"configure",
 			RoomBuilder.art_rect(entry),
-			RoomBuilder.point_world(entry.get("center", [160, 90]))
+			Vector2(float(center_art[0]), float(center_art[1]))
 		)
 	if node.has_signal("delivered"):
 		node.connect("delivered", _on_chute_delivered)
@@ -461,6 +469,22 @@ func _on_chute_delivered(_item: Node, points: int) -> void:
 	if _hud != null and _hud.has_method("flash_reward"):
 		_hud.call("flash_reward", points)
 	GameState.emit_feedback("+%d" % points, &"success")
+
+
+## First contact: the belts are how laundry arrives. One line, once per shift.
+func _maybe_show_belt_hint() -> void:
+	if _belt_hint_shown or shift_time < 2.0 or _items.get_child_count() == 0:
+		return
+	_belt_hint_shown = true
+	GameState.emit_feedback(tr("LA CINTA TRAE ROPA SUCIA"), &"info")
+
+
+## First contact: a lost item costs stability. The shredder teaches it once.
+func _on_shredder_consumed(_item: Node) -> void:
+	if _shredder_hint_shown:
+		return
+	_shredder_hint_shown = true
+	GameState.emit_feedback(tr("NO DEJES CAER LA ROPA AL VACÍO"), &"danger")
 
 
 func _on_chute_dirty(_item: Node) -> void:

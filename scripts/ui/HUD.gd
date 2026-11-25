@@ -20,8 +20,8 @@ enum Slot {
 }
 
 # --- Geometry (1280×720, docs/UX_BIBLE.md §5) -------------------------------
-const PLAQUE_A_RECT := Rect2(0, 0, 312, 104)
-const PLAQUE_B_RECT := Rect2(968, 0, 312, 104)
+const PLAQUE_A_RECT := Rect2(0, 0, 312, 94)
+const PLAQUE_B_RECT := Rect2(968, 0, 312, 94)
 const BAR_RECT := Rect2(24, 26, 200, 16)
 const SEGMENTS := 12
 const BEAT_DOT_ORIGIN := Vector2(232, 34)
@@ -44,8 +44,10 @@ const PANEL_ALPHA := 0.97
 const CLOCK_WARN_S := 10.0
 const PHASE_NAME_HOLD_S := 4.0
 const DANGER_STABILITY := 35.0
-const RIBBON_ALPHA := 0.55
-const RIBBON_BORDER_ALPHA := 0.45
+## The objective is floating type with a 2 px shadow, not a plate: a filled bar over the
+## wall band read as another HUD panel (owner: "the HUD is way too invasive").
+const RIBBON_ALPHA := 0.0
+const RIBBON_BORDER_ALPHA := 0.0
 const OBJECTIVE_FADE_S := 8.0
 const OBJECTIVE_IDLE_ALPHA := 0.55
 const OBJECTIVE_MAX_CHARS := 46
@@ -660,6 +662,9 @@ func set_tutorial_mode(on: bool) -> void:
 		_bpm_label.visible = not on
 	if _score_label != null:
 		_score_label.visible = not on
+	if _ribbon != null:
+		# The tutorial's step chip owns the top line instead of a second mission line.
+		_ribbon.visible = not on
 	_refresh_clock()
 
 

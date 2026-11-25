@@ -284,7 +284,7 @@ func _stage_deliver() -> void:
 		_spawn_clean_fallback()
 		_clean_item = _gate_item
 	_gate_item = _clean_item
-	show_gate_prompt(_item_anchor())
+	show_gate_prompt(_chute_anchor() + Vector2(0.0, -72.0))
 	overlay.show_beacon(_chute_anchor())
 
 

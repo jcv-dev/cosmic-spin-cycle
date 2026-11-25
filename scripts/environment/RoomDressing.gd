@@ -287,20 +287,20 @@ static func _floor_grime(specs: Array[Dictionary], rng: RandomNumberGenerator) -
 
 
 static func _floor_puddles(specs: Array[Dictionary]) -> void:
-	var radius := Vector2(11.0, 6.0) * float(Config.ART_SCALE)
+	var radius := Vector2(6.0, 3.5) * float(Config.ART_SCALE)
 	for center_art: Vector2 in PUDDLES:
 		var center := center_art * float(Config.ART_SCALE)
 		var points := PackedVector2Array()
 		for vertex in range(18):
 			var angle := TAU * float(vertex) / 18.0
 			points.append(_snap(center + Vector2(cos(angle) * radius.x, sin(angle) * radius.y)))
-		specs.append(_poly(points, Palette.SPACE_HAZE, 0.9))
+		specs.append(_poly(points, Palette.SPACE_HAZE, 0.55))
 		# 1 art-px specular highlight along the top-left rim, as if a lamp is reflected.
 		var gloss := PackedVector2Array()
 		for step in range(9):
 			var angle := PI * (1.05 + 0.5 * float(step) / 8.0)
 			gloss.append(_snap(center + Vector2(cos(angle) * radius.x, sin(angle) * radius.y)))
-		specs.append(_line(gloss, Palette.METAL_3, 0.75))
+		specs.append(_line(gloss, Palette.METAL_3, 0.30))
 
 
 ## Two long specular streaks from the ceiling lamps: the floor reads as wet concrete.
@@ -433,10 +433,10 @@ static func _floor_contact_shadows(specs: Array[Dictionary]) -> void:
 			)
 		)
 		specs.append(
-			_shadow_ellipse(Vector2(rect.get_center().x, rect.end.y - 4.0), rect.size.x * 0.46)
+			_shadow_ellipse(Vector2(rect.get_center().x, rect.end.y - 4.0), rect.size.x * 0.34)
 		)
 	var chute := RoomBuilder.layout_rect("chute")
-	specs.append(_shadow_ellipse(Vector2(chute.get_center().x, chute.end.y - 4.0), 26.0))
+	specs.append(_shadow_ellipse(Vector2(chute.get_center().x, chute.end.y - 4.0), 18.0))
 	for belt: Dictionary in RoomBuilder.layout().get("belts", []):
 		var rect := RoomBuilder.rect_world(belt)
 		if rect.size.x >= rect.size.y:
@@ -466,7 +466,7 @@ static func _shadow_ellipse(center: Vector2, radius_x: float, radius_y: float = 
 			_snap(center + Vector2(-rx * 0.68, ry)),
 		]
 	)
-	return _poly(points, Palette.SPACE_VOID, 0.42)
+	return _poly(points, Palette.SPACE_VOID, 0.28)
 
 
 ## Soft contact shadow where the floor meets the walls: three stepped strips per wall.

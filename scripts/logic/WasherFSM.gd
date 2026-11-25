@@ -81,6 +81,7 @@ var _events: Array[Dictionary] = []
 var _load: Array[Dictionary] = []
 ## Wash reduction from throws that arrived before the cycle started (AGENTS §A6 #8).
 var _pending_reduction := 0.0
+var _auto_start_left := -1.0
 var _settle_elapsed := 0.0
 var _turbulence_elapsed := 0.0
 var _auto_turbulent_at := -1.0
@@ -195,6 +196,8 @@ func insert(item: Variant, info: Dictionary = {}, grade: int = GRADE_UNKNOWN) ->
 	_apply_miss_turbulence(grade)
 	if state == State.IDLE and slots_used >= CAPACITY:
 		_start_cycle()
+	elif state == State.IDLE and _load.size() > 0:
+		_auto_start_left = Config.WASHER_AUTO_START_S
 	return true
 
 
@@ -273,6 +276,7 @@ func collect() -> Array:
 	for entry in _load:
 		items.append(entry.get("item"))
 	_load.clear()
+	_auto_start_left = -1.0
 	_recount()
 	state = State.IDLE
 	cycle_time = 0.0
@@ -400,6 +404,10 @@ func _fits_requirement(entry: Dictionary, item_id: StringName) -> bool:
 
 
 func _advance(dt: float) -> void:
+	if state == State.IDLE and _auto_start_left > 0.0:
+		_auto_start_left = maxf(_auto_start_left - dt, 0.0)
+		if _auto_start_left <= 0.0 and _load.size() > 0:
+			_start_cycle()
 	match state:
 		State.WASHING:
 			_advance_washing(dt)
@@ -438,6 +446,7 @@ func _advance_turbulent(dt: float) -> void:
 
 
 func _start_cycle() -> bool:
+	_auto_start_left = -1.0
 	var length := _cycle_time()
 	cycle_time = length
 	remaining = maxf(length - _pending_reduction, minf(length, MIN_WASH_TIME_S))
@@ -461,6 +470,7 @@ func _explode(reason: StringName) -> void:
 		return
 	var items := get_loaded_items()
 	_load.clear()
+	_auto_start_left = -1.0
 	_recount()
 	state = State.BROKEN
 	_repair_left = REPAIR_COOLDOWN_S

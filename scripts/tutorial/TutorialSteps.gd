@@ -83,8 +83,8 @@ static func steps() -> Array[Dictionary]:
 		},
 		{
 			"id": &"match",
-			"title": "SUELTA AQUÍ",
-			"prompt": "SUELTA EN LA ROJA",
+			"title": "A LA LAVADORA ROJA",
+			"prompt": "TIRA A LA ROJA",
 			"kind": &"insert",
 			"max_words": 4,
 			"hint_after_s": GRAB_HINT_AFTER_S,
@@ -99,10 +99,10 @@ static func steps() -> Array[Dictionary]:
 		},
 		{
 			"id": &"deliver",
-			"title": "LLEVA EL LIMPIO AL DUCTO",
-			"prompt": "AL DUCTO DEL CENTRO",
+			"title": "ENTREGA",
+			"prompt": "TIRA A LA TAPA VERDE",
 			"kind": &"deliver",
-			"max_words": 4,
+			"max_words": 5,
 			"hint_after_s": GRAB_HINT_AFTER_S,
 		},
 	]

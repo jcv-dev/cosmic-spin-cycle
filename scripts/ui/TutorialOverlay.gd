@@ -21,8 +21,8 @@ signal completion_continued
 const LAYER := 25
 ## Below the 48 px HUD bar so the tutorial chip never fights the clock/stability readout,
 ## and still inside the y 0–104 safe band (docs/UX_BIBLE.md §12).
-const CHIP_TOP := 56
-const CHIP_HEIGHT := 46
+const CHIP_TOP := 6
+const CHIP_HEIGHT := 32
 const CHIP_PAD_X := 16
 const CHIP_GAP := 10
 const UNDERLINE_H := 2
@@ -313,10 +313,10 @@ func _build_chip() -> void:
 	_sep_label = UITheme.label("·", UITheme.FONT_LABEL, UITheme.INK_DIM)
 	_sep_label.name = "SepLabel"
 	_chip.add_child(_sep_label)
-	_title_label = UITheme.label("MUÉVETE", UITheme.FONT_H2, UITheme.INK, true)
+	_title_label = UITheme.label("MUÉVETE", UITheme.FONT_BODY, UITheme.INK, true)
 	_title_label.name = "TitleLabel"
 	_chip.add_child(_title_label)
-	_skip_hint = UITheme.label("TAB · SALTAR PASO", UITheme.FONT_MICRO, UITheme.INK_DIM)
+	_skip_hint = UITheme.label("TAB · SALTAR PASO", UITheme.FONT_SMALL, UITheme.INK_DIM)
 	_skip_hint.name = "SoftSkipHint"
 	_skip_hint.visible = false
 	# Screen-space footer: it must not inherit the chip's local origin (it sits off the chip).

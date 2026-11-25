@@ -26,7 +26,10 @@ enum HoloState { IDLE, MATCH, MISMATCH, WASHING, TURBULENT, DONE, BROKEN, LOCKED
 
 const ART_ID := "mach_washer"
 
-const MOUTH_RADIUS := 60.0
+## The catch volume is deliberately generous: the whole cabinet plus a 24 px lip. The owner's
+## note was "make it so you don't need to aim exactly at the door"; a thrown item that touches
+## any part of the machine must count.
+const MOUTH_RADIUS := 122.0
 const BODY_SIZE := Vector2(176.0, 176.0)
 const BODY_CENTER := Vector2(0.0, -96.0)
 const EJECT_OFFSET := Vector2(0.0, 76.0)
@@ -154,10 +157,26 @@ func _process(delta: float) -> void:
 
 
 ## Mouth rim: a 1-frame clean-green flash on a correct load, orange on a wrong one.
+## Strong "throw it here" affordance: a cyan bracket around the cabinet and three chevrons
+## aimed at the drum, shown only while the player carries a compatible item.
+func _draw_match_bracket() -> void:
+	if holo_state != HoloState.MATCH:
+		return
+	var body := Rect2(BODY_CENTER - BODY_SIZE * 0.5, BODY_SIZE)
+	var ink := Color(Palette.FUNK_CYAN, 0.85)
+	draw_rect(body.grow(6.0), ink, false, 2.0)
+	var tip := BODY_CENTER + Vector2(0.0, 10.0)
+	for index in range(3):
+		var y := body.position.y - 26.0 - float(index) * 14.0
+		draw_line(Vector2(tip.x - 16.0, y), Vector2(tip.x, y + 12.0), ink, 2.0)
+		draw_line(Vector2(tip.x + 16.0, y), Vector2(tip.x, y + 12.0), ink, 2.0)
+
+
 func _draw() -> void:
 	if _rim_left <= 0.0:
 		return
-	draw_arc(Vector2.ZERO, MOUTH_RADIUS, 0.0, TAU, 48, Color(_rim_color, 0.9), 3.0, true)
+	draw_arc(BODY_CENTER, BODY_SIZE.x * 0.5 + 6.0, 0.0, TAU, 48, Color(_rim_color, 0.55), 2.0, true)
+	_draw_match_bracket()
 
 
 # --- public API -------------------------------------------------------------
@@ -306,6 +325,11 @@ func get_glow_color() -> Color:
 			return Palette.FUNK_CYAN
 		_:
 			return Palette.METAL_3
+
+
+## Centre of the machine: the point a throw is steered toward and the anchor for labels.
+func get_center_world() -> Vector2:
+	return global_position + BODY_CENTER
 
 
 func get_mouth_world() -> Vector2:
@@ -772,6 +796,7 @@ func _apply_config() -> void:
 		var circle := CircleShape2D.new()
 		circle.radius = MOUTH_RADIUS
 		_mouth_shape.shape = circle
+		_mouth_shape.position = BODY_CENTER
 	if _fallback != null:
 		_fallback.visible = not SpriteSheet.has_sheet(ART_ID)
 

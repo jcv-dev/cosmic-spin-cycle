@@ -16,6 +16,10 @@ signal landed
 const SOCK_SLIDE_DELAY_S := 0.4
 const SOCK_SLIDE_SPEED := 120.0
 const MIN_INPUT_LENGTH := 0.0001
+## Homing window and strength after a throw (deliberately short: it forgives, not aims).
+const HOME_IN_TIME_S := 0.55
+const HOME_IN_RANGE_PX := 460.0
+const HOME_IN_ACCEL := 1900.0
 
 # --- Feel tunables (owned here until promoted) -----------------------------------------
 ## Fraction of the player's velocity carried into the throw, and its cap in px/s.
@@ -61,6 +65,9 @@ var _carry_velocity := Vector2.ZERO
 var _carry_time := 0.0
 var _air_time := 0.0
 var _air_active := false
+## Short homing window after a throw: the player aims the machine, the game covers the last
+## few pixels (the owner's "aiming exactly at the door is near impossible").
+var _home_time := 0.0
 var _throw_grade := -1
 var _rng := RandomNumberGenerator.new()
 var _throw_player: AudioStreamPlayer2D = null
@@ -181,6 +188,7 @@ func throw_with_impulse(
 		_boomerang_duration = SOCK_ARC_DURATION_S
 		_boomerang_accel = SOCK_ARC_ACCEL
 	_start_air(grade)
+	_home_time = HOME_IN_TIME_S
 	_play_throw_feedback(dir, grade)
 	throw_count += 1
 	return true
@@ -245,9 +253,48 @@ func _integrate_forces(state: PhysicsDirectBodyState2D) -> void:
 		state.linear_velocity -= _carry_velocity * decay
 		_carry_velocity *= 1.0 - decay
 		_carry_time = maxf(_carry_time - step, 0.0)
+	_apply_home_in(state)
 	# Throws queue an impulse; clamp after the solver has applied it (no tunnelling at speed).
 	if state.linear_velocity.length() > Config.MAX_ITEM_SPEED:
 		state.linear_velocity = state.linear_velocity.normalized() * Config.MAX_ITEM_SPEED
+
+
+## Gentle homing toward the nearest valid destination for a short window after release.
+## Never snaps: it adds lateral acceleration so the arc still reads as a throw.
+func _apply_home_in(state: PhysicsDirectBodyState2D) -> void:
+	if _home_time <= 0.0:
+		return
+	var step := maxf(state.step, 0.0)
+	_home_time = maxf(_home_time - step, 0.0)
+	var target := _home_target()
+	if target == Vector2.INF:
+		return
+	var offset := target - global_position
+	var distance := offset.length()
+	if distance <= 12.0 or distance > HOME_IN_RANGE_PX:
+		return
+	var speed := state.linear_velocity.length()
+	if speed < 40.0:
+		return
+	var to_target := offset.normalized()
+	if state.linear_velocity.normalized().dot(to_target) < 0.15:
+		return
+	var closeness := 1.0 - distance / HOME_IN_RANGE_PX
+	state.linear_velocity += to_target * HOME_IN_ACCEL * (0.35 + 0.65 * closeness) * step
+
+
+func _home_target() -> Vector2:
+	if is_clean:
+		var tree := get_tree()
+		if tree != null:
+			var chute := tree.get_first_node_in_group(Config.GROUP_CHUTE) as Node2D
+			if chute != null:
+				return chute.global_position
+		return Vector2.INF
+	var target: Variant = _nearest_compatible_mouth()
+	if target is Vector2:
+		return target
+	return Vector2.INF
 
 
 func _hold_target() -> Vector2:
@@ -335,6 +382,10 @@ func _washer_accepts(washer: Node2D) -> bool:
 
 
 func _mouth_position(washer: Node2D) -> Vector2:
+	if washer.has_method("get_center_world"):
+		var centre: Variant = washer.call("get_center_world")
+		if centre is Vector2:
+			return centre
 	if washer.has_method("get_mouth_position"):
 		var value: Variant = washer.call("get_mouth_position")
 		if value is Vector2:

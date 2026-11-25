@@ -21,7 +21,13 @@ const ART_ID := "env_chute"
 const BEACON_RADIUS := 44.0
 ## Outer "come here" ring shown while carrying a clean item.
 const HINT_RADIUS := 84.0
-const HATCH_RADIUS := 64.0
+## The hatch is a mouth, not a coin slot: a 110 px catch plus a 240 px suction funnel, so a
+## clean item that lands near the centre is pulled in (the owner's "if it should be sucking
+## the planet then it's not working").
+const HATCH_RADIUS := 110.0
+const FUNNEL_RADIUS := 240.0
+const SUCTION_ACCEL := 1500.0
+const SUCTION_MIN := 60.0
 const REJECT_LABEL_S := 1.2
 const REJECT_COOLDOWN_S := 0.6
 ## 3 frames at 12 fps (`env_chute` accept animation).
@@ -36,8 +42,8 @@ const FEEDBACK_S := 0.18
 const BOUNCE_IMPULSE := 340.0
 const CHIME_DB := -7.0
 const CLICK_DB := -10.0
-const LABEL_IDLE := "DUCTO"
-const LABEL_DELIVER := "ENTREGAR"
+const LABEL_IDLE := "TAPA VERDE"
+const LABEL_DELIVER := "TIRA AQUÍ"
 const LABEL_DIRTY := "LAVA PRIMERO"
 
 var label_text := LABEL_IDLE
@@ -83,6 +89,36 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	tick(delta)
+
+
+## The chute is a funnel: clean items near the hatch are pulled toward the iris so the
+## player can throw roughly at it and still score. Dirty items are not pulled (they bounce).
+func _suction() -> void:
+	var tree := get_tree()
+	if tree == null:
+		return
+	for node in tree.get_nodes_in_group(Config.GROUP_ITEMS):
+		var item := node as Node2D
+		if item == null or not is_instance_valid(item):
+			continue
+		if item.get("is_held") == true:
+			continue
+		if not _is_clean(item):
+			continue
+		var offset := global_position - item.global_position
+		var distance := offset.length()
+		if distance <= 1.0 or distance > FUNNEL_RADIUS:
+			continue
+		var falloff := 1.0 - distance / FUNNEL_RADIUS
+		var body := item as RigidBody2D
+		if body == null:
+			continue
+		var pull := maxf(SUCTION_ACCEL * falloff * falloff, SUCTION_MIN)
+		body.apply_central_force(offset.normalized() * pull * body.mass)
+
+
+func _physics_process(_delta: float) -> void:
+	_suction()
 
 
 # --- public API -------------------------------------------------------------
@@ -445,7 +481,7 @@ class BeaconRing:
 		var width := font.get_string_size(label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
 		draw_string(
 			font,
-			Vector2(-width * 0.5, 96.0),
+			Vector2(-width * 0.5, -104.0),
 			label_text,
 			HORIZONTAL_ALIGNMENT_LEFT,
 			-1.0,
