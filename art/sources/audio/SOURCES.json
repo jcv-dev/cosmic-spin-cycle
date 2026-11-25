@@ -1,0 +1,185 @@
+{
+  "version": 1,
+  "sources": [
+    {
+      "kind": "music",
+      "id": "breath",
+      "file": "art/sources/audio/music/holizna_bassic_03_breath.ogg",
+      "title": "Breath",
+      "author": "HoliznaCC0",
+      "album": "BASSIC (2020-01-10)",
+      "page": "https://freemusicarchive.org/music/holiznacc0/bassic/breath-1/",
+      "license": "CC0-1.0",
+      "sha256": "d48f8fbcbd718b3139beed2c5073078fe57fe9c148dacd45c08d3f7588f6dd3f",
+      "retrieved": "2026-11-24"
+    },
+    {
+      "kind": "music",
+      "id": "sleep",
+      "file": "art/sources/audio/music/holizna_bassic_02_sleep.ogg",
+      "title": "Sleep",
+      "author": "HoliznaCC0",
+      "album": "BASSIC (2020-01-10)",
+      "page": "https://freemusicarchive.org/music/holiznacc0/bassic/sleep-2/",
+      "license": "CC0-1.0",
+      "sha256": "8d77819a8329b1cb7e9b8a5b7f50d1c04c2b272c86a864adec8e2aa99b63c719",
+      "retrieved": "2026-11-24"
+    },
+    {
+      "kind": "music",
+      "id": "eat",
+      "file": "art/sources/audio/music/holizna_bassic_01_eat.ogg",
+      "title": "Eat",
+      "author": "HoliznaCC0",
+      "album": "BASSIC (2020-01-10)",
+      "page": "https://freemusicarchive.org/music/holiznacc0/bassic/eatmp3/",
+      "license": "CC0-1.0",
+      "sha256": "b48179151e77efc01b858bf564d5ec76f5d2f33475502c47b5c94627ec2e121c",
+      "retrieved": "2026-11-24"
+    },
+    {
+      "kind": "music",
+      "id": "make_money",
+      "file": "art/sources/audio/music/holizna_bassic_04_make_money.ogg",
+      "title": "Make Money",
+      "author": "HoliznaCC0",
+      "album": "BASSIC (2020-01-10)",
+      "page": "https://freemusicarchive.org/music/holiznacc0/bassic/make-money/",
+      "license": "CC0-1.0",
+      "sha256": "e5b627cf7d0952c79284713a78fbd64f8aaae0b2886ffa2689611eca13080376",
+      "retrieved": "2026-11-24"
+    },
+    {
+      "kind": "sfx",
+      "id": "washer01",
+      "file": ".work/dl/washer01.wav",
+      "author": "bretbernhoft",
+      "page": "https://opengameart.org/content/general-household-sound-effects",
+      "license": "CC0-1.0",
+      "note": "General Household Sound Effects - real washing machine, 6.97 s",
+      "sha256": "03fa65c003a9aeebe7c0c71b035ca5d1b669bf707d435d9f0c2995e84195b15c",
+      "retrieved": "2026-11-24"
+    },
+    {
+      "kind": "sfx",
+      "id": "computerfans01",
+      "file": ".work/dl/computerfans01.wav",
+      "author": "bretbernhoft",
+      "page": "https://opengameart.org/content/general-household-sound-effects",
+      "license": "CC0-1.0",
+      "note": "General Household Sound Effects - steady fan hum, 108 s",
+      "sha256": "303c96278896e6e082467511ee8d655f384164911f7fdcb34856e64bce724f0e",
+      "retrieved": "2026-11-24"
+    },
+    {
+      "kind": "sfx",
+      "id": "plop_02",
+      "file": ".work/dl/100cc0/plop_02.ogg",
+      "author": "rubberduck",
+      "page": "https://opengameart.org/content/100-cc0-sfx",
+      "license": "CC0-1.0",
+      "pack": "100cc0",
+      "sha256": "b4cbe7e0c49ad1caf2dc02dc218897bdf9b5bce2e5d11b3b87861dd5269c1749",
+      "retrieved": "2026-11-24"
+    },
+    {
+      "kind": "sfx",
+      "id": "splash_02",
+      "file": ".work/dl/100cc0/splash_02.ogg",
+      "author": "rubberduck",
+      "page": "https://opengameart.org/content/100-cc0-sfx",
+      "license": "CC0-1.0",
+      "pack": "100cc0",
+      "sha256": "e515b7da00b2a268263824dbea9b7bc0c2e972fbd189fe3c02576d2e29af3aa5",
+      "retrieved": "2026-11-24"
+    },
+    {
+      "kind": "sfx",
+      "id": "noise_02",
+      "file": ".work/dl/100cc0/noise_02.ogg",
+      "author": "rubberduck",
+      "page": "https://opengameart.org/content/100-cc0-sfx",
+      "license": "CC0-1.0",
+      "pack": "100cc0",
+      "sha256": "65c3fc73139f56af481a54082fefb10b671b1881dd5e1ea1ecfdc20b84f7f795",
+      "retrieved": "2026-11-24"
+    },
+    {
+      "kind": "sfx",
+      "id": "other_06",
+      "file": ".work/dl/100cc0/other_06.ogg",
+      "author": "rubberduck",
+      "page": "https://opengameart.org/content/100-cc0-sfx",
+      "license": "CC0-1.0",
+      "pack": "100cc0",
+      "sha256": "2468a1635460a2da0ed7b0d91417f787f925b26d900042ce289ebcebad7ec652",
+      "retrieved": "2026-11-24"
+    },
+    {
+      "kind": "sfx",
+      "id": "bell_02",
+      "file": ".work/dl/100cc0/bell_02.ogg",
+      "author": "rubberduck",
+      "page": "https://opengameart.org/content/100-cc0-sfx",
+      "license": "CC0-1.0",
+      "pack": "100cc0",
+      "sha256": "ea47ae29d3fe87c82414881084cf5dfa4a0a43c6def7437fcafbc21ffbf3ec72",
+      "retrieved": "2026-11-24"
+    },
+    {
+      "kind": "sfx",
+      "id": "bell_03",
+      "file": ".work/dl/100cc0/bell_03.ogg",
+      "author": "rubberduck",
+      "page": "https://opengameart.org/content/100-cc0-sfx",
+      "license": "CC0-1.0",
+      "pack": "100cc0",
+      "sha256": "9440896c5ffbc85d045b88953057d12019ddbf052f3694615216d83161a9e2d9",
+      "retrieved": "2026-11-24"
+    },
+    {
+      "kind": "sfx",
+      "id": "gong_01",
+      "file": ".work/dl/100cc0/gong_01.ogg",
+      "author": "rubberduck",
+      "page": "https://opengameart.org/content/100-cc0-sfx",
+      "license": "CC0-1.0",
+      "pack": "100cc0",
+      "sha256": "4780a38e91688b59899b3679cf3534b4b75654b45a177af9d9fb681c447f7f9a",
+      "retrieved": "2026-11-24"
+    },
+    {
+      "kind": "sfx",
+      "id": "explosion",
+      "file": ".work/dl/100cc0/explosion.ogg",
+      "author": "rubberduck",
+      "page": "https://opengameart.org/content/100-cc0-sfx",
+      "license": "CC0-1.0",
+      "pack": "100cc0",
+      "sha256": "f31e12359b96b5e4d43edbcd533630b32421e55bc0b08aec4520d2ed45cd1a93",
+      "retrieved": "2026-11-24"
+    },
+    {
+      "kind": "sfx",
+      "id": "slam_01",
+      "file": ".work/dl/100cc0/slam_01.ogg",
+      "author": "rubberduck",
+      "page": "https://opengameart.org/content/100-cc0-sfx",
+      "license": "CC0-1.0",
+      "pack": "100cc0",
+      "sha256": "30aad7b563efd45dbd652247c1c45a809a4f0cac3f7ea13e68893104431c5dca",
+      "retrieved": "2026-11-24"
+    },
+    {
+      "kind": "sfx",
+      "id": "switch_01",
+      "file": ".work/dl/100cc0/switch_01.ogg",
+      "author": "rubberduck",
+      "page": "https://opengameart.org/content/100-cc0-sfx",
+      "license": "CC0-1.0",
+      "pack": "100cc0",
+      "sha256": "a24004ad0adbc08571324456963533c496bd27cf4808b40cb90833dc06b95792",
+      "retrieved": "2026-11-24"
+    }
+  ]
+}
