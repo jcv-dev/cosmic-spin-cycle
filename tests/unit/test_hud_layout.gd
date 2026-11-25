@@ -132,3 +132,36 @@ func test_feedback_is_one_toast_not_a_log() -> void:
 	assert_eq(hud.get_node("ToastLabel").get_theme_color("font_color"), Palette.HAZARD_ORANGE)
 	hud.tick(1.5)
 	assert_eq(hud.toast_text(), "", "the toast expires after 1.4 s")
+
+
+func test_reward_float_lives_near_plaque_b_and_expires() -> void:
+	Settings.reduce_motion = false
+	var hud := _open_hud()
+	assert_eq(hud.reward_text(), "")
+	hud.flash_reward(350)
+	assert_eq(hud.reward_text(), "+350")
+	var start: Vector2 = hud.get_node("RewardFloat").position
+	hud.tick(0.3)
+	assert_true(hud.get_node("RewardFloat").position.y < start.y, "the reward floats upward")
+	hud.tick(0.4)
+	assert_eq(hud.reward_text(), "", "the reward expires after 600 ms")
+
+
+func test_reward_float_does_not_move_under_reduce_motion() -> void:
+	Settings.reduce_motion = true
+	var hud := _open_hud()
+	hud.flash_reward(120)
+	var start: Vector2 = hud.get_node("RewardFloat").position
+	hud.tick(0.3)
+	assert_eq(hud.get_node("RewardFloat").position, start, "reduce motion keeps it static")
+	assert_eq(hud.reward_text(), "+120", "the number is still readable")
+	Settings.reduce_motion = false
+
+
+func test_danger_flag_pulses_but_is_readable_statically() -> void:
+	Settings.reduce_motion = true
+	var hud := _open_hud()
+	assert_false(hud.danger)
+	hud.set_danger(true)
+	assert_true(hud.danger)
+	Settings.reduce_motion = false

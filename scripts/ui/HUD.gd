@@ -33,6 +33,7 @@ const STABILITY_DIAMOND_CENTER := Vector2(280, 16)
 const STABILITY_DIAMOND_RADIUS := 6.0
 const RIBBON_RECT := Rect2(400, 6, 480, 28)
 const TOAST_RECT := Rect2(400, 34, 480, 18)
+const REWARD_RECT := Rect2(1156, 104, 100, 18)
 
 # --- Timing -----------------------------------------------------------------
 const PANEL_ALPHA := 0.88
@@ -48,6 +49,9 @@ const TOAST_MAX_CHARS := 46
 const TOAST_S := 1.4
 const TOAST_ALPHA := 0.82
 const DEFAULT_OBJECTIVE := &"OBJETIVO · LAVA Y ENTREGA HASTA LAS 06:00"
+const REWARD_S := 0.6
+const REWARD_RISE := 16.0
+const DANGER_PULSE_HZ := 3.0
 
 const PHASE_NAMES: Array[StringName] = [&"APERTURA", &"CINTA SUR", &"MAREJADA", &"CARGA FINAL"]
 
@@ -80,11 +84,13 @@ var _stability_value: Label
 var _combo_label: Label
 var _score_label: Label
 var _objective_label: Label
+var _reward_label: Label
 var _toast_label: Label
 var _grade_label: Label
 var _objective_age := 0.0
 var _objective_alpha := 1.0
 var _toast_left := 0.0
+var _reward_left := 0.0
 
 
 ## Interior draw slot: a Control that asks the HUD to paint it, so the plaque can be scaled
@@ -139,11 +145,16 @@ func tick(delta: float) -> void:
 		if _toast_left <= 0.0:
 			_toast_label.visible = false
 			_slot_toast.queue_redraw()
+	if _reward_left > 0.0:
+		_reward_left = maxf(_reward_left - delta, 0.0)
+		_update_reward()
+		if _reward_left <= 0.0:
+			_reward_label.visible = false
 	var beat := BeatConductor.get_beat_index() if BeatConductor.is_playing else -1
 	if beat != _last_beat:
 		_last_beat = beat
 		_slot_a.queue_redraw()
-	if danger or GameState.stability < DANGER_STABILITY:
+	if _danger_active():
 		_slot_b.queue_redraw()
 
 
@@ -226,6 +237,14 @@ func _build_ribbon() -> void:
 	_slot_toast = _make_slot("Paint", Slot.TOAST, TOAST_RECT.size)
 	_slot_toast.position = TOAST_RECT.position
 	add_child(_slot_toast)
+	_reward_label = _place(
+		UITheme.label("", UITheme.FONT_LABEL, Palette.CLEAN_GREEN, true),
+		self,
+		"RewardFloat",
+		REWARD_RECT
+	)
+	_reward_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_reward_label.visible = false
 	_toast_label = _place(
 		UITheme.label("", UITheme.FONT_SMALL, Palette.METAL_3), self, "ToastLabel", TOAST_RECT
 	)
@@ -352,6 +371,17 @@ func _draw_stability(target: CanvasItem) -> void:
 		Palette.SPACE_MID
 	)
 	HudGlyphs.draw_diamond(target, STABILITY_DIAMOND_CENTER, STABILITY_DIAMOND_RADIUS, color)
+	if _danger_active():
+		var border := Palette.HAZARD_ORANGE
+		if not Settings.reduce_motion:
+			border.a = 0.45 + 0.55 * absf(sin(_pulse * DANGER_PULSE_HZ))
+		target.draw_rect(Rect2(Vector2.ZERO, PLAQUE_B_RECT.size), border, false, 2.0)
+
+
+## True while the fail state is close: the explicit level signal, or the raw stability value
+## once it drops below the hazard band (so the HUD is honest even if nobody called us).
+func _danger_active() -> bool:
+	return danger or GameState.stability < DANGER_STABILITY
 
 
 func _draw_ribbon(target: CanvasItem) -> void:
@@ -512,6 +542,36 @@ static func _kind_color(kind: StringName) -> Color:
 			return Palette.METAL_3
 
 
+## `+points` near plaque B: 600 ms, floats up 16 px, no stack. Reduce-motion keeps the number
+## legible but drops the movement (docs/UX_BIBLE.md §11).
+func flash_reward(points: int) -> void:
+	if _reward_label == null:
+		return
+	_reward_label.text = "+%d" % points
+	_reward_label.visible = true
+	_reward_left = REWARD_S
+	_update_reward()
+
+
+func _update_reward() -> void:
+	if _reward_label == null:
+		return
+	var progress := clampf(1.0 - _reward_left / REWARD_S, 0.0, 1.0)
+	if Settings.reduce_motion:
+		_reward_label.position = REWARD_RECT.position
+		_reward_label.modulate.a = 1.0 - progress * progress
+		return
+	_reward_label.position = REWARD_RECT.position - Vector2(0.0, REWARD_RISE * progress)
+	_reward_label.modulate.a = 1.0 - progress
+
+
+## Called by MainLevel at the hazard band; pulses the plaque B border and the bar.
+func set_danger(on: bool) -> void:
+	danger = on
+	if _slot_b != null:
+		_slot_b.queue_redraw()
+
+
 func show_grade(grade: int) -> void:
 	if _grade_label == null:
 		return
@@ -594,6 +654,12 @@ func objective_text() -> String:
 
 func objective_alpha() -> float:
 	return _objective_alpha
+
+
+func reward_text() -> String:
+	if _reward_label == null or not _reward_label.visible:
+		return ""
+	return _reward_label.text
 
 
 func toast_text() -> String:
