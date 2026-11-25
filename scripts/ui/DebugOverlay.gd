@@ -21,7 +21,7 @@ const EARLY_TEXT := "EARLY"
 const LATE_TEXT := "LATE"
 
 const PANEL_POSITION := Vector2(16.0, 16.0)
-const PANEL_SIZE := Vector2(620.0, 206.0)
+const PANEL_SIZE := Vector2(620.0, 232.0)
 const PADDING := 14.0
 const BAR_HEIGHT := 14.0
 const BAR_WIDTH := 592.0
@@ -152,7 +152,7 @@ func _draw() -> void:
 	draw_string(
 		font,
 		Vector2(PANEL_POSITION.x + PANEL_SIZE.x - 120.0, y),
-		"F3 toggles",
+		"F10 toggles",
 		HORIZONTAL_ALIGNMENT_LEFT,
 		-1,
 		TEXT_SIZE,
@@ -207,7 +207,7 @@ func _draw() -> void:
 	y += LINE_GAP * 1.4
 	_draw_window_bar(Vector2(x, y), grade)
 
-	y += BAR_HEIGHT + LINE_GAP
+	y += BAR_HEIGHT + LINE_GAP + 16.0
 	draw_string(
 		font,
 		Vector2(x, y),

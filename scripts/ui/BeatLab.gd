@@ -8,7 +8,7 @@ extends Control
 
 const BPM_KEYS: Array[int] = [KEY_1, KEY_2, KEY_3, KEY_4]
 const STATUS_IDLE := "Stopped — press 1-4 to start a click track"
-const HINT_TEXT := "1-4 tempo · SPACE start/stop · C calibration · R restart · F3 overlay"
+const HINT_TEXT := "1-4 tempo · SPACE start/stop · C calibration · R restart · F10 overlay"
 
 var _bpm := Config.PHASE_BPM[0]
 var _was_playing_before_calibration := false
