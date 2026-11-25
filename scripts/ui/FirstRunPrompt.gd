@@ -96,6 +96,15 @@ func _build() -> void:
 	_skip_button.mouse_entered.connect(_skip_button.grab_focus)
 	plaque.add_child(_skip_button)
 
+	_tutorial_button.focus_neighbor_left = _tutorial_button.get_path_to(_skip_button)
+	_tutorial_button.focus_neighbor_right = _tutorial_button.get_path_to(_skip_button)
+	_skip_button.focus_neighbor_left = _skip_button.get_path_to(_tutorial_button)
+	_skip_button.focus_neighbor_right = _skip_button.get_path_to(_tutorial_button)
+	_tutorial_button.focus_neighbor_top = _tutorial_button.get_path_to(_tutorial_button)
+	_tutorial_button.focus_neighbor_bottom = _tutorial_button.get_path_to(_tutorial_button)
+	_skip_button.focus_neighbor_top = _skip_button.get_path_to(_skip_button)
+	_skip_button.focus_neighbor_bottom = _skip_button.get_path_to(_skip_button)
+
 	var hint := UITheme.label(HINT_TEXT, UITheme.FONT_MICRO, Palette.METAL_1)
 	hint.name = "Hint"
 	hint.position = Vector2(CONTENT_X, HINT_Y) - PLAQUE.position
@@ -121,4 +130,6 @@ func _on_tutorial_pressed() -> void:
 
 
 func _on_skip_pressed() -> void:
+	# The bible is explicit: taking the shift instead of the tutorial persists the choice.
+	Settings.mark_first_run_done()
 	skip_selected.emit()

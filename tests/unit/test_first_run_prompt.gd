@@ -57,6 +57,20 @@ func test_skip_button_emits_skip_selected() -> void:
 	assert_signal_emitted(_screen, "skip_selected")
 
 
+func test_skip_persists_first_run_done() -> void:
+	Settings.first_run_done = false
+	(_screen.get_node("Plaque/SkipButton") as Button).emit_signal("pressed")
+	assert_true(Settings.first_run_done, "EMPEZAR EL TURNO must not make the prompt nag")
+
+
+func test_focus_pair_stays_inside_the_modal() -> void:
+	var tutorial := _screen.get_node("Plaque/TutorialButton") as Button
+	var skip := _screen.get_node("Plaque/SkipButton") as Button
+	assert_eq(tutorial.focus_neighbor_right, tutorial.get_path_to(skip))
+	assert_eq(skip.focus_neighbor_left, skip.get_path_to(tutorial))
+	assert_eq(tutorial.focus_neighbor_top, tutorial.get_path_to(tutorial))
+
+
 func test_close_emits_closed() -> void:
 	watch_signals(_screen)
 	_screen.close()
