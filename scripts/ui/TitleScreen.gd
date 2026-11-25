@@ -450,7 +450,7 @@ static func _format_score(value: int) -> String:
 
 func _build_footer() -> void:
 	for index in range(LEGEND_LINES.size()):
-		var line := UITheme.label(LEGEND_LINES[index], UITheme.FONT_MICRO, Palette.METAL_1)
+		var line := UITheme.label(LEGEND_LINES[index], UITheme.FONT_MICRO, Palette.METAL_2)
 		line.name = "Legend%d" % index
 		line.position = Vector2(LEGEND_X, LEGEND_Y + float(index) * LEGEND_LINE_H)
 		add_child(line)

@@ -70,7 +70,7 @@ func _build() -> void:
 	title.position = Vector2(CONTENT_X, TITLE_Y) - PLAQUE.position
 	plaque.add_child(title)
 
-	var caption := UITheme.label(CAPTION_TEXT, UITheme.FONT_MICRO, Palette.METAL_1)
+	var caption := UITheme.label(CAPTION_TEXT, UITheme.FONT_MICRO, Palette.METAL_2)
 	caption.name = "Caption"
 	caption.position = Vector2(CONTENT_X, CAPTION_Y) - PLAQUE.position
 	plaque.add_child(caption)

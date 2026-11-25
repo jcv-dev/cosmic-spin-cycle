@@ -116,7 +116,7 @@ func _build() -> void:
 	title.position = Vector2(CONTENT_X, TITLE_Y) - PLAQUE.position
 	plaque.add_child(title)
 
-	_caption = UITheme.label("", UITheme.FONT_MICRO, Palette.METAL_1)
+	_caption = UITheme.label("", UITheme.FONT_MICRO, Palette.METAL_2)
 	_caption.name = "Caption"
 	_caption.position = Vector2(CONTENT_X, CAPTION_Y) - PLAQUE.position
 	plaque.add_child(_caption)
