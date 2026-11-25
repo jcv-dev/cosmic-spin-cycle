@@ -1,0 +1,126 @@
+{
+  "bars_per_loop": 8,
+  "beats_per_loop": 32,
+  "beats_per_measure": 4,
+  "bit_depth": 16,
+  "channels": 1,
+  "click": {
+    "attack_s": 0.0015,
+    "beat_decay_s": 0.02,
+    "beat_gain": 0.5,
+    "beat_hz": 1040.0,
+    "downbeat_decay_s": 0.03,
+    "downbeat_gain": 0.82,
+    "downbeat_hz": 1560.0,
+    "overtone_gain": 0.32,
+    "overtone_ratio": 2.0
+  },
+  "countin": [
+    {
+      "beats": 8,
+      "bpm": 105,
+      "bytes": 403244,
+      "clicks": 4,
+      "duration_s": 4.571429,
+      "effective_bpm": 105.0,
+      "file": "countin_105.wav",
+      "frames": 201600,
+      "samples_per_beat": 25200.0,
+      "sha256": "2d552f9696f3642d7d354158d2520080ca3f6c6fb1b0fc1b96413f49e2958624"
+    },
+    {
+      "beats": 8,
+      "bpm": 118,
+      "bytes": 358824,
+      "clicks": 4,
+      "duration_s": 4.0678,
+      "effective_bpm": 117.999889,
+      "file": "countin_118.wav",
+      "frames": 179390,
+      "samples_per_beat": 22423.75,
+      "sha256": "76c88c66c7f782360d4a4788e423761d22e83ae6014395f183f38efcb076374b"
+    },
+    {
+      "beats": 8,
+      "bpm": 130,
+      "bytes": 325706,
+      "clicks": 4,
+      "duration_s": 3.692313,
+      "effective_bpm": 129.999816,
+      "file": "countin_130.wav",
+      "frames": 162831,
+      "samples_per_beat": 20353.875,
+      "sha256": "13a98f8f1a1a9c9ec78f1df617e7c03479aba03c58b1de8ba9c84e4f1c4ef041"
+    },
+    {
+      "beats": 8,
+      "bpm": 142,
+      "bytes": 298184,
+      "clicks": 4,
+      "duration_s": 3.380272,
+      "effective_bpm": 142.000402,
+      "file": "countin_142.wav",
+      "frames": 149070,
+      "samples_per_beat": 18633.75,
+      "sha256": "01364eee34b62485fbc1137cc28dab0b2ff56263e71ec8b2bb64a9ae297ae034"
+    }
+  ],
+  "countin_layout": "4 click beats (accent on 0) + 4 silent beats",
+  "downbeat_every": 4,
+  "encoding": "pcm_s16le",
+  "first_beat_sample": 0,
+  "format": "wav",
+  "generated_by": "tools/make_click_track.py",
+  "loop_seam": "beat 32 is the file boundary; the last click has decayed by then",
+  "sample_rate": 44100,
+  "tracks": [
+    {
+      "beats": 32,
+      "bpm": 105,
+      "bytes": 1612844,
+      "clicks": 32,
+      "duration_s": 18.285714,
+      "effective_bpm": 105.0,
+      "file": "click_105.wav",
+      "frames": 806400,
+      "samples_per_beat": 25200.0,
+      "sha256": "517f90845d725ae900f499a5c0c9926ffdc6e2fc2ef0923236cb6799058a3853"
+    },
+    {
+      "beats": 32,
+      "bpm": 118,
+      "bytes": 1435162,
+      "clicks": 32,
+      "duration_s": 16.271179,
+      "effective_bpm": 118.000053,
+      "file": "click_118.wav",
+      "frames": 717559,
+      "samples_per_beat": 22423.71875,
+      "sha256": "48e7cd5cf1d4d488b620680e910c39b27a14dfce5d87f626349e9c0792bbfe00"
+    },
+    {
+      "beats": 32,
+      "bpm": 130,
+      "bytes": 1302690,
+      "clicks": 32,
+      "duration_s": 14.769229,
+      "effective_bpm": 130.000015,
+      "file": "click_130.wav",
+      "frames": 651323,
+      "samples_per_beat": 20353.84375,
+      "sha256": "21d1a00a3f23c4c1fd6b0e5faf4cf09afd619f7d367b38c3808091c06ac2c984"
+    },
+    {
+      "beats": 32,
+      "bpm": 142,
+      "bytes": 1192608,
+      "clicks": 32,
+      "duration_s": 13.521134,
+      "effective_bpm": 141.999926,
+      "file": "click_142.wav",
+      "frames": 596282,
+      "samples_per_beat": 18633.8125,
+      "sha256": "09f15f1b47a7d0573b4d3ea98db82761c710a848e7c1dee93a239436e89696fc"
+    }
+  ]
+}
