@@ -241,10 +241,14 @@ def check_sfx(strict: bool) -> None:
             warnings.append(f"loop seam step {ratio:.1f}x typical")
         detail = (f"{'loop' if is_loop else 'once'} {dur:.2f}s  peak {peak:.2f}  "
                   f"DC {dc:+.4f}  seam {ratio:.2f}x")
+        if warnings:
+            detail = "; ".join(problems + warnings + [detail])
+        elif problems:
+            detail = "; ".join(problems)
         ok = not problems
         if ok and warnings and strict:
             ok = False
-        record("sfx", name, ok, "; ".join(problems + warnings) or detail)
+        record("sfx", name, ok, detail, warn=bool(warnings) and ok)
 
 
 def check_fonts(strict: bool) -> None:
@@ -298,10 +302,13 @@ def render(verbose: bool) -> None:
         if row["kind"] != kind_now:
             kind_now = row["kind"]
             print(f"\n[{kind_now}]")
-        status = "PASS" if row["ok"] else ("WARN" if row["warn"] else "FAIL")
+        if row["warn"]:
+            status = "WARN"
+        else:
+            status = "PASS" if row["ok"] else "FAIL"
         print(f"  {row['name']:<{width}} {status:5s} {row['detail']}")
     failures = [r for r in RESULTS if not r["ok"] and not r["warn"]]
-    warnings = [r for r in RESULTS if r["warn"] and not r["ok"]]
+    warnings = [r for r in RESULTS if r["warn"]]
     print(f"\n{len(RESULTS)} checks, {len(failures)} failed, {len(warnings)} warnings")
 
 
