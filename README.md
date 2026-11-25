@@ -67,7 +67,7 @@ python3 tools/lint_sprites.py && python3 tools/verify_audio.py
 godot --headless --path . -s tools/sim_run.gd -- --seed=1234
 ```
 
-Current state: **314 tests / 7,175 asserts green**, 29/29 sprite sheets pass the contract
+Current state: **315 tests / 7,179 asserts green**, 29/29 sprite sheets pass the contract
 linter, 16/16 audio checks pass, and the 480 s simulation reports exactly 197 spawns.
 
 ## Documentation
