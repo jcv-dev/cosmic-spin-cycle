@@ -20,8 +20,27 @@ var _loaded := false
 
 
 func _ready() -> void:
+	_ensure_buses()
 	load_settings()
 	apply()
+
+
+## Master → Music / SFX / UI. Volumes are applied by `apply()` and can be tuned on the bus
+## layout; M8 may add Loops as a distinct bus for washer/belt loops.
+func _ensure_buses() -> void:
+	_ensure_bus("Music", "Master", music_volume_db)
+	_ensure_bus("SFX", "Master", sfx_volume_db)
+	_ensure_bus("UI", "Master", -6.0)
+
+
+func _ensure_bus(bus_name: String, send: String, volume_db: float) -> void:
+	if AudioServer.get_bus_index(bus_name) >= 0:
+		return
+	var index := AudioServer.bus_count
+	AudioServer.add_bus(index)
+	AudioServer.set_bus_name(index, bus_name)
+	AudioServer.set_bus_send(index, send)
+	AudioServer.set_bus_volume_db(index, volume_db)
 
 
 func load_settings() -> void:

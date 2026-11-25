@@ -46,6 +46,8 @@ func _ready() -> void:
 	process_priority = 100
 	_player = get_node_or_null("AudioStreamPlayer") as AudioStreamPlayer
 	if _player != null:
+		if AudioServer.get_bus_index("Music") >= 0:
+			_player.bus = "Music"
 		_player.finished.connect(_on_stream_finished)
 	bpm = start_bpm
 
