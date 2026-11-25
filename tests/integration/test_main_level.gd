@@ -129,3 +129,19 @@ func test_stability_zero_stops_the_shift() -> void:
 	var label := level.get_node("UI/EndLabel") as Label
 	assert_true(label.visible)
 	assert_string_contains(label.text, "DESGARRO")
+
+
+func test_phase_three_beat_flips_the_north_belt() -> void:
+	var level := _spawn_level()
+	level.warp_to(270.0)
+	var belt := level.get_node("Environment/BeltNorth") as ConveyorBelt
+	assert_eq(level.get_phase_index(), 2)
+	assert_eq(belt.get_flow_direction(), Vector2.RIGHT)
+	var beat_s := 60.0 / float(Config.PHASE_BPM[2])
+	BeatConductor.advance_clock(64.0 * beat_s + 0.001)
+	assert_eq(BeatConductor.get_measure_index(), 16)
+	assert_eq(belt.get_flow_direction(), Vector2.LEFT, "16-measure flip reaches the level")
+	var spawner := level.get_node_or_null("SpawnDirector")
+	if spawner != null:
+		spawner.call("stop")
+	BeatConductor.stop()

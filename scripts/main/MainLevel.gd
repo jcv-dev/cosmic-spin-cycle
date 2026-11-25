@@ -334,7 +334,7 @@ func _on_belt_warning(beats_left: int) -> void:
 func _on_beat(beat: int) -> void:
 	if _ended:
 		return
-	var measure := BeatConductor.get_measure_index()
+	var measure := int(beat / Config.BEATS_PER_MEASURE)
 	for belt_id in _belts:
 		var node: Node = _belts[belt_id]
 		if node == null or not is_instance_valid(node):
