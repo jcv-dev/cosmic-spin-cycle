@@ -6,7 +6,7 @@ extends RefCounted
 
 const LAYOUT_PATH := "res://data/layout.json"
 const TILE_WORLD := 64
-const GRID_LINE_COLOR := Color(0.29, 0.32, 0.47, 0.16)
+const GRID_LINE_COLOR := Color(0.29, 0.32, 0.47, 0.30)
 
 static var _layout_cache: Dictionary = {}
 
@@ -88,13 +88,18 @@ static func _build_floor(root: Node2D) -> void:
 	floor_layer.z_index = -90
 	root.add_child(floor_layer)
 	var size := room_rect().size
-	var plate := ColorRect.new()
-	plate.name = "FloorPlate"
-	plate.color = Palette.SPACE_DEEP
-	plate.position = Vector2.ZERO
-	plate.size = size
-	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	floor_layer.add_child(plate)
+	# A shipped env_room already contains its floor; never paint an opaque plate over it.
+	var has_room_art := ArtCatalog.has_sprite("env_room")
+	if not has_room_art:
+		var plate := ColorRect.new()
+		plate.name = "FloorPlate"
+		plate.color = Palette.SPACE_DEEP
+		plate.position = Vector2.ZERO
+		plate.size = size
+		plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		floor_layer.add_child(plate)
+	if SpriteSheet.has_sheet("env_floor"):
+		_build_tiled_floor(floor_layer)
 
 	var x := 0.0
 	while x <= size.x:
@@ -114,6 +119,32 @@ static func _build_floor(root: Node2D) -> void:
 		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		floor_layer.add_child(line)
 		y += float(TILE_WORLD)
+
+
+## Tiles the shipped env_floor sheet across the room (nearest, integer positions).
+static func _build_tiled_floor(floor_layer: Node2D) -> void:
+	var names := SpriteSheet.animation_names("env_floor")
+	if names.is_empty():
+		return
+	var cell := SpriteSheet.frame_size("env_floor")
+	if cell.x <= 0 or cell.y <= 0:
+		return
+	var cell_world := cell * Config.ART_SCALE
+	var cols := int(ceil(room_rect().size.x / float(cell_world.x)))
+	var rows := int(ceil(room_rect().size.y / float(cell_world.y)))
+	for ty in range(rows):
+		for tx in range(cols):
+			var anim: StringName = names[(tx + ty * 2) % names.size()]
+			var tex := SpriteSheet.frame_texture("env_floor", anim, 0)
+			if tex == null:
+				continue
+			var tile := Sprite2D.new()
+			tile.texture = tex
+			tile.centered = false
+			tile.position = Vector2(float(tx * cell_world.x), float(ty * cell_world.y))
+			tile.scale = Vector2.ONE * float(Config.ART_SCALE)
+			tile.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			floor_layer.add_child(tile)
 
 
 static func _build_walls(root: Node2D) -> StaticBody2D:
