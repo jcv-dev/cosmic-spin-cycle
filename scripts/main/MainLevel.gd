@@ -83,6 +83,7 @@ func _ready() -> void:
 	_build_washers()
 	_build_chute()
 	_build_player()
+	_build_diegetic()
 	_build_spawner()
 	_build_ui()
 	_build_warning_audio()
@@ -90,6 +91,7 @@ func _ready() -> void:
 	BeatConductor.beat_hit.connect(_on_beat)
 	BeatConductor.start(Config.PHASE_BPM[0])
 	_apply_phase(0, true)
+	_set_objective_for_carry()
 	if _hud != null and _hud.has_method("set_tutorial_mode"):
 		_hud.call("set_tutorial_mode", mode == &"tutorial")
 	_ready_done = true
@@ -285,6 +287,16 @@ func _build_chute() -> void:
 		node.connect("dirty_rejected", _on_chute_dirty)
 	_entities.add_child(node)
 	_chute = node
+
+
+## World-space affordances (beat ring, reticle, context prompt) shipped by the HUD
+## workstream. Optional: the level is fully playable without them.
+func _build_diegetic() -> void:
+	var node := _instantiate_scene("res://scenes/ui/DiegeticLayer.tscn")
+	if node == null:
+		return
+	node.name = "DiegeticLayer"
+	_entities.add_child(node)
 
 
 func _instantiate_scene(scene_path: String) -> Node:
