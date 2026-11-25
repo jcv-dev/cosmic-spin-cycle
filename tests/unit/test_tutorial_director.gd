@@ -396,6 +396,22 @@ func test_travel_hint_circle_appears_after_four_seconds() -> void:
 	assert_almost_eq(overlay._hint_radius, 120.0, 0.001)
 
 
+func test_travel_hint_ring_follows_the_player() -> void:
+	var level := _make_level()
+	var started := _start(level)
+	var director: TutorialDirector = started[0]
+	var overlay: TutorialOverlay = started[1]
+	director.debug_set_elapsed(5.0)
+	level.player.position = Vector2(40, 0)
+	director._process(0.016)
+	assert_true(overlay._hint_active)
+	assert_almost_eq(overlay._hint_world.x, 40.0, 1.0)
+	level.player.position = Vector2(80, 0)
+	director._process(0.016)
+	assert_almost_eq(overlay._hint_world.x, 80.0, 1.0, "the ring tracks, it does not lag")
+	assert_eq(director.current_step(), 0, "80 px of walking must not grant the 200 px gate")
+
+
 func test_strike_gate_cannot_explode_and_assists_a_stuck_player() -> void:
 	var level := _make_level()
 	var started := _start(level)

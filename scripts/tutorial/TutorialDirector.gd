@@ -325,20 +325,22 @@ func _update_gate(delta: float) -> void:
 
 
 func _update_travel() -> void:
-	if bool(state.get("hint", false)) and not _hint_shown:
-		_hint_shown = true
-		overlay.show_hint_circle(_player_anchor(), TutorialSteps.TRAVEL_HINT_RADIUS_PX)
+	if not bool(state.get("hint", false)):
+		return
+	_hint_shown = true
+	# Re-issued every frame: the ring must stay glued to Pip while they keep walking.
+	overlay.show_hint_circle(_player_anchor(), TutorialSteps.TRAVEL_HINT_RADIUS_PX)
 
 
 ## Gate 2 fail-forward: steer the item inside the grab radius instead of shouting louder.
 func _update_grab(delta: float) -> void:
 	if _gate_item == null or not is_instance_valid(_gate_item):
 		return
-	if bool(state.get("hint", false)) and not _hint_shown:
-		_hint_shown = true
-		overlay.show_hint_circle(_item_anchor(), Config.GRAB_RADIUS)
 	if not bool(state.get("hint", false)):
 		return
+	_hint_shown = true
+	# The item is being steered toward Pip, so the ring follows it instead of lagging behind.
+	overlay.show_hint_circle(_raw_item_pos(), Config.GRAB_RADIUS)
 	if not (_gate_item is Node2D) or not (_player is Node2D):
 		return
 	var item_pos := (_gate_item as Node2D).global_position
@@ -586,6 +588,13 @@ func _item_anchor() -> Vector2:
 
 ## Never let the world prompt sit on Pip's head: when the anchor is over the sprite, slide
 ## the prompt sideways instead of up (the room always has more room to the right).
+## Raw item position: fail-forward rings sit on the object, never on the shifted prompt.
+func _raw_item_pos() -> Vector2:
+	if _gate_item != null and is_instance_valid(_gate_item) and _gate_item is Node2D:
+		return (_gate_item as Node2D).global_position
+	return _anchor_in_front()
+
+
 func _prompt_safe(world_pos: Vector2) -> Vector2:
 	if not (_player is Node2D):
 		return world_pos

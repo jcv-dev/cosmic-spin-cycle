@@ -246,6 +246,12 @@ func test_a_granted_gate_ignores_later_events() -> void:
 	assert_true(state["granted"])
 
 
+func test_the_worst_case_run_fits_the_four_minute_cap() -> void:
+	# Every gate can be escaped after the stuck grace, so the run can never exceed this.
+	var worst := float(STEPS.STEP_COUNT) * Config.TUTORIAL_SOFT_SKIP_S
+	assert_lte(worst, Config.TUTORIAL_MAX_S, "7 soft-skips must fit inside the 240 s cap")
+
+
 func test_new_state_starts_clean_at_every_gate() -> void:
 	for index in range(STEPS.STEP_COUNT):
 		var state := STEPS.new_state(index)
