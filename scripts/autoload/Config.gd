@@ -167,14 +167,14 @@ const HAZARD_MIN_SEPARATION_PX := 120.0
 ## The chute mouth stays clear so a dodge never forces a miss on the delivery.
 const HAZARD_CHUTE_CLEARANCE_PX := 90.0
 const HAZARD_DODGE_POINTS := 25
-const HAZARD_VENT_RADIUS_PX := 56.0
+const HAZARD_VENT_RADIUS_PX := 72.0
 const HAZARD_VENT_PULL := 220.0
 const HAZARD_VENT_SLOW_S := 0.5
 const HAZARD_VENT_SLOW_SCALE := 0.55
-const HAZARD_METEOR_RADIUS_PX := 40.0
+const HAZARD_METEOR_RADIUS_PX := 56.0
 const HAZARD_METEOR_HITSTOP_S := 0.09
-const HAZARD_ARC_HALF_WIDTH_PX := 20.0
-const HAZARD_POCKET_RADIUS_PX := 36.0
+const HAZARD_ARC_HALF_WIDTH_PX := 24.0
+const HAZARD_POCKET_RADIUS_PX := 44.0
 const HAZARD_MAX_EVENTS := 4096
 ## The last phase is where the void shows its teeth (hazard density bonus).
 const HAZARD_LATE_PHASE := 3

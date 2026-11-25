@@ -6,8 +6,14 @@ extends Node2D
 ## so grading and penalties live in one place. Two phases, both audible and readable:
 ## WARNING (telegraph, always at least two beats) and ACTIVE (one beat of danger).
 
-const WARNING_ALPHA := 0.55
-const ACTIVE_ALPHA := 0.95
+## The first pass at 0.55 alpha was invisible on the dark floor (owner report). The
+## telegraph now draws a dark underlay plus a bright 2.5 px line, in the top half of the
+## palette, so the shape reads from across the room.
+const WARNING_ALPHA := 0.92
+const ACTIVE_ALPHA := 1.0
+const LINE_W := 2.5
+const UNDERLAY_W := 5.0
+const UNDERLAY_ALPHA := 0.8
 const FADE_S := 0.18
 const DASHES := 12
 const ARC_DASHES := 9
@@ -26,13 +32,13 @@ var _finished := false
 static func kind_color(kind_id: int) -> Color:
 	match kind_id:
 		Config.HazardKind.VOID_VENT:
-			return Palette.FUNK_PLUM
+			return Palette.FUNK_MAGENTA
 		Config.HazardKind.METEOR:
 			return Palette.HAZARD_ORANGE
 		Config.HazardKind.LINT_ARC:
 			return Palette.YEL_3
 		_:
-			return Palette.FUNK_TEAL
+			return Palette.FUNK_CYAN
 
 
 func setup(kind_id: int, world_center: Vector2, strike_angle: float, telegraph_s: float) -> void:
@@ -113,8 +119,14 @@ func _draw_meteor(color: Color, alpha: float) -> void:
 	var shrink := lerpf(1.6, 1.0, _progress())
 	_dashed_circle(radius * shrink, 8, color, alpha)
 	var cross := radius * 0.55
-	draw_line(Vector2(-cross, 0), Vector2(cross, 0), Color(color, alpha), 1.0)
-	draw_line(Vector2(0, -cross), Vector2(0, cross), Color(color, alpha), 1.0)
+	draw_line(
+		Vector2(-cross, 0), Vector2(cross, 0), Color(Palette.SPACE_VOID, UNDERLAY_ALPHA), UNDERLAY_W
+	)
+	draw_line(
+		Vector2(0, -cross), Vector2(0, cross), Color(Palette.SPACE_VOID, UNDERLAY_ALPHA), UNDERLAY_W
+	)
+	draw_line(Vector2(-cross, 0), Vector2(cross, 0), Color(color, alpha), LINE_W)
+	draw_line(Vector2(0, -cross), Vector2(0, cross), Color(color, alpha), LINE_W)
 	if _active:
 		draw_circle(Vector2.ZERO, radius * 0.6, Color(color, alpha * 0.5))
 
@@ -124,12 +136,18 @@ func _draw_arc(color: Color, alpha: float) -> void:
 	var axis := Vector2.RIGHT.rotated(angle)
 	var half := HazardPlanner.ARC_LENGTH_PX * 0.5
 	var normal := axis.orthogonal() * Config.HAZARD_ARC_HALF_WIDTH_PX
-	draw_line(axis * -half + normal, axis * half + normal, Color(color, alpha * 0.7), 1.0)
-	draw_line(axis * -half - normal, axis * half - normal, Color(color, alpha * 0.7), 1.0)
+	var edge := normal.normalized() * Config.HAZARD_ARC_HALF_WIDTH_PX
+	for side: float in [-1.0, 1.0]:
+		var a := axis * -half + edge * side
+		var b := axis * half + edge * side
+		draw_line(a, b, Color(Palette.SPACE_VOID, UNDERLAY_ALPHA), UNDERLAY_W)
+		draw_line(a, b, Color(color, alpha * 0.8), LINE_W)
 	var step := (half * 2.0) / float(ARC_DASHES)
 	for i in range(ARC_DASHES):
 		var from := axis * (-half + step * i)
-		draw_line(from, from + axis * step * 0.55, Color(color, alpha), 1.0)
+		var to := from + axis * step * 0.55
+		draw_line(from, to, Color(Palette.SPACE_VOID, UNDERLAY_ALPHA), UNDERLAY_W)
+		draw_line(from, to, Color(color, alpha), LINE_W)
 	if _active:
 		draw_line(axis * -half, axis * half, Color(color, alpha * 0.45), 2.0)
 	draw_circle(axis * -half, 2.0, Color(color, alpha))
@@ -139,19 +157,26 @@ func _draw_arc(color: Color, alpha: float) -> void:
 ## Gravity pocket: two rings with rotating ticks, no fill (it is a feeling, not a hole).
 func _draw_pocket(color: Color, alpha: float) -> void:
 	var radius := Config.HAZARD_POCKET_RADIUS_PX
-	draw_arc(Vector2.ZERO, radius, 0.0, TAU, 24, Color(color, alpha), 1.0)
-	draw_arc(Vector2.ZERO, radius * 0.72, 0.0, TAU, 20, Color(color, alpha * 0.6), 1.0)
+	draw_arc(
+		Vector2.ZERO, radius, 0.0, TAU, 28, Color(Palette.SPACE_VOID, UNDERLAY_ALPHA), UNDERLAY_W
+	)
+	draw_arc(Vector2.ZERO, radius, 0.0, TAU, 28, Color(color, alpha), LINE_W)
+	draw_arc(Vector2.ZERO, radius * 0.72, 0.0, TAU, 24, Color(color, alpha * 0.75), LINE_W)
 	var spin := _elapsed * 2.0
 	for i in range(4):
 		var dir := Vector2.RIGHT.rotated(spin + TAU * float(i) / 4.0)
-		draw_line(dir * radius * 0.8, dir * radius * 1.05, Color(color, alpha), 1.0)
+		draw_line(dir * radius * 0.8, dir * radius * 1.05, Color(color, alpha), LINE_W)
 
 
 func _dashed_circle(radius: float, count: int, color: Color, alpha: float) -> void:
 	var step := TAU / float(count)
 	for i in range(count):
 		var from := step * float(i)
-		draw_arc(Vector2.ZERO, radius, from, from + step * 0.55, 6, Color(color, alpha), 1.0)
+		var to := from + step * 0.55
+		draw_arc(
+			Vector2.ZERO, radius, from, to, 8, Color(Palette.SPACE_VOID, UNDERLAY_ALPHA), UNDERLAY_W
+		)
+		draw_arc(Vector2.ZERO, radius, from, to, 8, Color(color, alpha), LINE_W)
 
 
 func _progress() -> float:

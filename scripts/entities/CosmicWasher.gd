@@ -32,7 +32,7 @@ const ART_ID := "mach_washer"
 const MOUTH_RADIUS := 122.0
 const BODY_SIZE := Vector2(176.0, 176.0)
 const BODY_CENTER := Vector2(0.0, -96.0)
-const EJECT_OFFSET := Vector2(0.0, 76.0)
+const EJECT_DISTANCE := 76.0
 const EJECT_IMPULSE := 260.0
 const EXPLODE_IMPULSE := 420.0
 const BOUNCE_IMPULSE := 320.0
@@ -438,6 +438,21 @@ func get_mouth_world() -> Vector2:
 	return global_position
 
 
+## Unit vector from a machine mouth toward the centre of the room. Pure, so the eject rule
+## is testable without a scene: ejecting "down" put every south item onto the south belt.
+static func eject_direction(from_world: Vector2) -> Vector2:
+	var canvas := Vector2(Config.ART_CANVAS) * float(Config.ART_SCALE)
+	var toward := canvas * 0.5 - from_world
+	if toward.length_squared() < 1.0:
+		return Vector2.UP
+	return toward.normalized()
+
+
+## World point where a released item appears (mouth plus one eject distance, centerward).
+static func eject_point(from_world: Vector2) -> Vector2:
+	return from_world + eject_direction(from_world) * EJECT_DISTANCE
+
+
 ## Tells the hologram what the player is carrying so it can dim incompatible machines.
 func set_carry_hint(item: Node) -> void:
 	_carry_hint = item if item != null and is_instance_valid(item) else null
@@ -655,8 +670,11 @@ func _eject(item: Variant, explosive: bool, index: int = 0) -> void:
 	var spread := 0.0
 	if explosive:
 		spread = (float(index % 3) - 1.0) * 0.45
-	var direction := Vector2(sin(spread), cos(spread))
-	var offset := EJECT_OFFSET + Vector2(direction.x * 28.0, 0.0)
+	# Eject toward the room centre, never straight down: the south machines sit directly
+	# above the south belt, so a fixed (0, 76) offset dropped every clean item onto it.
+	var centerward := eject_direction(global_position)
+	var direction := centerward.rotated(spread)
+	var offset := centerward * EJECT_DISTANCE
 	var body := item as RigidBody2D
 	if body != null:
 		# `_absorb` queued freeze=true; a direct false here is overwritten by that deferral and

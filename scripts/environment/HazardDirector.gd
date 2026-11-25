@@ -117,7 +117,7 @@ func _collapse() -> void:
 	_collapsing_left = Config.DIFFICULTY_COLLAPSE_S[Config.difficulty_index(difficulty)]
 	void_changed.emit(void_value, true)
 	collapse_started.emit()
-	GameState.emit_feedback(tr("VOID_COLLAPSE"), &"danger")
+	GameState.emit_feedback(tr("¡COLAPSO DE VACÍO!"), &"danger")
 
 
 func _on_measure(measure: int) -> void:
@@ -146,11 +146,12 @@ func _plan(measure: int, beat_offset: int) -> void:
 		float(warning) * Config.beat_seconds(float(Config.PHASE_BPM[phase]))
 	)
 	_last_anchor = entry["art_pos"]
+	var strike_beat := measure * Config.BEATS_PER_MEASURE + warning + beat_offset
 	(
 		_pending
 		. append(
 			{
-				"strike_beat": measure * Config.BEATS_PER_MEASURE + warning + beat_offset,
+				"strike_beat": strike_beat,
 				"kind": int(entry["kind"]),
 				"center": center,
 				"angle": float(entry.get("angle", 0.0)),
@@ -233,7 +234,7 @@ func _hit(kind: int) -> void:
 	_invulnerable_left = Config.DIFFICULTY_IFRAME_S[preset]
 	var damage := Config.DIFFICULTY_HIT_DAMAGE[preset]
 	GameState.add_stability(damage, "hazard")
-	GameState.emit_feedback(tr("HAZARD_HIT"), &"danger")
+	GameState.emit_feedback(tr("¡GOLPE DEL VACÍO!"), &"danger")
 	hazard_hit.emit(kind, damage)
 	if kind == Config.HazardKind.METEOR:
 		Juice.hitstop(Config.HAZARD_METEOR_HITSTOP_S)
@@ -244,7 +245,7 @@ func _reward_dodge() -> void:
 	GameState.add_score(Config.HAZARD_DODGE_POINTS)
 	void_value = VoidIndex.bump(void_value, Config.VOID_PERFECT_DODGE_RELIEF)
 	void_changed.emit(void_value, is_collapsing())
-	GameState.emit_feedback(tr("DODGE_PERFECT"), &"rhythm")
+	GameState.emit_feedback(tr("¡ESQUIVA PERFECTA!"), &"rhythm")
 
 
 func _can_spawn() -> bool:

@@ -25,6 +25,9 @@ const MAX_BACKWARD_JUMP_S := 0.005
 const BEAT_EPSILON_S := 0.000001
 ## Safety valve for pathological clock jumps (≈ 11 min at 142 BPM).
 const MAX_BEATS_PER_STEP := 4096
+## Audio that claims to play but does not advance for this long hands over to the free-run
+## clock. Without it a dummy driver or a lost device freezes every beat and every measure.
+const AUDIO_STALL_S := 0.5
 
 @export var start_bpm := Config.PHASE_BPM[0]
 
@@ -41,6 +44,11 @@ var _clock := 0.0
 var _grid_origin := 0.0
 var _beat_index := 0
 var _measure_index := 0
+## Seconds the audio position has refused to advance while claiming to play. A dummy driver,
+## a lost device or a paused stream would otherwise freeze the whole beat grid.
+var _audio_stall_s := 0.0
+## Once the audio position stalls for good we stop trusting it for the rest of the shift.
+var _audio_trusted := true
 
 
 func _ready() -> void:
@@ -57,9 +65,18 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if not is_playing:
 		return
-	if _audio_is_playing():
+	if _audio_trusted and _audio_is_playing():
 		# get_song_time() pulls the compensated audio position and keeps it monotonic.
+		var before := _clock
 		get_song_time()
+		if _clock > before + 0.0001:
+			_audio_stall_s = 0.0
+		else:
+			_audio_stall_s += maxf(delta, 0.0)
+			if _audio_stall_s > AUDIO_STALL_S:
+				_audio_trusted = false
+		if not _audio_trusted:
+			_clock += maxf(delta, 0.0)
 	else:
 		_clock += maxf(delta, 0.0)
 	_advance_beats(_clock)
@@ -145,7 +162,7 @@ func set_stream(stream: AudioStream, first_beat_offset: float = 0.0) -> void:
 func get_song_time() -> float:
 	if not is_playing:
 		return _clock
-	if _audio_is_playing():
+	if _audio_trusted and _audio_is_playing():
 		var candidate := compensated_song_time(
 			_player.get_playback_position(),
 			AudioServer.get_time_since_last_mix(),
@@ -246,6 +263,9 @@ func _reset_musical_clock() -> void:
 	_grid_origin = 0.0
 	_beat_index = 0
 	_measure_index = 0
+	# A fresh stem is allowed to win the clock back after a stall.
+	_audio_stall_s = 0.0
+	_audio_trusted = true
 
 
 func _integrate_candidate(candidate: float) -> void:

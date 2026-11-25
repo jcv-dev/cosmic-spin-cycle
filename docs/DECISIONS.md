@@ -437,3 +437,25 @@ jerarquía se corrigió: el reloj deja de ser lo más grande y el número de est
 22 px junto a la barra. Los tests que fijaban literales (14 px) ahora comparan contra
 `UITheme.FONT_*`, y el presupuesto del chip del tutorial sube de 320 a 380 px con el motivo
 escrito en el test.
+
+## D050 — Las lavadoras escupen hacia el centro, no hacia la cinta
+2026-11-25 · El dueño reportó que las lavadoras de abajo "no sueltan el objeto visiblemente,
+parece que lo sueltan en la cinta". La causa era `EJECT_OFFSET = (0, 76)`: un desplazamiento
+fijo hacia abajo. Las bocas sur están a 40 px de la cinta sur, así que cada item limpio caía
+dentro de la cinta. Ahora `CosmicWasher.eject_direction()` apunta desde la boca al centro de
+la sala y `eject_point()` se prueba contra `data/layout.json`: ningún punto de eyección puede
+caer dentro de una cinta (regresión en `tests/unit/test_washer_eject.gd`).
+
+## D051 — Reloj musical a prueba de audio muerto, y telegrafías legibles
+2026-11-25 · Dos causas detrás de "no veo ninguna amenaza".
+
+1. **El reloj se congelaba.** `BeatConductor._process` usaba la posición de reproducción
+   siempre que `AudioStreamPlayer.playing` fuera true. Con un driver dummy, un dispositivo
+   perdido o un stream pausado, esa posición no avanza: no hay beats, no hay compases y, por
+   tanto, no hay amenazas. Ahora, si la posición no avanza durante **0.5 s**
+   (`AUDIO_STALL_S`), el reloj pasa a free-run y `get_song_time()` deja de leer el audio para
+   el resto del turno; un stem nuevo (`_reset_musical_clock`) puede recuperar el mando.
+2. **La telegrafía era casi invisible**: `WARNING_ALPHA` 0.55 y `funk_plum` sobre suelo
+   oscuro. Ahora 0.92, colores del extremo claro de la paleta (magenta/orange/yel/cyan), trazo
+   de 2.5 px con subrayado oscuro de 5 px, y radios mayores (fuga 72, meteorito 56, arco 24,
+   bolsillo 44). El catálogo se revisa con `.work/hazard_gallery.tscn` (gitignored).
