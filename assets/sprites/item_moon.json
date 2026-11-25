@@ -1,0 +1,71 @@
+{
+  "id": "item_moon",
+  "frame_size": [
+    16,
+    16
+  ],
+  "scale": 4,
+  "pivot": [
+    8,
+    8
+  ],
+  "animations": {
+    "red_solid": {
+      "row": 0,
+      "frames": 1,
+      "fps": 3,
+      "loop": true
+    },
+    "red_ringed": {
+      "row": 1,
+      "frames": 1,
+      "fps": 3,
+      "loop": true
+    },
+    "red_spotted": {
+      "row": 2,
+      "frames": 1,
+      "fps": 3,
+      "loop": true
+    },
+    "blue_solid": {
+      "row": 3,
+      "frames": 1,
+      "fps": 3,
+      "loop": true
+    },
+    "blue_ringed": {
+      "row": 4,
+      "frames": 1,
+      "fps": 3,
+      "loop": true
+    },
+    "blue_spotted": {
+      "row": 5,
+      "frames": 1,
+      "fps": 3,
+      "loop": true
+    },
+    "yellow_solid": {
+      "row": 6,
+      "frames": 1,
+      "fps": 3,
+      "loop": true
+    },
+    "yellow_ringed": {
+      "row": 7,
+      "frames": 1,
+      "fps": 3,
+      "loop": true
+    },
+    "yellow_spotted": {
+      "row": 8,
+      "frames": 1,
+      "fps": 3,
+      "loop": true
+    }
+  },
+  "tier": "A",
+  "source": "art/src/items.py",
+  "note": "crescent moon, 9 variants"
+}

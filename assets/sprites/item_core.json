@@ -1,0 +1,23 @@
+{
+  "id": "item_core",
+  "frame_size": [
+    32,
+    32
+  ],
+  "scale": 4,
+  "pivot": [
+    16,
+    16
+  ],
+  "animations": {
+    "idle": {
+      "row": 0,
+      "frames": 4,
+      "fps": 6,
+      "loop": true
+    }
+  },
+  "tier": "A",
+  "source": "art/src/items.py",
+  "note": "galaxy core, wildcard"
+}

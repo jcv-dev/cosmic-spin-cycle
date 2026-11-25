@@ -10,14 +10,14 @@ no suitable CC0 source existed). Details and hashes: `docs/PROVENANCE.md`.
 
 | id | size | anims | frames | status | provenance | source |
 |---|---|---|---|---|---|---|
-| `item_rocky` | 16x16 | 9 | 18 | planned | TBD | TBD |
-| `item_sock` | 16x16 | 9 | 18 | planned | TBD | TBD |
-| `item_moon` | 16x16 | 9 | 9 | planned | TBD | TBD |
-| `item_gas` | 24x24 | 9 | 18 | planned | TBD | TBD |
-| `item_core` | 32x32 | 1 | 4 | planned | TBD | TBD |
-| `item_grime_16` | 16x16 | 1 | 1 | planned | TBD | TBD |
-| `item_grime_24` | 24x24 | 1 | 1 | planned | TBD | TBD |
-| `item_grime_32` | 32x32 | 1 | 1 | planned | TBD | TBD |
+| `item_rocky` | 16x16 | 9 | 18 | built | adapted | kenney-planets / planet03 continents |
+| `item_sock` | 16x16 | 9 | 18 | built | procedural | authored in pxlib |
+| `item_moon` | 16x16 | 9 | 9 | built | adapted | kenney-planets / planet04 craters + crescent |
+| `item_gas` | 24x24 | 9 | 18 | built | adapted | kenney-planets / planet07 storm |
+| `item_core` | 32x32 | 1 | 4 | built | procedural | authored in pxlib (spiral disc) |
+| `item_grime_16` | 16x16 | 1 | 1 | built | procedural | authored in pxlib |
+| `item_grime_24` | 24x24 | 1 | 1 | built | procedural | authored in pxlib |
+| `item_grime_32` | 32x32 | 1 | 1 | built | procedural | authored in pxlib |
 | `char_pip` | 24x24 | 12 | 30 | planned | TBD | TBD |
 | `env_belt` | 16x16 | 1 | 4 | planned | TBD | TBD |
 | `env_belt_cap` | 16x16 | 1 | 1 | planned | TBD | TBD |
