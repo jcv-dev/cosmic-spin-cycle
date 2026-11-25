@@ -46,6 +46,19 @@ const ITEM_TAG_DY := -22.0
 const NOW_DY := 30.0
 const ITEM_CHIP_MAX_CHARS := 26
 
+## Grade popup + turbulence path (docs/UX_BIBLE.md §6.7, §8).
+const GRADE_POPUP_S := 0.38
+const GRADE_DY := -150.0
+const GRADE_RISE := 12.0
+const GRADE_FONT_PERFECT := 40
+const GRADE_FONT_GOOD := 32
+const GRADE_FONT_MISS := 28
+const SPARK_COUNT := 8
+const TURBULENCE_ALPHA := 0.55
+const TURBULENCE_PULSE_HZ := 1.8
+const TURBULENCE_DASH := 8.0
+const TURBULENCE_GAP := 6.0
+
 const WASHER_TURBULENT := 2
 const COMPAT_SCRIPT := "res://scripts/logic/Compatibility.gd"
 
@@ -75,6 +88,11 @@ var _prompt := ""
 var _prompt_kind := PROMPT_KIND_NONE
 var _gamepad_seen := false
 var _gamepad_forced := -1
+var _grade := -1
+var _grade_left := 0.0
+var _grade_origin := Vector2.ZERO
+var _turbulent: Node = null
+var _turbulent_mouth := Vector2.ZERO
 
 
 func _ready() -> void:
@@ -111,11 +129,13 @@ func refresh_now() -> void:
 	queue_redraw()
 
 
-func _update(_delta: float) -> void:
+func _update(delta: float) -> void:
 	_aim = _player_aim()
 	_update_held()
 	_update_target()
 	_update_prompt()
+	_update_turbulence()
+	_update_grade(delta)
 	_update_ring()
 
 
@@ -402,6 +422,54 @@ func _item_chip_text(item: Node) -> String:
 	return text.left(ITEM_CHIP_MAX_CHARS)
 
 
+# --- Grade popup + turbulence -----------------------------------------------
+
+
+## The grade lives where the action happened, not in the middle of the screen.
+func show_grade(grade: int) -> void:
+	_grade = grade
+	_grade_left = GRADE_POPUP_S
+	_grade_origin = _player_position()
+	_dirty = true
+
+
+func _update_grade(delta: float) -> void:
+	if _grade_left <= 0.0:
+		return
+	_grade_left = maxf(_grade_left - delta, 0.0)
+	_dirty = true
+
+
+func _update_turbulence() -> void:
+	var next := _nearest_turbulent(INF)
+	var mouth := _mouth_of(next) if next != null else Vector2.ZERO
+	if next == _turbulent and mouth == _turbulent_mouth:
+		return
+	_turbulent = next
+	_turbulent_mouth = mouth
+	_dirty = true
+
+
+func _grade_text() -> String:
+	match _grade:
+		RhythmEvaluator.Grade.GOOD:
+			return tr("BIEN")
+		RhythmEvaluator.Grade.MISS:
+			return tr("FUERA DE RITMO")
+		_:
+			return tr("PERFECTO")
+
+
+func _grade_font_size() -> int:
+	match _grade:
+		RhythmEvaluator.Grade.GOOD:
+			return GRADE_FONT_GOOD
+		RhythmEvaluator.Grade.MISS:
+			return GRADE_FONT_MISS
+		_:
+			return GRADE_FONT_PERFECT
+
+
 # --- Beat ring --------------------------------------------------------------
 
 
@@ -449,6 +517,7 @@ func _draw() -> void:
 		return
 	var origin := (_player.global_position).round()
 	var reticle := (origin + _aim * AIM_DISTANCE).round()
+	_draw_turbulence(to_local(origin))
 	if _target != null and is_instance_valid(_target):
 		if _reticle_state == STATE_WASHER_OK or (_reticle_state == STATE_CHUTE and _chute_ok):
 			var tracer := Palette.FUNK_CYAN
@@ -459,6 +528,7 @@ func _draw() -> void:
 	_draw_held_chip(to_local(origin))
 	_draw_prompt(to_local(origin + Vector2(0.0, PROMPT_DY)))
 	_draw_now(to_local(origin + Vector2(0.0, NOW_DY)))
+	_draw_grade(to_local(origin))
 
 
 func _draw_reticle(center: Vector2) -> void:
@@ -489,8 +559,57 @@ func _draw_reticle(center: Vector2) -> void:
 			HudGlyphs.draw_cross(self, center, RETICLE_RADIUS, idle, 1.0)
 
 
+## One dashed orange line from the turbulent washer to Pip: a "come here", never a full-screen
+## flash (docs/UX_BIBLE.md §6.7).
+func _draw_turbulence(origin: Vector2) -> void:
+	if _turbulent == null or not is_instance_valid(_turbulent):
+		return
+	var ink := Palette.HAZARD_ORANGE
+	ink.a = TURBULENCE_ALPHA
+	if not Settings.reduce_motion:
+		ink.a *= 0.65 + 0.35 * absf(sin(_now * TURBULENCE_PULSE_HZ * TAU))
+	HudGlyphs.draw_dashed_line(
+		self, to_local(_turbulent_mouth), origin, ink, TURBULENCE_DASH, TURBULENCE_GAP, 2.0
+	)
+
+
+func _draw_grade(origin: Vector2) -> void:
+	if _grade_left <= 0.0 or _grade < 0:
+		return
+	var progress := clampf(1.0 - _grade_left / GRADE_POPUP_S, 0.0, 1.0)
+	var ink := Palette.grade_color(_grade)
+	ink.a = 1.0 - clampf((progress - 0.55) / 0.45, 0.0, 1.0)
+	var size := _grade_font_size()
+	var text := _grade_text()
+	var width := _font_bold.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
+	var rise := 0.0 if Settings.reduce_motion else -GRADE_RISE * progress
+	var anchor := origin + Vector2(0.0, GRADE_DY + rise)
+	var scale := 1.0
+	if not Settings.reduce_motion:
+		scale = lerpf(1.3, 1.0, clampf(progress / 0.3, 0.0, 1.0))
+	draw_set_transform(anchor, 0.0, Vector2(scale, scale))
+	draw_string(
+		_font_bold, Vector2(-width * 0.5, 0.0), text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, ink
+	)
+	if _grade == RhythmEvaluator.Grade.PERFECT and not Settings.reduce_motion:
+		_draw_sparks(anchor, progress, width)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+## Deterministic spark fan: no RNG, no allocation, same shape every time.
+func _draw_sparks(anchor: Vector2, progress: float, width: float) -> void:
+	var ink := Palette.FUNK_MAGENTA
+	ink.a = (1.0 - progress) * 0.9
+	var radius := width * 0.5 + 10.0
+	for index in range(SPARK_COUNT):
+		var direction := Vector2.from_angle(TAU * float(index) / float(SPARK_COUNT) + 0.18)
+		var inner := anchor + direction * (radius + 16.0 * progress)
+		var outer := anchor + direction * (radius + 26.0 + 22.0 * progress)
+		draw_line(inner, outer, ink, 2.0)
+
+
 func _draw_prompt(center: Vector2) -> void:
-	if _prompt == "":
+	if _prompt == "" or _grade_left > 0.0:
 		return
 	_draw_text_chip(_prompt, center, Palette.METAL_4)
 
@@ -574,6 +693,20 @@ func ring_alpha() -> float:
 	return _ring_alpha
 
 
+func grade_text() -> String:
+	return _grade_text() if _grade_left > 0.0 else ""
+
+
+func is_grade_active() -> bool:
+	return _grade_left > 0.0
+
+
+func turbulence_target() -> Node:
+	if _turbulent != null and is_instance_valid(_turbulent):
+		return _turbulent
+	return null
+
+
 func prompt_text() -> String:
 	return _prompt
 
@@ -599,6 +732,8 @@ func state_readout() -> Dictionary:
 		"has_held": _held != null,
 		"prompt": _prompt,
 		"prompt_kind": _prompt_kind,
+		"grade": grade_text(),
+		"has_turbulence": turbulence_target() != null,
 		"ring_radius": _ring_radius,
 		"ring_width": _ring_width,
 		"ring_alpha": _ring_alpha,

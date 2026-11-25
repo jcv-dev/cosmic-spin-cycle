@@ -102,3 +102,49 @@ func test_carried_item_chip_reads_colour_pattern_points() -> void:
 	assert_eq(
 		layer.item_chip_text(), "ROJO · ANILLADO · 100", "LIMPIA is a separate tag, not a suffix"
 	)
+
+
+# --- Grade popup + turbulence -----------------------------------------------
+
+
+func test_grade_popup_appears_at_the_action_for_380_ms() -> void:
+	world.add_player(Vector2(500, 400))
+	_add_layer()
+	layer.show_grade(RhythmEvaluator.Grade.PERFECT)
+	assert_eq(layer.grade_text(), "PERFECTO")
+	assert_true(layer.is_grade_active())
+	layer.advance(0.2)
+	assert_true(layer.is_grade_active(), "still visible at 200 ms")
+	layer.advance(0.2)
+	assert_false(layer.is_grade_active(), "gone after 380 ms")
+
+
+func test_grade_copy_matches_the_grade() -> void:
+	world.add_player()
+	_add_layer()
+	layer.show_grade(RhythmEvaluator.Grade.GOOD)
+	assert_eq(layer.grade_text(), "BIEN")
+	layer.show_grade(RhythmEvaluator.Grade.MISS)
+	assert_eq(layer.grade_text(), "FUERA DE RITMO")
+
+
+func test_turbulence_path_targets_one_washer() -> void:
+	world.add_player()
+	var first: Fakes.FakeWasher = world.add_washer(Vector2(500, 360), &"solid")
+	first.state = 2
+	var second: Fakes.FakeWasher = world.add_washer(Vector2(900, 360), &"red")
+	second.state = 2
+	_add_layer()
+	layer.refresh_now()
+	assert_eq(layer.turbulence_target(), first, "only the nearest turbulent washer is signalled")
+	first.state = 1
+	layer.refresh_now()
+	assert_eq(layer.turbulence_target(), second, "the next one takes over")
+
+
+func test_no_turbulence_path_when_everything_is_calm() -> void:
+	world.add_player()
+	world.add_washer(Vector2(500, 360), &"solid")
+	_add_layer()
+	layer.refresh_now()
+	assert_null(layer.turbulence_target())
