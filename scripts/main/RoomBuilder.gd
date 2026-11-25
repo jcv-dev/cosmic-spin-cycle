@@ -79,6 +79,7 @@ static func _build_background(root: Node2D) -> void:
 	bg.position = Vector2.ZERO
 	bg.size = room_rect().size
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bg.z_index = -100
 	root.add_child(bg)
 
 
