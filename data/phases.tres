@@ -1,0 +1,87 @@
+[gd_resource type="Resource" script_class="PhaseTable" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/PhaseTable.gd" id="1_table"]
+[ext_resource type="Script" path="res://scripts/data/PhaseData.gd" id="2_data"]
+
+[sub_resource type="Resource" id="PhaseData_0"]
+script = ExtResource("2_data")
+index = 0
+name_key = &"PHASE_OPENING"
+start_s = 0.0
+end_s = 120.0
+bpm = 105
+spawn_interval_s = 3.5
+active_belts = Array[StringName]([&"belt_north"])
+allowed_colors = Array[StringName]([&"red", &"blue"])
+allowed_patterns = Array[StringName]([&"solid"])
+item_weights = {
+&"moon": 2.0,
+&"rocky": 5.0,
+&"sock": 3.0
+}
+convoy = false
+
+[sub_resource type="Resource" id="PhaseData_1"]
+script = ExtResource("2_data")
+index = 1
+name_key = &"PHASE_RUSH"
+start_s = 120.0
+end_s = 270.0
+bpm = 118
+spawn_interval_s = 2.4
+active_belts = Array[StringName]([&"belt_north", &"belt_south"])
+allowed_colors = Array[StringName]([&"red", &"blue"])
+allowed_patterns = Array[StringName]([&"solid", &"ringed"])
+item_weights = {
+&"gas_giant": 1.0,
+&"moon": 2.0,
+&"rocky": 4.0,
+&"sock": 4.0
+}
+convoy = false
+
+[sub_resource type="Resource" id="PhaseData_2"]
+script = ExtResource("2_data")
+index = 2
+name_key = &"PHASE_TURBULENCE"
+start_s = 270.0
+end_s = 420.0
+bpm = 130
+spawn_interval_s = 1.7
+active_belts = Array[StringName]([&"belt_north", &"belt_south", &"belt_west"])
+allowed_colors = Array[StringName]([&"red", &"blue", &"yellow"])
+allowed_patterns = Array[StringName]([&"solid", &"ringed", &"spotted"])
+item_weights = {
+&"gas_giant": 2.0,
+&"moon": 3.0,
+&"rocky": 3.0,
+&"sock": 3.0
+}
+convoy = false
+
+[sub_resource type="Resource" id="PhaseData_3"]
+script = ExtResource("2_data")
+index = 3
+name_key = &"PHASE_FINAL_LOAD"
+start_s = 420.0
+end_s = 480.0
+bpm = 142
+spawn_interval_s = 0.0
+active_belts = Array[StringName]([&"belt_north", &"belt_south", &"belt_west"])
+allowed_colors = Array[StringName]([&"red", &"blue", &"yellow"])
+allowed_patterns = Array[StringName]([&"solid", &"ringed", &"spotted"])
+item_weights = {}
+convoy = true
+convoy_count = 13
+convoy_composition = {
+&"gas_giant": 4,
+&"moon": 4,
+&"rocky": 4
+}
+convoy_interval_s = 4.5
+convoy_core_item = &"galaxy_core"
+convoy_core_slot = 12
+
+[resource]
+script = ExtResource("1_table")
+phases = Array[Resource]([SubResource("PhaseData_0"), SubResource("PhaseData_1"), SubResource("PhaseData_2"), SubResource("PhaseData_3")])
