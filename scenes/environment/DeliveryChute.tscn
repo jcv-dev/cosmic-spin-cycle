@@ -1,0 +1,21 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/environment/DeliveryChute.gd" id="1_chute"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_chute"]
+radius = 64.0
+
+[node name="DeliveryChute" type="Area2D" groups=["chute"]]
+collision_layer = 32
+collision_mask = 4
+monitorable = false
+script = ExtResource("1_chute")
+
+[node name="Visual" type="AnimatedSprite2D" parent="."]
+texture_filter = 1
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_chute")
+
+[node name="Audio" type="AudioStreamPlayer" parent="."]
+bus = &"SFX"
