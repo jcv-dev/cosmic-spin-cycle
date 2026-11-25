@@ -1,0 +1,23 @@
+{
+  "id": "fx_miss_puff",
+  "frame_size": [
+    12,
+    12
+  ],
+  "scale": 4,
+  "pivot": [
+    6,
+    6
+  ],
+  "animations": {
+    "play": {
+      "row": 0,
+      "frames": 3,
+      "fps": 10,
+      "loop": false
+    }
+  },
+  "tier": "A",
+  "source": "art/src/fx.py",
+  "note": "MISS puff"
+}

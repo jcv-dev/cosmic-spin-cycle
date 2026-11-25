@@ -230,112 +230,133 @@ def floor_tile(variant: int) -> Canvas:
 
 
 # --------------------------------------------------------------------------------------
-# env_room — 320x180 backdrop
+# env_room — 320x180 top-down laundromat deck
 # --------------------------------------------------------------------------------------
+#
+# The game is top-down 2.5D and the frozen layout spans the whole canvas (belts at
+# y=10..170, washers in the four inner corners), so the room is a *floor*, not a wall:
+# the deck fills the canvas, wall trim is only the 8 px perimeter, and every detail is
+# read from above (drains, vents, hatches, cable runs, a painted spin decal).  Contrast
+# stays deliberately low so items and machines pop.
 
 
-def porthole(c: Canvas, cx: int, cy: int, radius: int = 15) -> None:
-    c.disc(cx, cy, radius, M[1])
-    c.disc(cx, cy, radius - 1, M[2])
-    c.arc(cx, cy, radius - 0.4, 1, M[3], math.pi * 0.95, math.pi * 1.7)
-    c.disc(cx, cy, radius - 2.4, "space_deep")
-    # a grey moon inside; the viewport never competes with the items for hue
-    c.disc(cx - 1, cy + 1, radius - 7.5, M[1])
-    c.disc(cx - 2, cy, radius - 8.5, M[2])
-    for x, y in ((cx - 5, cy - 2), (cx - 4, cy - 2), (cx - 4, cy - 1), (cx - 3, cy - 3)):
-        c.set(x, y, M[3])
-    for x, y in ((cx, cy + 3), (cx + 1, cy + 3), (cx + 1, cy + 4), (cx - 2, cy + 4)):
-        c.set(x, y, M[0])
-    for x, y in ((cx + 7, cy - 3), (cx - 8, cy + 4), (cx + 6, cy + 6)):
-        c.set(x, y, "funk_cyan")
-    c.arc(cx, cy, radius - 3.2, 1, M[3], math.pi * 1.1, math.pi * 1.5)
-
-
-def conduit(c: Canvas) -> None:
-    c.hline(0, 319, 3, "metal_0")
-    c.hline(0, 319, 4, "metal_1")
-    c.hline(0, 319, 5, "metal_0")
-    for x in range(16, 320, 48):
-        c.rect(x, 2, 3, 5, "metal_2")
-        c.set(x, 2, "metal_3")
-        c.vline(x + 1, 3, 5, "metal_1")
-
-
-def wall(c: Canvas) -> None:
-    c.rect(0, 6, 320, 86, "metal_1")
-    # panel seams every 32 px, with a lit top edge
-    for x in range(0, 320, 32):
-        c.vline(x, 6, 91, "metal_0")
-        c.vline(x + 1, 6, 91, "metal_2")
-    c.hline(0, 319, 6, "metal_2")
-    # rivets
-    for x in range(4, 320, 32):
-        for y in (10, 84):
-            c.set(x, y, "metal_2")
-            c.set(x, y + 1, "metal_0")
-    # lower wall shading and the beam that separates wall from floor
-    c.rect(0, 88, 320, 4, "metal_0")
-    c.hline(0, 319, 88, "metal_2")
-    # horizontal wall seam breaks the big panel field
-    c.hline(0, 319, 52, "metal_0")
-    c.hline(0, 319, 53, "metal_2")
-    # vertical pipes at the far edges
-    for px in (12, 306):
-        c.vline(px, 6, 91, "metal_0")
-        c.vline(px + 1, 6, 91, "metal_2")
-        c.vline(px + 2, 6, 91, "metal_0")
-        for y in (20, 52, 78):
-            c.rect(px - 1, y, 5, 2, "metal_1")
-
-
-def floor(c: Canvas) -> None:
-    c.rect(0, 96, 320, 84, "space_deep")
-    # plate grid every 32 px, aligned with the 16 px floor tiles (two tiles per plate)
-    for y in range(96, 180, 32):
+def deck_plates(c: Canvas) -> None:
+    # 32 px deck plates with a 1 px seam; the seam is the only grid line that reads
+    for y in range(0, 180, 32):
         c.hline(0, 319, y, "space_mid")
     for x in range(0, 320, 32):
-        c.vline(x, 96, 179, "space_mid")
-    for x in range(16, 320, 32):
-        for y in (112, 144):
-            c.set(x, y, "metal_0")
-    # a single dark row under the beam settles the room
-    c.hline(0, 319, 96, "space_void")
-    # two neon tubes along the beam lip, with dark gaps at the ends
-    for x0, x1 in ((36, 124), (196, 284)):
-        c.hline(x0, x1, 93, "funk_cyan")
-        c.set(x0, 92, "metal_1")
-        c.set(x1, 92, "metal_1")
+        c.vline(x, 0, 179, "space_mid")
+    # quarter rivets at plate intersections
+    for y in range(16, 180, 32):
+        for x in range(16, 320, 32):
+            c.set(x, y, "space_haze")
+            c.set(x + 1, y, "space_deep")
+            c.set(x, y + 1, "space_deep")
+    # a sparse 1:8 stipple keeps big plates from reading as flat blocks
+    for y in range(4, 180, 8):
+        for x in range(4, 320, 8):
+            if (x // 8 + y // 8) % 3 == 0:
+                c.set(x, y, "space_mid")
+    # eight long weld seams break the plate field into bays
+    c.hline(0, 319, 88, "space_mid")
+    c.hline(0, 319, 96, "space_mid")
+    c.vline(96, 0, 179, "space_mid")
+    c.vline(224, 0, 179, "space_mid")
 
 
-def neon_sign(c: Canvas) -> None:
-    x, y = 148, 14
-    pxlib.draw_text(c, x + 1, y + 1, "SPIN", "metal_0")
-    pxlib.draw_text(c, x, y, "SPIN", "funk_cyan")
-    c.hline(x, x + pxlib.text_width("SPIN") - 1, y + 8, "funk_cyan")
-    c.hline(x, x + pxlib.text_width("SPIN") - 1, y + 9, "metal_0")
+def spin_decal(c: Canvas) -> None:
+    """Painted floor marking around the chute: dashes on two arcs, no horizon."""
+    for radius, thickness in ((34, 2), (44, 1)):
+        for y in range(52, 132):
+            for x in range(110, 212):
+                dx, dy = x - 160, y - 90
+                dist = (dx * dx + dy * dy) ** 0.5
+                if not (radius - 0.6 <= dist <= radius + thickness - 0.6):
+                    continue
+                angle = math.atan2(dy, dx) % (2 * math.pi)
+                if int(angle * 4) % 2 == 0:
+                    c.set(x, y, "space_haze" if radius == 44 else "space_mid")
+
+
+def drain(c: Canvas, cx: int, cy: int) -> None:
+    c.disc(cx, cy, 6.2, "metal_0")
+    c.disc(cx, cy, 5.0, "space_void")
+    for offset in (-2, 0, 2):
+        c.hline(cx - 4, cx + 4, cy + offset, "metal_1")
+    c.set(cx - 1, cy - 5, "metal_2")
+
+
+def vent(c: Canvas, x: int, y: int, w: int = 18, h: int = 9) -> None:
+    c.rect(x, y, w, h, "metal_0")
+    c.hline(x, x + w - 1, y, "metal_1")
+    c.hline(x, x + w - 1, y + h - 1, "space_void")
+    for step in range(2, h - 1, 2):
+        c.hline(x + 2, x + w - 3, y + step, "space_void")
+        c.hline(x + 2, x + w - 3, y + step + 1, "metal_1")
+    for bx in (x + 1, x + w - 2):
+        c.set(bx, y + 1, "metal_2")
+
+
+def hatch(c: Canvas, x: int, y: int, w: int = 30, h: int = 16) -> None:
+    c.rect(x, y, w, h, "metal_1")
+    c.rect(x + 1, y + 1, w - 2, h - 2, "metal_0")
+    c.hline(x + 1, x + w - 2, y + 1, "metal_2")
+    c.vline(x + 1, y + 2, y + h - 2, "metal_1")
+    c.hline(x + 2, x + w - 2, y + h - 1, "space_void")
+    for bx, by in ((x + 3, y + 3), (x + w - 4, y + 3), (x + 3, y + h - 4),
+                   (x + w - 4, y + h - 4)):
+        c.set(bx, by, "metal_2")
+    # lifting hook
+    c.hline(x + w // 2 - 2, x + w // 2 + 2, y + h // 2, "space_void")
+    c.set(x + w // 2, y + h // 2 - 1, "metal_2")
+
+
+def trim(c: Canvas) -> None:
+    """8 px wall trim: shadow outside, lit deck edge inside, cable run between."""
+    for x in range(320):
+        for y in range(8):
+            c.set(x, y, "space_void" if y < 3 else "metal_0" if y < 6 else "metal_1")
+        for y in range(172, 180):
+            c.set(x, y, "space_void" if y > 176 else "metal_0" if y > 174 else "space_haze")
+    for y in range(8, 172):
+        for x in range(8):
+            c.set(x, y, "space_void" if x < 3 else "metal_0" if x < 6 else "metal_1")
+        for x in range(312, 320):
+            c.set(x, y, "space_void" if x > 316 else "metal_0" if x > 314 else "space_haze")
+    # cable run dashes just inside the trim
+    for x in range(12, 308, 16):
+        c.hline(x, x + 7, 10, "space_mid")
+        c.hline(x, x + 6, 169, "space_mid")
+    for y in range(12, 168, 16):
+        c.vline(10, y, y + 7, "space_mid")
+        c.vline(309, y, y + 6, "space_mid")
+    # corner brackets in the accent colour, the only saturated marks in the backdrop
+    for cx, cy, sx, sy in ((8, 8, 1, 1), (311, 8, -1, 1), (8, 171, 1, -1), (311, 171, -1, -1)):
+        c.hline(min(cx, cx + sx * 5), max(cx, cx + sx * 5), cy, "metal_2")
+        c.vline(cx, min(cy, cy + sy * 5), max(cy, cy + sy * 5), "metal_2")
+        c.set(cx + sx * 2, cy + sy * 2, "space_haze")
+    # bolts around the trim
+    for x in range(24, 320, 48):
+        c.set(x, 4, "metal_2")
+        c.set(x, 175, "metal_2")
+    for y in range(24, 172, 48):
+        c.set(4, y, "metal_2")
+        c.set(315, y, "metal_2")
 
 
 def room() -> Canvas:
     c = Canvas(320, 180)
-    c.rect(0, 0, 320, 180, "space_void")
-    wall(c)
-    conduit(c)
-    floor(c)
-    # recessed bays last: nothing paints across them
-    for bx in (36, 236):
-        for by in (32, 96):
-            c.rect(bx, by, 48, 48, "space_mid")
-            c.hline(bx, bx + 47, by, "metal_0")
-            c.vline(bx, by, by + 47, "metal_0")
-            c.hline(bx, bx + 47, by + 47, "space_void")
-
-    porthole(c, 106, 30)
-    porthole(c, 214, 30)
-    neon_sign(c)
-    # vignette: a one pixel void frame keeps the play area reading as a lit stage
-    c.rect(0, 0, 320, 180, "space_void", fill=False)
-    for x, y in ((320 - 2, 0), (320 - 1, 0), (0, 179), (1, 179)):
-        c.set(x, y, "space_void")
+    c.rect(0, 0, 320, 180, "space_deep")
+    deck_plates(c)
+    spin_decal(c)
+    drain(c, 64, 150)
+    drain(c, 256, 150)
+    vent(c, 112, 132)
+    vent(c, 190, 132)
+    hatch(c, 98, 34)
+    hatch(c, 192, 34)
+    hatch(c, 146, 140, 34, 14)
+    trim(c)
     return c
 
 

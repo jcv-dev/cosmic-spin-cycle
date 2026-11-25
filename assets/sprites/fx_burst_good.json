@@ -1,0 +1,23 @@
+{
+  "id": "fx_burst_good",
+  "frame_size": [
+    12,
+    12
+  ],
+  "scale": 4,
+  "pivot": [
+    6,
+    6
+  ],
+  "animations": {
+    "play": {
+      "row": 0,
+      "frames": 3,
+      "fps": 14,
+      "loop": false
+    }
+  },
+  "tier": "A",
+  "source": "art/src/fx.py",
+  "note": "GOOD burst"
+}

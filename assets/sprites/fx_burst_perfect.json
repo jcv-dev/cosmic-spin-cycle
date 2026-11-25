@@ -1,0 +1,23 @@
+{
+  "id": "fx_burst_perfect",
+  "frame_size": [
+    16,
+    16
+  ],
+  "scale": 4,
+  "pivot": [
+    8,
+    8
+  ],
+  "animations": {
+    "play": {
+      "row": 0,
+      "frames": 4,
+      "fps": 14,
+      "loop": false
+    }
+  },
+  "tier": "A",
+  "source": "art/src/fx.py",
+  "note": "PERFECT burst"
+}

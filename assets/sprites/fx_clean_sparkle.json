@@ -1,0 +1,23 @@
+{
+  "id": "fx_clean_sparkle",
+  "frame_size": [
+    8,
+    8
+  ],
+  "scale": 4,
+  "pivot": [
+    4,
+    4
+  ],
+  "animations": {
+    "play": {
+      "row": 0,
+      "frames": 4,
+      "fps": 8,
+      "loop": false
+    }
+  },
+  "tier": "A",
+  "source": "art/src/fx.py",
+  "note": "clean sparkle on delivered items"
+}
