@@ -1,0 +1,24 @@
+{
+  "id": "env_belt_cap",
+  "frame_size": [
+    16,
+    16
+  ],
+  "scale": 4,
+  "pivot": [
+    8,
+    8
+  ],
+  "animations": {
+    "start": {
+      "row": 0,
+      "frames": 1,
+      "fps": 1,
+      "loop": true
+    }
+  },
+  "tier": "A",
+  "source": "art/src/env.py",
+  "allow_edge": true,
+  "note": "dispenser / portal end"
+}

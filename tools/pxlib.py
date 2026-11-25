@@ -37,6 +37,9 @@ TRANSPARENT = (0, 0, 0, 0)
 #: Ramp families: index 0 is the darkest (used for sel-out), index 4 the highlight.
 RAMPS = ("space", "metal", "red", "blue", "yel")
 
+#: Item colour names (GDD: red/blue/yellow) -> palette ramp names.
+COLOUR_FAMILY = {"red": "red", "blue": "blue", "yellow": "yel"}
+
 #: Accent -> the darkest palette colour used for its selective outline.
 ACCENT_OUTLINE = {
     "funk_cyan": "funk_teal",
@@ -62,19 +65,23 @@ class _Palette:
             self.colors[name] = hex_to_rgb(entry["hex"])
             self.order.append(name)
         self.rgb_to_name = {rgb: name for name, rgb in self.colors.items()}
+        # the space family has four named steps (void, deep, mid, haze); the fifth slot
+        # repeats haze so a 5-step lookup never falls off the ramp
         self.ramps = {
-            family: [f"{family}_{i}" for i in range(5)] for family in RAMPS
+            family: [f"{family}_{i}" for i in range(5)]
+            for family in ("metal", "red", "blue", "yel")
         }
+        self.ramps["space"] = ["space_void", "space_deep", "space_mid", "space_haze",
+                               "space_haze"]
         self.accents = [
             n for n in self.order if not any(n.startswith(f + "_") for f in RAMPS)
         ]
+        self.name_to_slot = {}
+        for members in self.ramps.values():
+            for slot, color in enumerate(members):
+                self.name_to_slot.setdefault(color, slot)
         self.name_to_ramp = {
             color: family for family, members in self.ramps.items() for color in members
-        }
-        self.name_to_slot = {
-            color: int(color.rsplit("_", 1)[1])
-            for members in self.ramps.values()
-            for color in members
         }
 
     def rgb(self, color: str | tuple[int, int, int]) -> tuple[int, int, int]:
@@ -88,6 +95,7 @@ class _Palette:
             raise PaletteError(f"unknown palette colour {color!r}") from exc
 
     def ramp(self, family: str) -> list[str]:
+        family = COLOUR_FAMILY.get(family, family)
         if family not in self.ramps:
             raise PaletteError(f"unknown ramp {family!r}")
         return self.ramps[family]
@@ -456,6 +464,7 @@ def ramp_values(family: str) -> list[str]:
 
 def ramp_swap_family(canvas: Canvas, family: str) -> Canvas:
     """Map every ramp-coloured pixel of `canvas` onto `family`, preserving the slot."""
+    family = COLOUR_FAMILY.get(family, family)
     mapping: dict[str, str] = {}
     for color in canvas.keyset():
         if PAL.is_ramp(color):
@@ -852,7 +861,7 @@ class Registry:
         self.sheets[sheet.id] = sheet
         return sheet
 
-    def write_all(self) -> dict[str, str]:
+    def write_all(self, *, prune: bool = True) -> dict[str, str]:
         self.dest.mkdir(parents=True, exist_ok=True)
         written = set()
         for sheet_id in sorted(self.sheets):
@@ -860,6 +869,8 @@ class Registry:
             self.hashes[sheet_id] = digest
             written.add(f"{sheet_id}.png")
             written.add(f"{sheet_id}.json")
+        if not prune:
+            return self.hashes
         # remove orphans (png/json without a builder) so the linter's manifest check is honest
         for path in sorted(self.dest.glob("*")):
             if path.suffix in {".png", ".json"} and path.name not in written:
@@ -899,7 +910,8 @@ def source_to_canvas(
     values = lum[body]
     # Percentile thresholds keep the result stable when the source changes size.
     cuts = [float(np.percentile(values, p)) for p in (10, 35, 62, 84)]
-    colors = PAL.ramp(family)[list(slots)] if len(slots) == 5 else PAL.ramp(family)
+    ramp = PAL.ramp(family)
+    colors = [ramp[slot] for slot in slots] if slots else ramp
     for y in range(h):
         for x in range(w):
             if not body[y, x]:
@@ -934,8 +946,88 @@ def source_pattern_mask(
     return (mask & alpha).astype(bool)
 
 
+
+# --------------------------------------------------------------------------------------
+# mask morphology (source adaptation cleanup)
+# --------------------------------------------------------------------------------------
+
+
+def erode(mask: np.ndarray, steps: int = 1) -> np.ndarray:
+    out = mask.copy()
+    for _ in range(steps):
+        padded = np.pad(out, 1, constant_values=False)
+        out = (
+            padded[0:-2, 1:-1] & padded[2:, 1:-1] & padded[1:-1, 0:-2] & padded[1:-1, 2:]
+            & padded[1:-1, 1:-1]
+        )
+    return out
+
+
+def dilate(mask: np.ndarray, steps: int = 1) -> np.ndarray:
+    out = mask.copy()
+    for _ in range(steps):
+        padded = np.pad(out, 1, constant_values=False)
+        out = (
+            padded[0:-2, 1:-1] | padded[2:, 1:-1] | padded[1:-1, 0:-2] | padded[1:-1, 2:]
+            | padded[1:-1, 1:-1]
+        )
+    return out
+
+
+def components(mask: np.ndarray) -> list[np.ndarray]:
+    """4-connected components, ordered by size (desc), then top-left position."""
+    seen = np.zeros_like(mask, dtype=bool)
+    found: list[tuple[int, int, int, np.ndarray]] = []
+    h, w = mask.shape
+    for y in range(h):
+        for x in range(w):
+            if not mask[y, x] or seen[y, x]:
+                continue
+            stack = [(y, x)]
+            seen[y, x] = True
+            pixels: list[tuple[int, int]] = []
+            while stack:
+                cy, cx = stack.pop()
+                pixels.append((cy, cx))
+                for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    ny, nx = cy + dy, cx + dx
+                    if 0 <= ny < h and 0 <= nx < w and mask[ny, nx] and not seen[ny, nx]:
+                        seen[ny, nx] = True
+                        stack.append((ny, nx))
+            piece = np.zeros_like(mask, dtype=bool)
+            ys = [p[0] for p in pixels]
+            xs = [p[1] for p in pixels]
+            piece[ys, xs] = True
+            found.append((len(pixels), min(ys), min(xs), piece))
+    found.sort(key=lambda item: (-item[0], item[1], item[2]))
+    return [item[3] for item in found]
+
+
+def clean_mask(mask: np.ndarray, *, keep: int = 3, min_px: int = 5, smooth: int = 1) -> np.ndarray:
+    """Turn a noisy downscaled source mask into a few readable blobs.
+
+    Deterministic: binary close (dilate+erode), drop tiny components, keep the largest
+    ``keep`` ones in size order.  This is the step that makes a 1280 px planet render
+    usable as a 16 px pattern without turning into noise.
+    """
+    work = dilate(mask, smooth)
+    work = erode(work, smooth)
+    pieces = components(work)
+    out = np.zeros_like(mask, dtype=bool)
+    kept = 0
+    for piece in pieces:
+        if int(piece.sum()) < min_px:
+            continue
+        out |= piece
+        kept += 1
+        if kept >= keep:
+            break
+    return out
+
+
 __all__ = [
     "ACCENT_OUTLINE",
+    "COLOUR_FAMILY",
     "Anim",
     "Canvas",
     "FONT_5X7",
@@ -948,6 +1040,10 @@ __all__ = [
     "SPRITES_DIR",
     "Sheet",
     "banded_mask",
+    "clean_mask",
+    "components",
+    "dilate",
+    "erode",
     "contrast_vs_void",
     "dither_mask",
     "dither_rect",
