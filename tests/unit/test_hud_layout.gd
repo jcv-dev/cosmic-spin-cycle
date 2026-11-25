@@ -100,3 +100,35 @@ func test_combo_turns_magenta_at_four() -> void:
 	var hot: Color = hud.get_node("PlaqueB/ComboLabel").get_theme_color("font_color")
 	assert_eq(calm, Palette.METAL_3)
 	assert_eq(hot, Palette.FUNK_MAGENTA)
+
+
+func test_mission_ribbon_default_and_fade() -> void:
+	var hud := _open_hud()
+	assert_eq(hud.objective_text(), "OBJETIVO · LAVA Y ENTREGA HASTA LAS 06:00")
+	assert_almost_eq(hud.objective_alpha(), 1.0, 0.001, "fresh objective shouts")
+	hud.tick(7.9)
+	assert_almost_eq(hud.objective_alpha(), 1.0, 0.001, "still 100 % before 8 s")
+	hud.tick(1.1)
+	assert_almost_eq(hud.objective_alpha(), 0.55, 0.001, "settles to 55 % and stays")
+	assert_eq(hud.objective_text(), "OBJETIVO · LAVA Y ENTREGA HASTA LAS 06:00")
+	hud.set_objective("LLEVA LA PIEZA LIMPIA AL DUCTO")
+	assert_almost_eq(hud.objective_alpha(), 1.0, 0.001, "a new objective re-shouts")
+
+
+func test_objective_is_capped_at_46_characters() -> void:
+	var hud := _open_hud()
+	hud.set_objective("X".repeat(80))
+	assert_eq(hud.objective_text().length(), 46)
+
+
+func test_feedback_is_one_toast_not_a_log() -> void:
+	var hud := _open_hud()
+	assert_eq(hud.toast_text(), "", "no toast before any feedback")
+	GameState.emit_feedback("+350", &"success")
+	assert_eq(hud.toast_text(), "+350")
+	assert_eq(hud.get_node("ToastLabel").get_theme_color("font_color"), Palette.CLEAN_GREEN)
+	GameState.emit_feedback("LAVADORA EQUIVOCADA", &"danger")
+	assert_eq(hud.toast_text(), "LAVADORA EQUIVOCADA", "the newest toast replaces the old one")
+	assert_eq(hud.get_node("ToastLabel").get_theme_color("font_color"), Palette.HAZARD_ORANGE)
+	hud.tick(1.5)
+	assert_eq(hud.toast_text(), "", "the toast expires after 1.4 s")

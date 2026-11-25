@@ -15,6 +15,8 @@ extends Control
 enum Slot {
 	PLAQUE_A,
 	PLAQUE_B,
+	RIBBON,
+	TOAST,
 }
 
 # --- Geometry (1280×720, docs/UX_BIBLE.md §5) -------------------------------
@@ -29,12 +31,23 @@ const DOT_RADIUS_ACTIVE := 4.0
 const DOT_DOWNBEAT_SCALE := 1.3
 const STABILITY_DIAMOND_CENTER := Vector2(280, 16)
 const STABILITY_DIAMOND_RADIUS := 6.0
+const RIBBON_RECT := Rect2(400, 6, 480, 28)
+const TOAST_RECT := Rect2(400, 34, 480, 18)
 
 # --- Timing -----------------------------------------------------------------
 const PANEL_ALPHA := 0.88
 const CLOCK_WARN_S := 10.0
 const PHASE_NAME_HOLD_S := 4.0
 const DANGER_STABILITY := 35.0
+const RIBBON_ALPHA := 0.55
+const RIBBON_BORDER_ALPHA := 0.45
+const OBJECTIVE_FADE_S := 8.0
+const OBJECTIVE_IDLE_ALPHA := 0.55
+const OBJECTIVE_MAX_CHARS := 46
+const TOAST_MAX_CHARS := 46
+const TOAST_S := 1.4
+const TOAST_ALPHA := 0.82
+const DEFAULT_OBJECTIVE := &"OBJETIVO · LAVA Y ENTREGA HASTA LAS 06:00"
 
 const PHASE_NAMES: Array[StringName] = [&"APERTURA", &"CINTA SUR", &"MAREJADA", &"CARGA FINAL"]
 
@@ -54,8 +67,11 @@ var _clock_warn := false
 var _clock_color := Palette.METAL_4
 var _plaque_a: Control
 var _plaque_b: Control
+var _ribbon: Control
 var _slot_a: Control
 var _slot_b: Control
+var _slot_ribbon: Control
+var _slot_toast: Control
 var _clock_label: Label
 var _caption_label: Label
 var _bpm_label: Label
@@ -63,7 +79,12 @@ var _stability_caption: Label
 var _stability_value: Label
 var _combo_label: Label
 var _score_label: Label
+var _objective_label: Label
+var _toast_label: Label
 var _grade_label: Label
+var _objective_age := 0.0
+var _objective_alpha := 1.0
+var _toast_left := 0.0
 
 
 ## Interior draw slot: a Control that asks the HUD to paint it, so the plaque can be scaled
@@ -83,6 +104,7 @@ func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	_build_plaque_a()
 	_build_plaque_b()
+	_build_ribbon()
 	_build_grade_label()
 	_connect_state()
 	_refresh_clock()
@@ -92,6 +114,7 @@ func _ready() -> void:
 	_on_combo(GameState.combo)
 	_on_score(GameState.score)
 	_on_phase(GameState.phase_index)
+	set_objective(tr(String(DEFAULT_OBJECTIVE)))
 	queue_redraw()
 
 
@@ -105,6 +128,17 @@ func tick(delta: float) -> void:
 	if _phase_name_left > 0.0:
 		_phase_name_left = maxf(_phase_name_left - delta, 0.0)
 		_refresh_caption()
+	if _objective_age >= 0.0:
+		_objective_age += delta
+		var alpha := _objective_alpha_at(_objective_age)
+		if not is_equal_approx(alpha, _objective_alpha):
+			_objective_alpha = alpha
+			_objective_label.modulate.a = alpha
+	if _toast_left > 0.0:
+		_toast_left = maxf(_toast_left - delta, 0.0)
+		if _toast_left <= 0.0:
+			_toast_label.visible = false
+			_slot_toast.queue_redraw()
 	var beat := BeatConductor.get_beat_index() if BeatConductor.is_playing else -1
 	if beat != _last_beat:
 		_last_beat = beat
@@ -173,6 +207,33 @@ func _build_plaque_b() -> void:
 	_score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 
 
+func _build_ribbon() -> void:
+	_ribbon = Control.new()
+	_ribbon.name = "Ribbon"
+	_ribbon.position = RIBBON_RECT.position
+	_ribbon.size = RIBBON_RECT.size
+	_ribbon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_ribbon)
+	_slot_ribbon = _make_slot("Paint", Slot.RIBBON, RIBBON_RECT.size)
+	_ribbon.add_child(_slot_ribbon)
+	_objective_label = _place(
+		UITheme.label("", UITheme.FONT_LABEL, Palette.METAL_3),
+		_ribbon,
+		"ObjectiveLabel",
+		Rect2(8, 4, RIBBON_RECT.size.x - 16.0, 20)
+	)
+	_objective_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_slot_toast = _make_slot("Paint", Slot.TOAST, TOAST_RECT.size)
+	_slot_toast.position = TOAST_RECT.position
+	add_child(_slot_toast)
+	_toast_label = _place(
+		UITheme.label("", UITheme.FONT_SMALL, Palette.METAL_3), self, "ToastLabel", TOAST_RECT
+	)
+	_toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_toast_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_toast_label.visible = false
+
+
 ## Grade text is never shown on screen any more (the diegetic layer places it at the action);
 ## the node survives as an invisible, assertable surface for tests.
 func _build_grade_label() -> void:
@@ -235,6 +296,7 @@ func _connect_state() -> void:
 	GameState.combo_changed.connect(_on_combo)
 	GameState.score_changed.connect(_on_score)
 	GameState.phase_changed.connect(_on_phase)
+	GameState.feedback.connect(_on_feedback)
 
 
 # --- Painting ---------------------------------------------------------------
@@ -246,6 +308,10 @@ func draw_slot(slot: Control, role: int) -> void:
 			_draw_beat_dots(slot)
 		Slot.PLAQUE_B:
 			_draw_stability(slot)
+		Slot.RIBBON:
+			_draw_ribbon(slot)
+		Slot.TOAST:
+			_draw_toast(slot)
 
 
 func _draw_beat_dots(target: CanvasItem) -> void:
@@ -286,6 +352,29 @@ func _draw_stability(target: CanvasItem) -> void:
 		Palette.SPACE_MID
 	)
 	HudGlyphs.draw_diamond(target, STABILITY_DIAMOND_CENTER, STABILITY_DIAMOND_RADIUS, color)
+
+
+func _draw_ribbon(target: CanvasItem) -> void:
+	target.draw_rect(Rect2(Vector2.ZERO, RIBBON_RECT.size), Color(Palette.SPACE_VOID, RIBBON_ALPHA))
+	target.draw_rect(
+		Rect2(Vector2.ZERO, RIBBON_RECT.size),
+		Color(Palette.METAL_0, RIBBON_BORDER_ALPHA),
+		false,
+		1.0
+	)
+
+
+## The toast chip is as wide as its text so it never reads as a second bar.
+func _draw_toast(target: CanvasItem) -> void:
+	if _toast_left <= 0.0 or _toast_label.text == "":
+		return
+	var font := UITheme.font()
+	var text_width := (
+		font.get_string_size(_toast_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, UITheme.FONT_SMALL).x
+	)
+	var width := minf(text_width + 20.0, TOAST_RECT.size.x)
+	var chip := Rect2((TOAST_RECT.size.x - width) * 0.5, 0.0, width, TOAST_RECT.size.y)
+	HudGlyphs.draw_chip(target, chip, TOAST_ALPHA, Color(Palette.METAL_0, RIBBON_BORDER_ALPHA))
 
 
 # --- State ------------------------------------------------------------------
@@ -378,6 +467,51 @@ func set_bpm(p_bpm: int) -> void:
 	_refresh_bpm()
 
 
+## One line, max 46 chars; it shouts for 8 s and then settles to 55 % — it never disappears
+## (docs/UX_BIBLE.md §5.3).
+func set_objective(text: String) -> void:
+	var line := text.strip_edges()
+	if line.length() > OBJECTIVE_MAX_CHARS:
+		line = line.left(OBJECTIVE_MAX_CHARS)
+	if _objective_label == null:
+		return
+	_objective_label.text = line
+	_objective_age = 0.0
+	_objective_alpha = 1.0
+	_objective_label.modulate.a = 1.0
+
+
+## 100 % for 8 s, then a 0.4 s settle to 55 %.
+static func _objective_alpha_at(age: float) -> float:
+	if age <= OBJECTIVE_FADE_S:
+		return 1.0
+	return lerpf(1.0, OBJECTIVE_IDLE_ALPHA, clampf((age - OBJECTIVE_FADE_S) / 0.4, 0.0, 1.0))
+
+
+## At most one toast, 1.4 s, never a log (docs/UX_BIBLE.md §8).
+func _on_feedback(text: String, kind: StringName) -> void:
+	var line := text.strip_edges()
+	if line == "" or _toast_label == null:
+		return
+	_toast_label.text = line.left(TOAST_MAX_CHARS)
+	_toast_label.add_theme_color_override("font_color", _kind_color(kind))
+	_toast_label.visible = true
+	_toast_left = TOAST_S
+	_slot_toast.queue_redraw()
+
+
+static func _kind_color(kind: StringName) -> Color:
+	match kind:
+		&"success":
+			return Palette.CLEAN_GREEN
+		&"danger":
+			return Palette.HAZARD_ORANGE
+		&"warn":
+			return Palette.YEL_3
+		_:
+			return Palette.METAL_3
+
+
 func show_grade(grade: int) -> void:
 	if _grade_label == null:
 		return
@@ -452,3 +586,17 @@ func score_text() -> String:
 
 func combo_text() -> String:
 	return _combo_label.text if _combo_label != null else ""
+
+
+func objective_text() -> String:
+	return _objective_label.text if _objective_label != null else ""
+
+
+func objective_alpha() -> float:
+	return _objective_alpha
+
+
+func toast_text() -> String:
+	if _toast_label == null or not _toast_label.visible:
+		return ""
+	return _toast_label.text
