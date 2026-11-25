@@ -79,7 +79,7 @@ Updated after every milestone/workstream. Times are local (America/Bogota).
 
 | Metric | Value | Where |
 |---|---|---|
-| Test suite | **313 tests, 7,163 asserts, ~38 s** | GUT summary |
+| Test suite | **314 tests, 7,175 asserts, ~38 s** | GUT summary |
 | Sprite contract | 29/29 sheets, 176 frames, 22 colour-budget warnings | `tools/lint_sprites.py` |
 | Audio contract | 16/16 checks (BPM drift ≤0.01 ms, peaks −1.3…−2.2 dBFS, Spanish glyphs) | `tools/verify_audio.py` |
 | Spawns / 480 s | 197 (34/62/88/13), seed 1234 | `tools/sim_run.gd` |

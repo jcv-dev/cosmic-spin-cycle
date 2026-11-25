@@ -4,10 +4,9 @@ extends RefCounted
 ## UI never breaks while the audio/art deliverables are still landing.
 
 const DIR := "res://assets/fonts/"
+const PREFERRED := ["Silkscreen-Regular.ttf", "Silkscreen-Bold.ttf"]
 
 static var _cached: Font
-
-const PREFERRED := ["Silkscreen-Regular.ttf", "Silkscreen-Bold.ttf"]
 
 
 static func pixel_font() -> Font:

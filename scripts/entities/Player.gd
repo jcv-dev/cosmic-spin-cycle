@@ -38,15 +38,13 @@ var _dash_origin := Vector2.ZERO
 var _mouse_active_until := 0
 var _aim_override := Vector2.ZERO
 var _has_aim_override := false
+var _pip: AnimatedSprite2D
+var _art_action := ""
+var _art_time := 0.0
 
 @onready var visual: Node2D = $Visual
 @onready var grabber: MagneticGrabber = $Grabber
 @onready var aim_indicator: Node2D = $AimIndicator
-
-var _pip: AnimatedSprite2D
-var _art_action := ""
-var _art_time := 0.0
-var _art_dir := "down"
 
 
 func _ready() -> void:

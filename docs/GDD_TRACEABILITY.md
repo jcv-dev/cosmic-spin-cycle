@@ -78,7 +78,7 @@ verified. Update at each milestone. Status: **M0–M3 implemented; M4+ planned.*
 
 ## Status 2026-11-24 — M0–M3 evidence
 
-M0–M3 are implemented and green: **313 tests / 7,163 assertions**, `tools/lint_sprites.py`
+M0–M3 are implemented and green: **314 tests / 7,175 assertions**, `tools/lint_sprites.py`
 29/29, `tools/verify_audio.py` 16/16, `tools/sim_run.gd` 197 spawns.
 
 | Area | Primary evidence |
