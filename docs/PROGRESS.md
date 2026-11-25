@@ -155,6 +155,7 @@ Updated after every milestone/workstream. Times are local (America/Bogota).
 | Metric | Value | Where |
 |---|---|---|
 | Test suite | **668 tests, 10,214 asserts** | GUT summary |
+| Clean clone | `git clone --local` + full gate: **exit 0, all PASS** | `.work/clean.log` |
 | Washer/chute tests | FSM transitions, coverage 4 phases, rank bounds, scene smoke | `tests/unit/test_washer*`, `test_delivery_chute.gd` |
 | Screen flow tests | title, first-run, pause, options, end, app flow | `tests/unit/test_*_screen.gd`, `test_pause_overlay.gd`, `tests/integration/test_app_flow.gd` |
 | Tutorial tests | 7 gates, skip, completion persistence, real level | `tests/unit/test_tutorial_*`, `tests/integration/test_tutorial_full.gd` |
