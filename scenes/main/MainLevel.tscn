@@ -1,43 +1,6 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=2 format=3]
 
-[sub_resource type="Gradient" id="Gradient_bg"]
-colors = PackedColorArray(0.043137, 0.047059, 0.062745, 1, 0.078431, 0.090196, 0.164706, 1)
-
-[sub_resource type="GradientTexture2D" id="GradientTexture2D_bg"]
-gradient = SubResource("Gradient_bg")
-width = 1280
-height = 720
-fill_from = Vector2(0.5, 0)
-fill_to = Vector2(0.5, 1)
+[ext_resource type="Script" path="res://scripts/main/MainLevel.gd" id="1_level"]
 
 [node name="MainLevel" type="Node2D"]
-
-[node name="Background" type="Sprite2D" parent="."]
-modulate = Color(1, 1, 1, 1)
-texture_filter = 2
-position = Vector2(640, 360)
-texture = SubResource("GradientTexture2D_bg")
-
-[node name="BootLabel" type="Label" parent="."]
-offset_left = 0.0
-offset_top = 330.0
-offset_right = 1280.0
-offset_bottom = 390.0
-theme_override_font_sizes/font_size = 32
-text = "COSMIC SPIN CYCLE"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="BootSub" type="Label" parent="."]
-offset_left = 0.0
-offset_top = 380.0
-offset_right = 1280.0
-offset_bottom = 410.0
-theme_override_colors/font_color = Color(0.098039, 0.890196, 0.819608, 1)
-theme_override_font_sizes/font_size = 16
-text = "M0 · bootstrap"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="Camera2D" type="Camera2D" parent="."]
-position = Vector2(640, 360)
+script = ExtResource("1_level")

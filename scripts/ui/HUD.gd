@@ -154,7 +154,7 @@ func _draw_measure_dots() -> void:
 	var active := -1
 	if BeatConductor.is_playing:
 		active = BeatConductor.get_beat_index() % Config.BEATS_PER_MEASURE
-	var origin := Vector2(655, 65)
+	var origin := Vector2(624, 660)
 	for i in range(Config.BEATS_PER_MEASURE):
 		var color := Palette.FUNK_CYAN if i == active else Palette.METAL_1
 		var radius := 4.0 if i == active else 3.0
