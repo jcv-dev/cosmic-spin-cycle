@@ -14,6 +14,7 @@ var _frames := 0
 var _target := DEFAULT_FRAMES
 var _out := DEFAULT_OUT
 var _scene_path := DEFAULT_SCENE
+var _time := -1.0
 
 
 func _initialize() -> void:
@@ -24,13 +25,35 @@ func _initialize() -> void:
 			_target = int(arg.trim_prefix("--frames="))
 		elif arg.begins_with("--scene="):
 			_scene_path = arg.trim_prefix("--scene=")
+		elif arg.begins_with("--time="):
+			_time = float(arg.trim_prefix("--time="))
 	var scene := load(_scene_path) as PackedScene
 	if scene == null:
 		push_error("cannot load scene " + _scene_path)
 		quit(1)
 		return
-	root.add_child(scene.instantiate())
-	print("SCREENSHOT_BOOT ok scene=%s frames=%d out=%s" % [_scene_path, _target, _out])
+	var instance := scene.instantiate()
+	root.add_child(instance)
+	if _time >= 0.0:
+		var level := _find_shift_level(instance)
+		if level != null:
+			level.call("set_shift_time", _time)
+	print(
+		(
+			"SCREENSHOT_BOOT ok scene=%s time=%.1f frames=%d out=%s"
+			% [_scene_path, _time, _target, _out]
+		)
+	)
+
+
+func _find_shift_level(node: Node) -> Node:
+	if node.has_method("set_shift_time"):
+		return node
+	for child in node.get_children():
+		var found := _find_shift_level(child)
+		if found != null:
+			return found
+	return null
 
 
 func _process(_delta: float) -> bool:
