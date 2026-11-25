@@ -36,13 +36,15 @@ const BOUNCE_IMPULSE := 320.0
 const REJECT_COOLDOWN_S := 0.6
 const RELEASE_COOLDOWN_S := 0.4
 
-## The hologram sits on the machine's layout top: a 128x56 panel whose bottom edge is the
-## `art_rect` top, horizontally centred on the machine (all four are on screen at 1280x720).
+## The hologram sits on the machine's control panel: a 128x56 plaque whose bottom edge is
+## 48 px below the `art_rect` top, so it never collides with the HUD corner plaques (which
+## end at y = 104) and all four stay fully on screen at 1280x720.
 const MACHINE_TOP := -184.0
-const HOLO_ORIGIN := Vector2(0.0, -192.0)
+const HOLO_DROP_PX := 48.0
+const HOLO_ORIGIN := Vector2(0.0, -144.0)
 ## Steel cabinets are the brightest thing on screen; pull them back 12-15 % so the holo,
 ## items and chute win the eye.
-const BODY_TINT := Color(0.86, 0.88, 0.95)
+const BODY_TINT := Color(0.97, 0.98, 1.0)
 
 ## Every action feedback must stay under `0.45 x T_beat`; 190 ms is the tightest phase.
 const FEEDBACK_S := 0.18
@@ -173,7 +175,7 @@ func configure(
 	position = mouth * float(Config.ART_SCALE)
 	var center_x := (art_rect.position.x + art_rect.size.x * 0.5) * float(Config.ART_SCALE)
 	var top_y := art_rect.position.y * float(Config.ART_SCALE)
-	_holo_origin = Vector2(center_x - position.x, top_y - position.y)
+	_holo_origin = Vector2(center_x - position.x, top_y - position.y + HOLO_DROP_PX)
 	if _holo != null:
 		_holo.position = _holo_origin
 	_configured = true

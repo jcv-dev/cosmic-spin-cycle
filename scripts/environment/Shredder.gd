@@ -125,11 +125,11 @@ func _draw() -> void:
 
 	draw_circle(Vector2.ZERO, r, void_color)
 	draw_circle(Vector2.ZERO, r * 0.86, deep)
-	draw_arc(Vector2.ZERO, r, 0.0, TAU, 32, hazard, 2.0, true)
+	draw_arc(Vector2.ZERO, r, 0.0, TAU, 32, Color(hazard, 0.55), 1.5, true)
 	for index in range(3):
 		var phase := _spin + TAU * float(index) / 3.0
 		var start := phase
 		var end := phase + TAU * 0.42
 		var arc_radius := r * (0.30 + 0.22 * float(index))
-		draw_arc(Vector2.ZERO, arc_radius, start, end, 16, metal, 3.0, true)
-	draw_circle(Vector2.ZERO, r * 0.12, hazard)
+		draw_arc(Vector2.ZERO, arc_radius, start, end, 16, Color(metal, 0.7), 2.0, true)
+	draw_circle(Vector2.ZERO, r * 0.10, Color(hazard, 0.8))

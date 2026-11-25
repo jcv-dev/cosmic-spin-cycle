@@ -31,11 +31,11 @@ const MENU_SIZES: Array[int] = [28, 20, 20, 16, 16]
 ## Tier 3 is dimmed by ink alpha, not by a darker palette slot: 82 % `metal_2` still measures
 ## ~5.2:1 on the plate, while `metal_1` would land at 3.9:1 and miss the 4.5:1 text floor.
 const MENU_INKS: Array[Color] = [
-	Palette.METAL_2,
-	Palette.METAL_2,
-	Palette.METAL_2,
-	Color(Palette.METAL_2, 0.82),
-	Color(Palette.METAL_2, 0.82),
+	Palette.METAL_4,
+	Palette.METAL_3,
+	Palette.METAL_3,
+	Color(Palette.METAL_3, 0.86),
+	Color(Palette.METAL_3, 0.86),
 ]
 const MENU_ACTIONS: Array[StringName] = [
 	&"start_requested",
@@ -65,6 +65,7 @@ const LEGEND_LINE_H := 16.0
 const FOOTER_RECT := Rect2(640, 682, 544, 14)
 const FOOTER_BAND := Rect2(0, 636, 1280, 84)
 
+const DIORAMA_SCENE := "res://scenes/main/Diorama.tscn"
 const PROP_MIN_ART_X := 80.0
 const SPRITE_DIR := "res://assets/sprites/"
 const LAYOUT_PATH := "res://data/layout.json"
@@ -82,6 +83,7 @@ var _buttons: Array[Button] = []
 var _sheets: Dictionary = {}
 var _star_layer: Control
 var _record_plaque: Panel
+var _uses_diorama := false
 
 
 func _ready() -> void:
@@ -124,6 +126,9 @@ func focus_quit() -> void:
 ## The room itself, populated from `data/layout.json`, dimmed so type stays legible.
 ## Never a black screen: if the props are missing the room plate is still drawn.
 func _build_backdrop() -> void:
+	if _build_living_diorama():
+		_add_backdrop_scrim()
+		return
 	var room := TextureRect.new()
 	room.name = "Room"
 	room.texture = _sheet("env_room", Vector2i(320, 180))
@@ -162,6 +167,72 @@ func _build_backdrop() -> void:
 	footer_band.size = FOOTER_BAND.size
 	footer_band.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(footer_band)
+
+
+## The real room, running live: one washer washing, steam, drifting dust and a sleeping Pip.
+## Rendered through a SubViewport so the diorama's own Camera2D can never move the menu.
+func _build_living_diorama() -> bool:
+	if not ResourceLoader.exists(DIORAMA_SCENE):
+		return false
+	var packed := load(DIORAMA_SCENE) as PackedScene
+	if packed == null:
+		return false
+	var viewport := SubViewport.new()
+	viewport.name = "DioramaViewport"
+	viewport.size = Vector2i(1280, 720)
+	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	viewport.transparent_bg = false
+	add_child(viewport)
+	var diorama := packed.instantiate()
+	viewport.add_child(diorama)
+	var rect := TextureRect.new()
+	rect.name = "Diorama"
+	rect.texture = viewport.get_texture()
+	rect.position = Vector2.ZERO
+	rect.size = Vector2(1280, 720)
+	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	rect.stretch_mode = TextureRect.STRETCH_SCALE
+	rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(rect)
+	if diorama.has_method("play_intro"):
+		diorama.call_deferred("play_intro")
+	if "focus_offset" in diorama:
+		diorama.set("focus_offset", Vector2(-130.0, 0.0))
+	_uses_diorama = true
+	return true
+
+
+func _add_backdrop_scrim() -> void:
+	# The menu must stay legible over a moving room: a left-to-right scrim, not a card.
+	var stops: Array = [
+		[Rect2(0, 0, 560, 720), 0.62],
+		[Rect2(560, 0, 120, 720), 0.36],
+		[Rect2(680, 0, 80, 720), 0.16],
+		[Rect2(0, 0, 1280, 720), 0.24],
+	]
+	for stop in stops:
+		var band := ColorRect.new()
+		band.name = "Scrim"
+		band.color = Color(Palette.SPACE_VOID, float(stop[1]))
+		band.position = (stop[0] as Rect2).position
+		band.size = (stop[0] as Rect2).size
+		band.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(band)
+	var top := ColorRect.new()
+	top.name = "TopBand"
+	top.color = Color(Palette.SPACE_VOID, 0.58)
+	top.size = Vector2(1280, 40)
+	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(top)
+	# Calm the wall band behind the wordmark so the diorama's signage never fights it.
+	var brand_band := ColorRect.new()
+	brand_band.name = "BrandBand"
+	brand_band.color = Color(Palette.SPACE_VOID, 0.34)
+	brand_band.position = Vector2(0, 40)
+	brand_band.size = Vector2(900, 236)
+	brand_band.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(brand_band)
 
 
 ## Static diorama props: four washers, the chute, belts and shredders in their real places.
@@ -336,15 +407,35 @@ func _build_brand() -> void:
 
 
 func _build_menu() -> void:
-	var plate := _panel(PLATE_RECT)
-	plate.name = "MenuPlate"
-	add_child(plate)
+	# No card: a borderless scrim keeps the rows legible over a moving room, with one cyan
+	# tick as the only ornament.
+	var plate_scrim := ColorRect.new()
+	plate_scrim.name = "MenuScrim"
+	plate_scrim.color = Color(Palette.SPACE_VOID, 0.66)
+	plate_scrim.position = Vector2(72, 318)
+	plate_scrim.size = Vector2(552, 360)
+	plate_scrim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(plate_scrim)
+	var feather := ColorRect.new()
+	feather.name = "MenuFeather"
+	feather.color = Color(Palette.SPACE_VOID, 0.28)
+	feather.position = Vector2(624, 318)
+	feather.size = Vector2(56, 360)
+	feather.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(feather)
+	var tick := ColorRect.new()
+	tick.name = "MenuTick"
+	tick.color = UITheme.ACCENT
+	tick.position = plate_scrim.position + Vector2(0, 10)
+	tick.size = Vector2(2, 40)
+	tick.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(tick)
 	var column := VBoxContainer.new()
 	column.name = "Menu"
-	column.position = Vector2(MENU_X - PLATE_RECT.position.x, MENU_Y - PLATE_RECT.position.y)
+	column.position = Vector2(MENU_X, MENU_Y)
 	column.custom_minimum_size = Vector2(MENU_WIDTH, 0)
 	column.add_theme_constant_override("separation", 0)
-	plate.add_child(column)
+	add_child(column)
 	for index in range(MENU_ROWS.size()):
 		var row := _menu_row(MENU_ROWS[index], MENU_SIZES[index], MENU_INKS[index])
 		row.name = String(BUTTON_NAMES[index])

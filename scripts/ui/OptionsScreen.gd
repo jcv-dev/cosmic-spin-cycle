@@ -427,7 +427,7 @@ func _toggle_text(index: int) -> String:
 		Toggle.REDUCE_MOTION:
 			return "SÍ" if Settings.reduce_motion else "NO"
 		Toggle.HUD_SCALE:
-			return "%d %%" % int(round(Settings.ui_scale * 100.0))
+			return "%d" % int(round(Settings.ui_scale * 100.0))
 		_:
 			return "SÍ" if Settings.haptics else "NO"
 

@@ -10,15 +10,15 @@ const CONTRACT_SIGNALS := [
 	"options_requested",
 	"quit_requested",
 ]
-const ROW_PATHS := [
-	"MenuPlate/Menu/StartButton",
-	"MenuPlate/Menu/TutorialButton",
-	"MenuPlate/Menu/CalibrationButton",
-	"MenuPlate/Menu/OptionsButton",
-	"MenuPlate/Menu/QuitButton",
+const ROW_NAMES := [
+	"StartButton", "TutorialButton", "CalibrationButton", "OptionsButton", "QuitButton"
 ]
 
 var _screen: Control
+
+
+func _row(index: int) -> Button:
+	return _screen.find_child(ROW_NAMES[index], true, false) as Button
 
 
 func before_each() -> void:
@@ -42,15 +42,15 @@ func test_declares_every_contract_signal() -> void:
 func test_focus_first_lands_on_start() -> void:
 	_screen.focus_first()
 	await wait_process_frames(1)
-	var start := _screen.get_node(ROW_PATHS[0]) as Button
+	var start := _row(0)
 	assert_true(start.has_focus(), "INICIAR TURNO must own the default focus")
 
 
 func test_each_row_emits_its_intent() -> void:
 	watch_signals(_screen)
-	for index in range(ROW_PATHS.size()):
-		var row := _screen.get_node(ROW_PATHS[index]) as Button
-		assert_not_null(row, "row %s missing" % ROW_PATHS[index])
+	for index in range(ROW_NAMES.size()):
+		var row := _row(index)
+		assert_not_null(row, "row %s missing" % ROW_NAMES[index])
 		row.emit_signal("pressed")
 		assert_signal_emitted(_screen, CONTRACT_SIGNALS[index])
 
@@ -60,7 +60,7 @@ func test_escape_lands_on_quit_without_quitting() -> void:
 	await wait_process_frames(1)
 	_screen.focus_quit()
 	await wait_process_frames(1)
-	var quit_row := _screen.get_node(ROW_PATHS[4]) as Button
+	var quit_row := _row(4)
 	assert_true(quit_row.has_focus())
 
 
@@ -83,21 +83,28 @@ func test_record_plaque_shows_rank_and_grouped_score() -> void:
 
 func test_menu_rows_are_the_five_contract_labels() -> void:
 	var labels: Array[String] = []
-	for path in ROW_PATHS:
-		labels.append((_screen.get_node(path) as Button).text)
+	for index in range(ROW_NAMES.size()):
+		labels.append(_row(index).text)
 	assert_eq(labels, ["INICIAR TURNO", "TUTORIAL", "CALIBRACIÓN DE AUDIO", "OPCIONES", "SALIR"])
 
 
 func test_backdrop_is_a_room_not_a_black_screen() -> void:
+	# Either the living diorama (preferred) or the static room plate; never black.
+	var diorama := _screen.get_node_or_null("Diorama") as TextureRect
+	if diorama != null:
+		assert_not_null(diorama.texture, "the diorama viewport texture must exist")
+		assert_eq(diorama.size, Vector2(1280, 720))
+		assert_not_null(_screen.get_node_or_null("DioramaViewport"))
+		return
 	var room := _screen.get_node_or_null("Room") as TextureRect
-	assert_not_null(room, "the diorama room must exist")
+	assert_not_null(room, "a backdrop must exist")
 	assert_not_null(room.texture, "the room texture must load")
 	assert_eq(room.size, Vector2(1280, 720))
 
 
 func test_focus_neighbours_wrap_vertically() -> void:
-	var first := _screen.get_node(ROW_PATHS[0]) as Button
-	var last := _screen.get_node(ROW_PATHS[4]) as Button
+	var first := _row(0)
+	var last := _row(4)
 	assert_eq(
 		first.focus_neighbor_top, first.get_path_to(last), "↑ on the first row wraps to SALIR"
 	)
@@ -106,15 +113,15 @@ func test_focus_neighbours_wrap_vertically() -> void:
 
 func test_type_tiers_descend_from_primary_to_tertiary() -> void:
 	var sizes: Array[int] = []
-	for path in ROW_PATHS:
-		sizes.append((_screen.get_node(path) as Button).get_theme_font_size("font_size"))
+	for index in range(ROW_NAMES.size()):
+		sizes.append(_row(index).get_theme_font_size("font_size"))
 	assert_eq(sizes, [28, 20, 20, 16, 16], "one primary, two secondary, two tertiary rows")
 
 
 func test_focused_row_draws_the_measured_ring() -> void:
 	_screen.focus_first()
 	await wait_process_frames(1)
-	var start := _screen.get_node(ROW_PATHS[0]) as Button
+	var start := _row(0)
 	var ring := start.get_node_or_null("FocusRing") as Control
 	assert_not_null(ring, "every menu row owns a focus ring")
 	assert_eq(ring.size, Vector2(512, 52) + Vector2(6, 6), "2 px ring + 1 px gap on both sides")

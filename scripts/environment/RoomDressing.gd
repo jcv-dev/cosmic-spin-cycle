@@ -664,8 +664,11 @@ static func _dressing_props(specs: Array[Dictionary]) -> void:
 	specs.append({"kind": &"baskets", "rect": _rect_world(Rect2(248, 150, 28, 20))})
 
 
-static func _dressing_sign(specs: Array[Dictionary]) -> void:
-	specs.append({"kind": &"sign", "rect": _rect_world(Rect2(104, 28, 40, 16)), "text": "TURNOS"})
+static func _dressing_sign(_specs: Array[Dictionary]) -> void:
+	# No wall sign: the mission ribbon already owns the top-centre band, and a second text
+	# block there competed with the HUD (docs/UX_BIBLE.md §5.4). Kept as a no-op so the
+	# dressing list stays stable for its tests.
+	pass
 
 
 static func _dressing_valves(specs: Array[Dictionary]) -> void:
@@ -771,7 +774,7 @@ func _draw_sign(rect: Rect2, text: String) -> void:
 	var pixel := 4.0
 	var pitch := 5.0 * pixel
 	var origin := Vector2(rect.position.x + 6.0, rect.position.y + 6.0)
-	var ink := Color(Palette.YEL_3.r, Palette.YEL_3.g, Palette.YEL_3.b, 0.92)
+	var ink := Color(Palette.YEL_2.r, Palette.YEL_2.g, Palette.YEL_2.b, 0.78)
 	for index in range(text.length()):
 		var glyph: Array = GLYPHS.get(text.substr(index, 1), [])
 		if glyph.is_empty():

@@ -507,7 +507,7 @@ func _maybe_spawn_starter_item() -> void:
 	if _player == null:
 		return
 	_starter_spawned = true
-	var position := (_player as Node2D).global_position + Vector2(0, -96)
+	var position := (_player as Node2D).global_position + Vector2(96, -24)
 	var item := spawn_item(
 		Config.STARTER_ITEM_ID,
 		Config.STARTER_ITEM_COLOR,

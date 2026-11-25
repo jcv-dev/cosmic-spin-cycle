@@ -90,6 +90,7 @@ var _stability_value: Label
 var _combo_label: Label
 var _score_label: Label
 var _objective_label: Label
+var _objective_text := ""
 var _reward_label: Label
 var _toast_label: Label
 var _grade_label: Label
@@ -556,7 +557,13 @@ func set_bpm(p_bpm: int) -> void:
 
 ## One line, max 46 chars; it shouts for 8 s and then settles to 55 % — it never disappears
 ## (docs/UX_BIBLE.md §5.3).
+## Raw objective string (tests, tutorial overlay handoff).
+func objective_text() -> String:
+	return _objective_text
+
+
 func set_objective(text: String) -> void:
+	_objective_text = text
 	var line := text.strip_edges()
 	if line.length() > OBJECTIVE_MAX_CHARS:
 		line = line.left(OBJECTIVE_MAX_CHARS)

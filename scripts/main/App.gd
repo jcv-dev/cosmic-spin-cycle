@@ -49,6 +49,7 @@ func _ready() -> void:
 	_setup_ambient()
 	Settings.settings_changed.connect(_on_settings_changed)
 	var boot := _boot_screen()
+	_arm_qa_hook()
 	if boot == &"shift" or boot == &"tutorial":
 		start_shift(boot == &"tutorial")
 	else:
@@ -549,6 +550,34 @@ func _stop_ambient() -> void:
 func _on_settings_changed() -> void:
 	if _ambient != null:
 		_ambient.volume_db = -16.0
+
+
+## Dev-only: `--qa=pause|end|firstrun|tutorial_end` drives a screen for screenshots.
+func _arm_qa_hook() -> void:
+	for argument in OS.get_cmdline_user_args():
+		if not argument.begins_with("--qa="):
+			continue
+		var mode := argument.trim_prefix("--qa=")
+		_qa_after(1.2, mode)
+
+
+func _qa_after(delay: float, mode: String) -> void:
+	await get_tree().create_timer(delay, true).timeout
+	match mode:
+		"pause":
+			pause_game()
+		"end":
+			GameState.add_stability(-500.0, "qa")
+		"firstrun":
+			Settings.tutorial_completed = false
+			Settings.tutorial_skipped = false
+			Settings.first_run_done = false
+			_show_first_run_prompt()
+		"tutorial_end":
+			Settings.mark_tutorial_completed()
+			show_title(true)
+		_:
+			pass
 
 
 func _boot_screen() -> StringName:

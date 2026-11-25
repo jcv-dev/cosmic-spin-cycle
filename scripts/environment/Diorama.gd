@@ -34,6 +34,10 @@ const TURBULENT_EVERY_S := 12.0
 ## Pip's breathing period in seconds (1 art px of travel).
 const BREATH_PERIOD_S := 2.6
 
+## Shifts the drifting framing without touching the authored home; the title screen uses it
+## to move the chute out from under the menu column.
+@export var focus_offset := Vector2.ZERO
+
 var camera: Camera2D
 var nodes: Dictionary = {}
 var machines: Dictionary = {}
@@ -293,7 +297,7 @@ func _drift_camera() -> void:
 		return
 	var phase := TAU * _elapsed / PAN_PERIOD_S
 	var offset := Vector2(roundf(sin(phase) * PAN_X), roundf(sin(phase * 0.7) * PAN_Y))
-	camera.position = (CAMERA_HOME + offset + _intro_offset).round()
+	camera.position = (CAMERA_HOME + focus_offset + offset + _intro_offset).round()
 	if _intro_tween == null or not _intro_tween.is_running():
 		camera.zoom = Vector2(CAMERA_ZOOM, CAMERA_ZOOM)
 

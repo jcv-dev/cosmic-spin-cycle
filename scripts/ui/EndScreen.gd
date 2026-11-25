@@ -178,7 +178,6 @@ func _build() -> void:
 	_animate_rank(rank_label)
 
 	_build_ledger(plaque, data)
-	_build_rank_ladder(plaque, rank)
 
 	var rhythm := UITheme.label(_rhythm_text(data), UITheme.FONT_SMALL, Palette.METAL_2)
 	rhythm.name = "Rhythm"
@@ -322,41 +321,11 @@ func _rule(parent: Control, y: float) -> void:
 	parent.add_child(rule)
 
 
-## S · A · B · C under the big letter: the end screen also teaches what the ranks mean.
-func _build_rank_ladder(parent: Control, rank: String) -> void:
-	var caption := UITheme.label("ESCALA", UITheme.FONT_SMALL, Palette.METAL_1)
-	caption.name = "LadderCaption"
-	caption.position = Vector2(CONTENT_X, LADDER_CAPTION_Y) - PLAQUE.position
-	parent.add_child(caption)
-	var letters: Array[String] = ["S", "A", "B", "C"]
-	for index in range(letters.size()):
-		var letter := letters[index]
-		var achieved := letter == rank
-		var color_value: Variant = RANK_COLORS.get(letter)
-		var color: Color = color_value if color_value is Color else Palette.METAL_1
-		var label := (
-			UITheme
-			. label(
-				letter,
-				UITheme.FONT_LABEL if achieved else UITheme.FONT_SMALL,
-				color if achieved else Color(Palette.METAL_2, 0.82),
-				achieved,
-			)
-		)
-		label.name = "Ladder%s" % letter
-		label.position = (
-			Vector2(CONTENT_X + float(index) * LADDER_STEP, LADDER_Y) - PLAQUE.position
-		)
-		parent.add_child(label)
-
-
-## Ledger: four primary numbers (LAVADAS, PRECISIÓN, COMBO MÁX, PUNTOS) read first, then
-## ENTREGADAS and SEMILLA one step smaller — same six values, explicit hierarchy.
 func _build_ledger(parent: Control, data: Dictionary) -> void:
 	var values := [
 		str(int(data.get("washed", 0))),
 		str(int(data.get("delivered", 0))),
-		"%d %%" % int(round(float(data.get("accuracy", 0.0)) * 100.0)),
+		"%d/100" % int(round(float(data.get("accuracy", 0.0)) * 100.0)),
 		"×%d" % int(data.get("max_combo", 1)),
 		_format_score(int(data.get("score", 0))),
 		"#%05d" % (int(data.get("seed", 0)) & 0x7FFFFFFF),
