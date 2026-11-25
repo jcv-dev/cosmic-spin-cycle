@@ -38,7 +38,7 @@ no suitable CC0 source existed). Details and hashes: `docs/PROVENANCE.md`.
 | `ui_icons` | 8x8 | 3 | 3 | planned | TBD | TBD |
 | `ui_reticle` | 16x16 | 1 | 1 | planned | TBD | TBD |
 | `ui_logo` | 160x48 | 1 | 1 | planned | TBD | TBD |
-| `mach_washer` | 48x48 | 6 | 17 | planned | TBD | TBD |
+| `mach_washer` | 48x48 | 6 | 17 | built | composed | kenney-industrial console + authored chassis |
 
 ## Totals
 
