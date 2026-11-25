@@ -22,15 +22,18 @@ const PUDDLES := [Vector2(112, 62), Vector2(206, 130)]
 ## Albedo multiplier for the display machines: the cabinets must stay secondary to the chute.
 const MACHINE_ALBEDO := Color(0.87, 0.88, 0.93)
 
-## 4×5 pixel font for the wall sign. Only the six glyphs the sign needs.
+## 3×5 pixel font for the wall sign. Six letters at a 4 px pitch = 24 art px = 96 world px,
+## which is the ceiling the HUD leaves for a wall sign.
 const GLYPHS := {
-	"T": ["1111", "0010", "0010", "0010", "0010"],
-	"U": ["1001", "1001", "1001", "1001", "0110"],
-	"R": ["1110", "1001", "1110", "1010", "1001"],
-	"N": ["1001", "1101", "1011", "1001", "1001"],
-	"O": ["0110", "1001", "1001", "1001", "0110"],
-	"S": ["0111", "1000", "0110", "0001", "1110"],
+	"T": ["111", "010", "010", "010", "010"],
+	"U": ["101", "101", "101", "101", "111"],
+	"R": ["111", "101", "110", "101", "101"],
+	"N": ["101", "111", "111", "101", "101"],
+	"O": ["111", "101", "101", "101", "111"],
+	"S": ["111", "100", "111", "001", "111"],
 }
+## Sign footprint in art px: 24 × 9 (96 × 36 world px), on the top band above the washers.
+const SIGN_RECT := Rect2(48, 12, 24, 9)
 
 static var _overlay_texture: ImageTexture = null
 
@@ -530,7 +533,7 @@ static func _dressing_props(specs: Array[Dictionary]) -> void:
 
 
 static func _dressing_sign(specs: Array[Dictionary]) -> void:
-	specs.append({"kind": &"sign", "rect": _rect_world(Rect2(104, 28, 40, 16)), "text": "TURNOS"})
+	specs.append({"kind": &"sign", "rect": _rect_world(SIGN_RECT), "text": "TURNOS"})
 
 
 static func _dressing_valves(specs: Array[Dictionary]) -> void:
@@ -591,11 +594,15 @@ func _draw_valve(center: Vector2, radius: float, color: Color) -> void:
 
 
 func _draw_sign(rect: Rect2, text: String) -> void:
-	draw_rect(rect, Color(Palette.SPACE_DEEP.r, Palette.SPACE_DEEP.g, Palette.SPACE_DEEP.b, 0.95))
-	draw_rect(rect, Color(Palette.METAL_1.r, Palette.METAL_1.g, Palette.METAL_1.b, 0.9), false, 2.0)
+	# Paper is metal_2, never white: the sign is set dressing, the HUD owns the bright type.
+	draw_rect(rect, Color(Palette.METAL_2.r, Palette.METAL_2.g, Palette.METAL_2.b, 0.92))
+	draw_rect(
+		rect, Color(Palette.METAL_1.r, Palette.METAL_1.g, Palette.METAL_1.b, 0.95), false, 2.0
+	)
 	var pixel := 4.0
-	var origin := Vector2(rect.position.x + 6.0, rect.position.y + 6.0)
-	var ink := Color(Palette.YEL_3.r, Palette.YEL_3.g, Palette.YEL_3.b, 0.92)
+	var pitch := 4.0 * pixel
+	var origin := rect.position + Vector2(pixel, pixel + 2.0)
+	var ink := Color(Palette.SPACE_DEEP.r, Palette.SPACE_DEEP.g, Palette.SPACE_DEEP.b, 0.92)
 	for index in range(text.length()):
 		var glyph: Array = GLYPHS.get(text.substr(index, 1), [])
 		for row in range(glyph.size()):
@@ -603,9 +610,7 @@ func _draw_sign(rect: Rect2, text: String) -> void:
 			for column in range(bits.length()):
 				if bits[column] != "1":
 					continue
-				var at := Vector2(
-					float(column) * pixel + float(index) * 5.0 * pixel, float(row) * pixel
-				)
+				var at := Vector2(float(index) * pitch + float(column) * pixel, float(row) * pixel)
 				draw_rect(Rect2(origin + at, Vector2(pixel, pixel)), ink)
 
 
