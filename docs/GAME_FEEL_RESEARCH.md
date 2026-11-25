@@ -29,7 +29,7 @@ Movement today is "functional and lifeless" for a measurable reason: **the numbe
 | Event → physics tick | 0–16.7 ms | `_input()` fires immediately; `_physics_process` waits for the tick |
 | Render + present | 16.7–33 ms | 1–2 frames |
 | Display scan-out | 8–16 ms | panel-dependent |
-| **Total** | **~50–75 ms** | ±65 ms PERFECT window ⇒ **we are grading near the noise floor** |
+| **Total** | **~50–75 ms typical, ~90 ms worst case** | ±65 ms PERFECT window ⇒ **we are grading near the noise floor** |
 
 Two rules follow. **(a)** Keep rhythm evaluation in `_input()` (already `AGENTS.md` §A2.7) and set `input_devices/buffering/agile_event_flushing` or disable `use_accumulated_input` for the gameplay window, then re-measure. **(b)** Log `Input.get_ticks_usec()` at press and at grade emission; if the delta exceeds **25 ms** on the dev box, the tuning is invalid.
 
@@ -56,16 +56,16 @@ Our current tuning reaches vmax in **142 ms / 24 px** (340 ÷ 2400; 340² ÷ 2a)
 | `MAX_SPEED` px/s | 360 | **340** | 300 |
 | Friction factor / frame | 0.92 | **0.80** | 0.86 |
 | Time to vmax | 225 ms | **142 ms** | 250 ms |
-| Stop distance / time to 10 % | 71 px / 437 ms | **28 px / 172 ms** | 40 px / 274 ms |
-| Turn-around (180°) | 450 ms | **142 ms → ~85 ms with ×2 opposing accel** | 500 ms |
+| Stop distance / time to 10 % (own max speed) | 75 px / 460 ms | **28 px / 172 ms** | 36 px / 254 ms |
+| Turn-around (180°) | 450 ms | **283 ms → 212 ms with ×2 opposing accel** | 500 ms |
 | Dash | 120 px / 0.18 s | **same, +1 frame squash** | 100 px / 0.20 s |
 | Reads as | slippery, low stakes | **arcade, readable, forgiving** | heavy, deliberate, punishes |
 
-**Recommendation: B, with a turn-around boost.** Reasoning: the loop is 4.4–6.0 beats long (UX doc §12), so the player changes direction 3–6 times per delivery; at 0.92 friction each reversal costs 437 ms ≈ 0.8–1.0 beat of drift, which is exactly the beat the player is trying to hit. B halves that, and the ×2 opposing acceleration (4800 px/s² when input opposes velocity) cuts a full reversal to ~85 ms — **under one beat at every BPM**, so a correction never eats the next hit.
+**Recommendation: B, with a turn-around boost.** Reasoning: the loop is 4.4–6.0 beats long (UX doc §12), so the player changes direction 3–6 times per delivery; at 0.92 friction each reversal costs 450 ms ≈ 0.79–1.06 beat of drift — a full beat at 142 BPM, which is exactly the beat the player is trying to hit. B roughly halves that (283 ms), and the ×2 opposing acceleration (4800 px/s² while input opposes velocity) cuts it to **212 ms, i.e. 0.37–0.50 of a beat**, so a correction never eats the next hit.
 
-**Why these three and not something else.** Swink frames feel as "real-time control of virtual objects in a simulated space, with interactions emphasised by polish" ([S22](UX_RESEARCH_SOURCES.md#s22)) — control, space, polish. A top-down game has no gravity axis, so two famous answers do not transfer: **Sonic-style momentum** (slope-and-slope-curve acceleration) has nothing to conserve, and **Mario's parabola** (asymmetric rise/fall, terminal velocity) has no fall. What is left is *horizontal* control: how fast velocity is granted, revoked, and reversed. The three profiles above are exactly that triangle.
+**Why these three and not something else.** Swink frames feel as "real-time control of virtual objects in a simulated space, with interactions emphasised by polish" ([S22](UX_RESEARCH_SOURCES.md#s22)) — control, space, polish. A top-down game has no gravity axis, so two famous answers do not transfer: **Sonic-style momentum** (slope- and curve-driven acceleration) has nothing to conserve, and **Mario's parabola** (asymmetric rise/fall, terminal velocity) has no fall. What is left is *horizontal* control: how fast velocity is granted, revoked, and reversed. The three profiles above are exactly that triangle.
 
-Also required regardless of profile: **normalise 8-way input** (diagonal must be 340, not 481 px/s), and shape the analog stick with a radial deadzone of **0.20** and `v' = ((m − d)/(1 − d))^1.15` so the first 30 % of stick travel is not a light switch. `Input.get_vector()` already applies a circular deadzone ([S24](UX_RESEARCH_SOURCES.md#s24)) — use it instead of hand-rolled axis math.
+Also required regardless of profile: **normalise 8-way input** (diagonal must be 340, not 481 px/s), and shape the analog stick with a radial deadzone of **0.20** plus `v' = ((m − d)/(1 − d))^1.15`, so the first 30 % of travel is fine control rather than a light switch. `Input.get_vector()` already applies a circular deadzone ([S24](UX_RESEARCH_SOURCES.md#s24)) — use it instead of hand-rolled axis math.
 
 ---
 
@@ -76,8 +76,8 @@ Fixed camera is the right choice for a 320×180 room (it prevents shimmer and ke
 | Element | Spec | Source / note |
 |---|---|---|
 | Base | `Camera2D` at (640, 360), never moves off-centre by more than 48 px | keeps every washer on screen |
-| Lead | `lead = clamp(velocity × 0.12 s, 48 px)` → 40.8 px at full speed | **[inference]** 0.12 s ≈ 2.4 frames of look-ahead at 340 px/s |
-| Deadzone | 32 × 32 px box around centre | prevents micro-jitter from the hold spring |
+| Lead | `lead = clamp(velocity × 0.12 s, 48 px)` → 41 px at full speed | **[inference]** 0.12 s = 7 frames; 41 px = 10 art px of look-ahead |
+| Deadzone | 32 × 32 px box around centre (±16 px per axis) | prevents micro-jitter from the hold spring |
 | Smoothing | `x = lerp(x, target, 1 − exp(−k·dt))`, **k = 10** | critically damped, frame-rate independent; never `lerp(a, b, 0.1)` per frame |
 | Trauma | `trauma = clamp(trauma + amount, 0, 1)`; `shake = trauma²`; `offset = noise(t) × shake × max_offset` | Eiserloh's model as implemented in [S23](UX_RESEARCH_SOURCES.md#s23): decay 0.5/s, exponent 2.0, "camera shakes don't feel punchy when they go up linearly" |
 | Decay | **1.5 / s** (a 0.4 hit is gone in 267 ms) | faster than the 2 s default because our events are shorter |
@@ -90,10 +90,11 @@ Fixed camera is the right choice for a 320×180 room (it prevents shimmer and ke
 | Zoom punch | **none** | a 1.05× zoom is an off-integer scale on a 320×180 canvas and shimmers (UX doc §4) |
 
 ```gdscript
-# Camera feel — the only three lines that matter. 4 px = 1 art px.
+# Camera feel. 4 px = 1 art px.
 func _process(dt: float) -> void:
     var target := base + (velocity * LEAD_S).limit_length(MAX_LEAD)   # LEAD_S = 0.12, MAX_LEAD = 48
-    if target.distance_to(base) < DEADZONE:                            # DEADZONE = 32 px box
+    if absf(target.x - base.x) < DEADZONE_HALF \
+            and absf(target.y - base.y) < DEADZONE_HALF:               # DEADZONE_HALF = 16
         target = base
     position = position.lerp(target, 1.0 - exp(-SMOOTH_K * dt))        # SMOOTH_K = 10, frame-rate independent
     trauma = maxf(trauma - TRAUMA_DECAY * dt, 0.0)                     # TRAUMA_DECAY = 1.5 /s
@@ -218,5 +219,3 @@ Sprites cannot rotate (§A7/§B3), so all motion character must come from *offse
 - **P2 — polish**
   9. Footsteps on the half-beat + ±6 % SFX pitch variation (never on stems).
   10. Aim assist: 12° cone / 8° max correction / reticle state colours; verify it is invisible in playtest.
-
-<!-- END -->
