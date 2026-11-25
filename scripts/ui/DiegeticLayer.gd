@@ -35,6 +35,17 @@ const STATE_WASHER_OK := &"washer_ok"
 const STATE_WASHER_NO := &"washer_no"
 const STATE_CHUTE := &"chute"
 
+## Contextual prompt + held-item chip (docs/UX_BIBLE.md §6.5, §6.6).
+const PROMPT_DY := -112.0
+const PROMPT_KIND_NONE := &"none"
+const PROMPT_KIND_THROW := &"throw"
+const PROMPT_KIND_GRAB := &"grab"
+const PROMPT_KIND_STRIKE := &"strike"
+const ITEM_CHIP_DY := 30.0
+const ITEM_TAG_DY := -22.0
+const NOW_DY := 30.0
+const ITEM_CHIP_MAX_CHARS := 26
+
 const WASHER_TURBULENT := 2
 const COMPAT_SCRIPT := "res://scripts/logic/Compatibility.gd"
 
@@ -60,6 +71,10 @@ var _target: Node = null
 var _reticle_state := STATE_NONE
 var _chute_ok := true
 var _compat: Script = null
+var _prompt := ""
+var _prompt_kind := PROMPT_KIND_NONE
+var _gamepad_seen := false
+var _gamepad_forced := -1
 
 
 func _ready() -> void:
@@ -100,6 +115,7 @@ func _update(_delta: float) -> void:
 	_aim = _player_aim()
 	_update_held()
 	_update_target()
+	_update_prompt()
 	_update_ring()
 
 
@@ -257,6 +273,135 @@ static func _property_name(node: Node, property: String, fallback: StringName = 
 	return StringName(str(value))
 
 
+# --- Contextual prompt ------------------------------------------------------
+
+
+## Last-input-device tracking: the prompt switches to Ⓐ / Ⓧ only when a pad is connected and
+## actually produced the most recent event (docs/UX_BIBLE.md §6.5).
+func _input(event: InputEvent) -> void:
+	if event is InputEventJoypadButton:
+		_gamepad_seen = true
+	elif event is InputEventJoypadMotion:
+		if absf((event as InputEventJoypadMotion).axis_value) > 0.5:
+			_gamepad_seen = true
+	elif event is InputEventKey or event is InputEventMouseButton:
+		_gamepad_seen = false
+
+
+## Overrides device detection (tests, and the design-time sandbox).
+func set_gamepad_hint(enabled: bool) -> void:
+	_gamepad_forced = 1 if enabled else 0
+	_prompt_kind = PROMPT_KIND_NONE
+	_update_prompt()
+	_dirty = true
+
+
+func _use_gamepad() -> bool:
+	if _gamepad_forced >= 0:
+		return _gamepad_forced == 1
+	return _gamepad_seen and not Input.get_connected_joypads().is_empty()
+
+
+## One prompt at a time, priority: you are carrying → throw; an item is close → grab; a
+## turbulent washer is close → strike (docs/UX_BIBLE.md §6.5).
+func _update_prompt() -> void:
+	var kind := PROMPT_KIND_NONE
+	if _held != null:
+		kind = PROMPT_KIND_THROW
+	elif _nearest_item(Config.GRAB_RADIUS) != null:
+		kind = PROMPT_KIND_GRAB
+	elif _nearest_turbulent(Config.STRIKE_RANGE_PX) != null:
+		kind = PROMPT_KIND_STRIKE
+	if kind == _prompt_kind:
+		return
+	_prompt_kind = kind
+	_prompt = _prompt_for(kind)
+	_dirty = true
+
+
+func _prompt_for(kind: StringName) -> String:
+	var action := "Ⓐ" if _use_gamepad() else "ESPACIO"
+	var strike := "Ⓧ" if _use_gamepad() else "SHIFT"
+	match kind:
+		PROMPT_KIND_THROW:
+			return "%s · %s" % [action, tr("LANZAR")]
+		PROMPT_KIND_GRAB:
+			return "%s · %s" % [action, tr("AGARRAR")]
+		PROMPT_KIND_STRIKE:
+			return "%s · %s" % [strike, tr("GOLPE")]
+		_:
+			return ""
+
+
+func _nearest_item(radius: float) -> Node:
+	if _player == null:
+		return null
+	var origin := _player.global_position
+	var best: Node = null
+	var best_distance := radius
+	for item in _items:
+		if not is_instance_valid(item) or item == _held:
+			continue
+		if bool(item.get("is_held")):
+			continue
+		var body := item as Node2D
+		if body == null:
+			continue
+		var distance := origin.distance_to(body.global_position)
+		if distance <= best_distance:
+			best_distance = distance
+			best = item
+	return best
+
+
+func _nearest_turbulent(radius: float) -> Node:
+	if _player == null:
+		return null
+	var origin := _player.global_position
+	for washer in _washers:
+		if not is_instance_valid(washer):
+			continue
+		if _washer_state(washer) != WASHER_TURBULENT:
+			continue
+		if origin.distance_to(_mouth_of(washer)) <= radius:
+			return washer
+	return null
+
+
+func _washer_state(washer: Node) -> int:
+	if not washer.has_method("get_state"):
+		return -1
+	var value: Variant = washer.call("get_state")
+	return int(value) if value != null else -1
+
+
+func _item_points(item: Node) -> int:
+	if item == null:
+		return 0
+	var data: Variant = item.get("data")
+	if data is Object and (data as Object).get("points") != null:
+		return int((data as Object).get("points"))
+	var direct: Variant = item.get("points")
+	return int(direct) if direct != null else 0
+
+
+## `ROJO · LISO · 100` — the single most important teaching object (docs/UX_BIBLE.md §6.6).
+func _item_chip_text(item: Node) -> String:
+	if item == null:
+		return ""
+	var text := (
+		"%s · %s"
+		% [
+			HudGlyphs.color_text(_property_name(item, "color")),
+			HudGlyphs.pattern_text(_property_name(item, "pattern")),
+		]
+	)
+	var points := _item_points(item)
+	if points > 0:
+		text = "%s · %d" % [text, points]
+	return text.left(ITEM_CHIP_MAX_CHARS)
+
+
 # --- Beat ring --------------------------------------------------------------
 
 
@@ -311,6 +456,9 @@ func _draw() -> void:
 			draw_line(to_local(origin), to_local(_mouth_of(_target)), tracer, TRACER_WIDTH, false)
 	_draw_ring(to_local(origin))
 	_draw_reticle(to_local(reticle))
+	_draw_held_chip(to_local(origin))
+	_draw_prompt(to_local(origin + Vector2(0.0, PROMPT_DY)))
+	_draw_now(to_local(origin + Vector2(0.0, NOW_DY)))
 
 
 func _draw_reticle(center: Vector2) -> void:
@@ -339,6 +487,46 @@ func _draw_reticle(center: Vector2) -> void:
 			var idle := Palette.METAL_2
 			idle.a = 0.6
 			HudGlyphs.draw_cross(self, center, RETICLE_RADIUS, idle, 1.0)
+
+
+func _draw_prompt(center: Vector2) -> void:
+	if _prompt == "":
+		return
+	_draw_text_chip(_prompt, center, Palette.METAL_4)
+
+
+## The chip sits under the held item, so the label and the object it describes move together.
+func _draw_held_chip(origin: Vector2) -> void:
+	if _held == null:
+		return
+	var text := _item_chip_text(_held)
+	if text == "":
+		return
+	var anchor := _held_anchor(origin)
+	var chip_center := anchor + Vector2(0.0, ITEM_CHIP_DY)
+	var ink := Palette.METAL_4
+	if bool(_held.get("is_clean")):
+		ink = Palette.CLEAN_GREEN
+		_draw_text_chip(tr("LIMPIA"), anchor + Vector2(0.0, ITEM_TAG_DY), Palette.CLEAN_GREEN)
+	_draw_text_chip(text, chip_center, ink)
+
+
+func _held_anchor(origin: Vector2) -> Vector2:
+	if _player != null and _player.has_method("get_hold_position"):
+		var value: Variant = _player.call("get_hold_position")
+		if value is Vector2:
+			return to_local(value as Vector2)
+	return origin + _aim * Config.HOLD_DISTANCE
+
+
+## `¡AHORA!` only while the player actually holds something and the PERFECT window is open.
+func _draw_now(center: Vector2) -> void:
+	if _held == null or not BeatConductor.is_playing:
+		return
+	var delta := BeatConductor.delta_to_nearest_beat(BeatConductor.get_song_time())
+	if delta > Config.WINDOW_PERFECT_S:
+		return
+	_draw_text_chip(tr("¡AHORA!"), center, Palette.FUNK_CYAN)
 
 
 ## A flat world-space chip: `space_void` fill, 1 px border, Silkscreen Bold 12.
@@ -386,6 +574,14 @@ func ring_alpha() -> float:
 	return _ring_alpha
 
 
+func prompt_text() -> String:
+	return _prompt
+
+
+func item_chip_text() -> String:
+	return _item_chip_text(_held)
+
+
 func reticle_state() -> StringName:
 	return _reticle_state
 
@@ -401,6 +597,8 @@ func state_readout() -> Dictionary:
 		"chute_ok": _chute_ok,
 		"has_target": target() != null,
 		"has_held": _held != null,
+		"prompt": _prompt,
+		"prompt_kind": _prompt_kind,
 		"ring_radius": _ring_radius,
 		"ring_width": _ring_width,
 		"ring_alpha": _ring_alpha,

@@ -1,81 +1,13 @@
 extends GutTest
-## DiegeticLayer contract: it boots with no world, finds the world by group, and the beat ring
-## stays inside its radius band (docs/UX_BIBLE.md §6.4, docs/HUD.md).
+## DiegeticLayer world contract: it boots with no world, finds the world by group, keeps the
+## beat ring inside its band and classifies the reticle destination
+## (docs/UX_BIBLE.md §6.3–§6.4, docs/HUD.md).
 
+const Fakes := preload("res://tests/unit/support/diegetic_fakes.gd")
 const LAYER_SCENE := preload("res://scenes/ui/DiegeticLayer.tscn")
 
-
-class FakePlayer:
-	extends Node2D
-	var held_item: Node = null
-	var aim_direction := Vector2.RIGHT
-
-	func _ready() -> void:
-		add_to_group(Config.GROUP_PLAYER)
-
-	func get_aim_direction() -> Vector2:
-		return aim_direction
-
-	func get_hold_position() -> Vector2:
-		return global_position + aim_direction * Config.HOLD_DISTANCE
-
-
-class FakeWasher:
-	extends Node2D
-	var requirement: StringName = &"red"
-	var state := 0
-	var locked := false
-
-	func _ready() -> void:
-		add_to_group(Config.GROUP_WASHERS)
-
-	func get_requirement() -> StringName:
-		return requirement
-
-	func get_state() -> int:
-		return state
-
-	func is_locked() -> bool:
-		return locked
-
-	func get_progress() -> float:
-		return 0.0
-
-	func get_mouth_world() -> Vector2:
-		return global_position
-
-	func strike(_grade: int) -> void:
-		pass
-
-
-class FakeChute:
-	extends Node2D
-
-	func _ready() -> void:
-		add_to_group(Config.GROUP_CHUTE)
-
-	func try_deliver(_item: Node) -> bool:
-		return true
-
-
-class FakeItem:
-	extends Node2D
-	var item_id: StringName = &"rocky"
-	var color: StringName = &"red"
-	var pattern: StringName = &"solid"
-	var is_held := false
-	var is_clean := false
-	var data: ItemData = null
-
-	func _ready() -> void:
-		add_to_group(Config.GROUP_ITEMS)
-
-
-var _world: Node2D
-var _layer: Node2D
-var _player: FakePlayer
-var _washers: Array[FakeWasher] = []
-var _chute: FakeChute
+var world: Fakes.World
+var layer: Node2D
 
 
 func before_each() -> void:
@@ -86,12 +18,10 @@ func before_each() -> void:
 	BeatConductor.set_stream(null, 0.0)
 	BeatConductor.set_process(false)
 	Settings.reduce_motion = false
-	_world = Node2D.new()
-	_world.name = "TestWorld"
-	add_child_autofree(_world)
-	_washers.clear()
-	_player = null
-	_chute = null
+	world = Fakes.World.new()
+	world.name = "DiegeticTestWorld"
+	add_child_autofree(world)
+	layer = null
 
 
 func after_each() -> void:
@@ -102,44 +32,9 @@ func after_each() -> void:
 
 ## Adds the layer after the world actors, so its `_ready` sees the groups.
 func _add_layer() -> Node2D:
-	_layer = LAYER_SCENE.instantiate() as Node2D
-	_world.add_child(_layer)
-	return _layer
-
-
-func _add_player(at: Vector2 = Vector2(640, 360)) -> FakePlayer:
-	_player = FakePlayer.new()
-	_player.position = at
-	_world.add_child(_player)
-	return _player
-
-
-func _add_washer(at: Vector2, requirement: StringName = &"red") -> FakeWasher:
-	var washer := FakeWasher.new()
-	washer.position = at
-	washer.requirement = requirement
-	_world.add_child(washer)
-	_washers.append(washer)
-	return washer
-
-
-func _add_chute(at: Vector2) -> FakeChute:
-	_chute = FakeChute.new()
-	_chute.position = at
-	_world.add_child(_chute)
-	return _chute
-
-
-func _add_item(at: Vector2, color: StringName = &"red") -> FakeItem:
-	var item := FakeItem.new()
-	item.position = at
-	item.color = color
-	_world.add_child(item)
-	return item
-
-
-func _hold(item: Node) -> void:
-	_player.held_item = item
+	layer = LAYER_SCENE.instantiate() as Node2D
+	world.add_child(layer)
+	return layer
 
 
 # --- Boot -------------------------------------------------------------------
@@ -147,23 +42,23 @@ func _hold(item: Node) -> void:
 
 func test_layer_boots_with_no_player_and_no_washers() -> void:
 	_add_layer()
-	assert_false(_layer.has_player())
-	var state: Dictionary = _layer.state_readout()
+	assert_false(layer.has_player())
+	var state: Dictionary = layer.state_readout()
 	assert_eq(state["washers"], 0)
 	assert_eq(state["items"], 0)
 	assert_false(state["has_chute"])
-	assert_between(_layer.ring_radius(), 42.0, 70.0, "ring radius stays in its band")
-	_layer.advance(0.5)
-	assert_false(_layer.has_player(), "still no player, still no crash")
+	assert_between(layer.ring_radius(), 42.0, 70.0, "ring radius stays in its band")
+	layer.advance(0.5)
+	assert_false(layer.has_player(), "still no player, still no crash")
 
 
 func test_layer_finds_the_world_by_group() -> void:
-	_add_player()
-	_add_washer(Vector2(900, 360))
-	_add_chute(Vector2(640, 200))
-	_add_item(Vector2(600, 360))
+	world.add_player()
+	world.add_washer(Vector2(900, 360))
+	world.add_chute(Vector2(640, 200))
+	world.add_item(Vector2(600, 360))
 	_add_layer()
-	var state: Dictionary = _layer.state_readout()
+	var state: Dictionary = layer.state_readout()
 	assert_true(state["has_player"])
 	assert_eq(state["washers"], 1)
 	assert_eq(state["items"], 1)
@@ -172,135 +67,122 @@ func test_layer_finds_the_world_by_group() -> void:
 
 func test_refresh_now_picks_up_a_late_player() -> void:
 	_add_layer()
-	assert_false(_layer.has_player())
-	_add_player()
-	_layer.refresh_now()
-	assert_true(_layer.has_player(), "the 0.5 s rescan is also available on demand")
+	assert_false(layer.has_player())
+	world.add_player()
+	layer.refresh_now()
+	assert_true(layer.has_player(), "the 0.5 s rescan is also available on demand")
 
 
 # --- Pulse ring -------------------------------------------------------------
 
 
 func test_ring_contracts_between_beats() -> void:
-	_add_player()
+	world.add_player()
 	_add_layer()
 	BeatConductor.start(105)
 	var beat := BeatConductor.beat_seconds()
 	BeatConductor.advance_clock(beat * 0.1)
-	_layer.refresh_now()
-	var early: float = _layer.ring_radius()
+	layer.refresh_now()
+	var early: float = layer.ring_radius()
 	BeatConductor.advance_clock(beat * 0.6)
-	_layer.refresh_now()
-	var late: float = _layer.ring_radius()
+	layer.refresh_now()
+	var late: float = layer.ring_radius()
 	assert_between(early, 42.0, 70.0)
 	assert_between(late, 42.0, 70.0)
 	assert_lt(late, early, "the ring contracts toward the next beat")
 
 
 func test_ring_snaps_wide_and_thick_on_the_beat() -> void:
-	_add_player()
+	world.add_player()
 	_add_layer()
 	BeatConductor.start(105)
 	BeatConductor.advance_clock(BeatConductor.beat_seconds())
-	_layer.refresh_now()
-	assert_almost_eq(_layer.ring_radius(), 70.0, 0.5, "wide at the beat")
-	assert_almost_eq(_layer.ring_width(), 4.0, 0.01, "thick inside the PERFECT window")
-	assert_gte(_layer.ring_alpha(), 0.7)
+	layer.refresh_now()
+	assert_almost_eq(layer.ring_radius(), 70.0, 0.5, "wide at the beat")
+	assert_almost_eq(layer.ring_width(), 4.0, 0.01, "thick inside the PERFECT window")
+	assert_gte(layer.ring_alpha(), 0.7)
 
 
 func test_reduce_motion_keeps_the_ring_static_but_readable() -> void:
 	Settings.reduce_motion = true
-	_add_player()
+	world.add_player()
 	_add_layer()
 	BeatConductor.start(105)
 	BeatConductor.advance_clock(BeatConductor.beat_seconds() * 0.2)
-	_layer.refresh_now()
-	var first_radius: float = _layer.ring_radius()
-	var first_alpha: float = _layer.ring_alpha()
-	BeatConductor.advance_clock(BeatConductor.beat_seconds() * 0.5)
-	_layer.refresh_now()
-	assert_almost_eq(_layer.ring_radius(), first_radius, 0.01, "no scale snap")
-	assert_ne(_layer.ring_alpha(), first_alpha, "information moves to alpha instead")
-	assert_almost_eq(_layer.ring_width(), 2.0, 0.01)
+	layer.refresh_now()
+	var first_radius: float = layer.ring_radius()
+	var first_alpha: float = layer.ring_alpha()
+	BeatConductor.advance_clock(BeatConductor.beat_seconds() * 0.2)
+	layer.refresh_now()
+	assert_almost_eq(layer.ring_radius(), first_radius, 0.01, "no scale snap")
+	assert_ne(layer.ring_alpha(), first_alpha, "information moves to alpha instead")
+	assert_almost_eq(layer.ring_width(), 2.0, 0.01)
 
 
 # --- Aim reticle ------------------------------------------------------------
 
 
 func test_no_target_without_a_held_item() -> void:
-	_add_player()
-	_add_washer(Vector2(840, 360), &"red")
+	world.add_player()
+	world.add_washer(Vector2(840, 360), &"red")
 	_add_layer()
 	assert_eq(
-		_layer.reticle_state(), "none", "the reticle points at a destination for what you carry"
+		layer.reticle_state(), "none", "the reticle points at a destination for what you carry"
 	)
-	assert_null(_layer.target())
+	assert_null(layer.target())
 
 
 func test_reticle_accepts_a_compatible_washer() -> void:
-	_add_player()
-	_add_washer(Vector2(840, 360), &"red")
+	world.add_player()
+	world.add_washer(Vector2(840, 360), &"red")
 	_add_layer()
-	var item := _add_item(Vector2(640, 360), &"red")
-	_hold(item)
-	_layer.refresh_now()
-	assert_eq(_layer.reticle_state(), "washer_ok")
-	assert_not_null(_layer.target())
+	world.hold(world.add_item(Vector2(640, 360), &"red"))
+	layer.refresh_now()
+	assert_eq(layer.reticle_state(), "washer_ok")
+	assert_not_null(layer.target())
 
 
 func test_reticle_rejects_an_incompatible_washer() -> void:
-	_add_player()
-	_add_washer(Vector2(840, 360), &"red")
+	world.add_player()
+	world.add_washer(Vector2(840, 360), &"red")
 	_add_layer()
-	var item := _add_item(Vector2(640, 360), &"blue")
-	_hold(item)
-	_layer.refresh_now()
-	assert_eq(_layer.reticle_state(), "washer_no")
+	world.hold(world.add_item(Vector2(640, 360), &"blue"))
+	layer.refresh_now()
+	assert_eq(layer.reticle_state(), "washer_no")
 
 
 func test_reticle_rejects_a_locked_washer() -> void:
-	_add_player()
-	var washer := _add_washer(Vector2(840, 360), &"red")
+	world.add_player()
+	var washer: Fakes.FakeWasher = world.add_washer(Vector2(840, 360), &"red")
 	washer.locked = true
 	_add_layer()
-	var item := _add_item(Vector2(640, 360), &"red")
-	_hold(item)
-	_layer.refresh_now()
-	assert_eq(_layer.reticle_state(), "washer_no")
+	world.hold(world.add_item(Vector2(640, 360), &"red"))
+	layer.refresh_now()
+	assert_eq(layer.reticle_state(), "washer_no")
 
 
-func test_reticle_turns_green_on_the_chute_with_a_clean_item() -> void:
-	_add_player()
-	_add_chute(Vector2(840, 360))
+func test_reticle_chute_states() -> void:
+	world.add_player()
+	world.add_chute(Vector2(840, 360))
 	_add_layer()
-	var item := _add_item(Vector2(640, 360), &"red")
+	var item: Fakes.FakeItem = world.add_item(Vector2(640, 360), &"red")
+	world.hold(item)
+	layer.refresh_now()
+	assert_eq(layer.reticle_state(), "chute")
+	assert_false(bool(layer.state_readout()["chute_ok"]), "a dirty piece cannot be delivered")
 	item.is_clean = true
-	_hold(item)
-	_layer.refresh_now()
-	assert_eq(_layer.reticle_state(), "chute")
-	assert_true(bool(_layer.state_readout()["chute_ok"]))
+	layer.refresh_now()
+	assert_eq(layer.reticle_state(), "chute")
+	assert_true(bool(layer.state_readout()["chute_ok"]), "a clean piece can")
 
 
-func test_chute_with_a_dirty_item_is_not_deliverable() -> void:
-	_add_player()
-	_add_chute(Vector2(840, 360))
+func test_the_destination_closest_to_the_aim_ray_wins() -> void:
+	world.add_player()
+	world.add_washer(Vector2(880, 360), &"red")
+	world.add_chute(Vector2(760, 360))
 	_add_layer()
-	var item := _add_item(Vector2(640, 360), &"red")
-	_hold(item)
-	_layer.refresh_now()
-	assert_eq(_layer.reticle_state(), "chute", "the chute is the target under the reticle")
-	assert_false(bool(_layer.state_readout()["chute_ok"]), "but it cannot accept a dirty piece")
-
-
-func test_the_closest_destination_wins() -> void:
-	_add_player()
-	_add_washer(Vector2(880, 360), &"red")
-	_add_chute(Vector2(760, 360))
-	_add_layer()
-	var item := _add_item(Vector2(640, 360), &"red")
+	var item: Fakes.FakeItem = world.add_item(Vector2(640, 360), &"red")
 	item.is_clean = true
-	_hold(item)
-	_layer.refresh_now()
-	assert_eq(
-		_layer.reticle_state(), "chute", "the destination closest to the aim ray wins"
-	)
+	world.hold(item)
+	layer.refresh_now()
+	assert_eq(layer.reticle_state(), "chute")
