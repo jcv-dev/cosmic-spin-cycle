@@ -44,8 +44,8 @@ func test_table_has_seven_gates_in_the_binding_order() -> void:
 
 
 func test_titles_match_the_frozen_copy() -> void:
-	assert_eq(STEPS.title_for(0), "MUÉVETE A LA PIEZA")
-	assert_eq(STEPS.title_for(1), "AGARRA LA PIEZA")
+	assert_eq(STEPS.title_for(0), "MUÉVETE AL PLANETA")
+	assert_eq(STEPS.title_for(1), "AGARRA EL PLANETA")
 	assert_eq(STEPS.title_for(2), "LANZA A LA LAVADORA")
 	assert_eq(STEPS.title_for(3), "LANZA A TIEMPO")
 	assert_eq(STEPS.title_for(4), "LAVADORA ROJA")
@@ -66,8 +66,8 @@ func test_every_prompt_fits_the_world_chip() -> void:
 
 
 func test_chip_text_reads_step_n_of_seven() -> void:
-	assert_eq(STEPS.chip_text(0), "PASO 1/7 · MUÉVETE A LA PIEZA")
-	assert_eq(STEPS.chip_text(1), "PASO 2/7 · AGARRA LA PIEZA")
+	assert_eq(STEPS.chip_text(0), "PASO 1/7 · MUÉVETE AL PLANETA")
+	assert_eq(STEPS.chip_text(1), "PASO 2/7 · AGARRA EL PLANETA")
 	assert_eq(STEPS.chip_text(6), "PASO 7/7 · ENTREGA EN LA TAPA")
 
 

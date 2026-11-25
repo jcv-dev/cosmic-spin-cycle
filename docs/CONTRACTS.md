@@ -105,8 +105,8 @@ API: `reset(seed: int = 0)`, `add_stability(delta: float, reason: String = "")`,
 `max_combo -> int`, `reset_rng(seed)`.
 
 Rules: combo starts ×1, `PERFECT +2`, `GOOD +1`, `MISS` resets to ×1, cap ×8. Combo
-multiplies delivery points (`item.points × combo`) and, at ×4 and ×8, adds +1 / +2 stability
-on delivery (`ScoreRules.delivery_stability`, D041). Stability
+multiplies delivery points (`item.points × combo`) and nothing else (owner: no stability
+reward, the game must not get easier; D042). Stability
 clamps 0…100; reaching 0 ends the shift as defeat (`reason = "stability"`). `accuracy()`
 = `(perfect + good) / max(rhythm_actions, 1)`.
 
@@ -197,6 +197,8 @@ Held item is steered in `_integrate_forces` to `player.pos + aim * HOLD_DISTANCE
 `held_item: Node`. One item at a time. Radius `Config.GRAB_RADIUS` (64 px).
 
 ### LaundryItem — `res://scenes/entities/LaundryItem.tscn`
+`celestial_name: String` — real catalogue name (Kepler-452b, Europa, Halley…) assigned by
+`CelestialNames.next_name(item_id)` and drawn 10 px under the sprite.
 Root `RigidBody2D`, `collision_layer = 4`, `collision_mask = 1|4`,
 `continuous_cd = CCD_MODE_CAST_SHAPE`, `contact_monitor = true`, `max_contacts_reported = 4`.
 Children: `Visual` (`Node2D`), `CollisionShape2D` (circle r≈data.radius), `SquelchPlayer`

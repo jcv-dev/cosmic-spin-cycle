@@ -225,7 +225,7 @@ func _build_hud() -> void:
 	if _tutorial:
 		hud.set_tutorial_mode(true)
 		hud.set_step(3, 7)
-		hud.set_objective(tr("ROJO · LISO — así se lee la pieza"))
+		hud.set_objective(tr("ROJO · LISO — así se lee el planeta"))
 
 
 ## `--tutorial` (after the tool's own `--`) renders the tutorial variant.

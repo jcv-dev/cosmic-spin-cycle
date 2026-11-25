@@ -54,6 +54,7 @@ var _guide_target := Vector2.ZERO
 var _guide_left := 0.0
 var _smears: Array[Dictionary] = []
 var _last_draw_offset := Vector2.INF
+var _caption: Label
 
 
 func _ready() -> void:
@@ -76,6 +77,34 @@ func configure(
 func set_clean(value: bool) -> void:
 	_clean = value
 	queue_redraw()
+
+
+## Catalogue name under the object: 10 px, centred, never covered by the sprite.
+func set_caption(text: String) -> void:
+	if text == "":
+		return
+	if _caption == null:
+		_caption = Label.new()
+		_caption.name = "CelestialName"
+		_caption.add_theme_font_override("font", Fonts.pixel_font())
+		_caption.add_theme_font_size_override("font_size", 10)
+		_caption.add_theme_color_override("font_color", Palette.METAL_2)
+		_caption.add_theme_color_override("font_shadow_color", Palette.SPACE_VOID)
+		_caption.add_theme_constant_override("shadow_offset_x", 1)
+		_caption.add_theme_constant_override("shadow_offset_y", 1)
+		_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_caption.size = Vector2(120, 14)
+		_caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(_caption)
+	_caption.text = text
+	_caption.position = Vector2(-60, _caption_y())
+
+
+func _caption_y() -> float:
+	var radius := 16.0
+	if _data != null:
+		radius = float(_data.radius) * float(Config.ART_SCALE) * 0.5
+	return radius + 10.0
 
 
 func is_clean() -> bool:

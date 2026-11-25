@@ -70,6 +70,7 @@ const ALARM_BEEPS := 2
 const DRUM_DB := -16.0
 const DONE_DB := -8.0
 const EXPLODE_DB := -6.0
+const JAM_DB := -11.0
 const ALARM_DB := -9.0
 const BUZZ_DB := -12.0
 const CLICK_DB := -12.0
@@ -257,6 +258,8 @@ func try_accept(item: Node, grade: int = WasherFSM.GRADE_UNKNOWN) -> bool:
 	if _absorbed.has(key):
 		return false
 	if not _fsm.insert(item, {}, grade):
+		if _fsm.last_reject == WasherFSM.REJECT_INCOMPATIBLE and not _fsm.is_locked():
+			return _jam_with(item)
 		_reject(item, _fsm.last_reject)
 		return false
 	_absorb(item)
@@ -267,6 +270,31 @@ func try_accept(item: Node, grade: int = WasherFSM.GRADE_UNKNOWN) -> bool:
 	_sync_state()
 	_update_visuals(0.0)
 	item_loaded.emit(item)
+	return true
+
+
+## Wrong colour/pattern: the item goes in and the machine jams. It drops the whole load,
+## costs stability and stays broken until it repairs, so a bad aim has a real consequence.
+func _jam_with(item: Node) -> bool:
+	_absorb(item)
+	var ejected := get_loaded_items()
+	ejected.append(item)
+	_fsm.jam()
+	for index in range(ejected.size()):
+		_eject(ejected[index], false, index)
+	GameState.add_stability(Config.STABILITY_WRONG_WASHER, "wrong_washer")
+	GameState.wrong_washer_count += 1
+	_play_oneshot("explode", JAM_DB)
+	_play_buzz()
+	_flash_porthole(Palette.HAZARD_ORANGE)
+	_shake_left = FEEDBACK_S
+	_spawn_text(tr("¡ATASCADA!"), 20, Palette.HAZARD_ORANGE)
+	WasherFX.make_chip(self, "-12", false, Palette.HAZARD_ORANGE)
+	GameState.emit_feedback(tr("LAVADORA ATASCADA: NO ERA SU COLOR"), &"danger")
+	_handle_events(_fsm.take_events())
+	_sync_state()
+	_update_visuals(0.0)
+	item_rejected.emit(item, "jammed")
 	return true
 
 

@@ -518,11 +518,7 @@ func _on_combo(value: int) -> void:
 	var color := Palette.FUNK_MAGENTA if value >= 4 else Palette.METAL_3
 	_combo_label.add_theme_color_override("font_color", color)
 	if _combo_caption != null:
-		var sustain := value >= 4
-		_combo_caption.text = tr("COMBO · +ESTAB") if sustain else tr("COMBO · PUNTOS")
-		_combo_caption.add_theme_color_override(
-			"font_color", Palette.FUNK_CYAN if sustain else Palette.METAL_2
-		)
+		_combo_caption.text = tr("COMBO · PUNTOS")
 
 
 func _on_score(value: int) -> void:

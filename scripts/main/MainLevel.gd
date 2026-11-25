@@ -417,7 +417,7 @@ func _set_objective_for_carry() -> void:
 		_hud.call("set_objective", tr("LAVA Y ENTREGA HASTA LAS 06:00"))
 		return
 	if bool(item.get("is_clean")):
-		_hud.call("set_objective", tr("LLEVA LA PIEZA LIMPIA AL DUCTO"))
+		_hud.call("set_objective", tr("LLEVA EL PLANETA LIMPIO AL DUCTO"))
 		return
 	var color := StringName(item.get("color"))
 	var pattern := StringName(item.get("pattern"))
@@ -479,7 +479,7 @@ func _maybe_show_belt_hint() -> void:
 	if _belt_hint_shown or shift_time < 2.0 or _items.get_child_count() == 0:
 		return
 	_belt_hint_shown = true
-	GameState.emit_feedback(tr("LA CINTA TRAE ROPA SUCIA"), &"info")
+	GameState.emit_feedback(tr("LA CINTA TRAE PLANETAS SUCIOS"), &"info")
 
 
 ## First contact: a lost item costs stability. The shredder teaches it once.
@@ -487,7 +487,7 @@ func _on_shredder_consumed(_item: Node) -> void:
 	if _shredder_hint_shown:
 		return
 	_shredder_hint_shown = true
-	GameState.emit_feedback(tr("NO DEJES CAER LA ROPA AL VACÍO"), &"danger")
+	GameState.emit_feedback(tr("NO DEJES CAER LOS PLANETAS"), &"danger")
 
 
 func _on_chute_dirty(_item: Node) -> void:
@@ -546,7 +546,7 @@ func _maybe_spawn_starter_item() -> void:
 	)
 	if item == null:
 		return
-	GameState.emit_feedback(tr("AGARRA LA PIEZA"), &"info")
+	GameState.emit_feedback(tr("AGARRA EL PLANETA"), &"info")
 
 
 ## Public factory used by the tutorial, cheats and QA scripts.

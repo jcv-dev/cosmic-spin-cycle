@@ -3,6 +3,10 @@ max-line-length: 100
 # RoomDressing is one cohesive authored room (decal/dressing builders); splitting it would
 # scatter tightly coupled layout constants. Bumped from the default 1000 with the reason above.
 max-file-lines: 1200
+# WasherFSM is a pure public API with one method per rule; the default cap is arbitrary here.
+max-public-methods: 24
+# try_accept has one early-out per rejection reason, which reads better than a state var.
+max-returns: 8
 class-definitions-order:
   - tools
   - classnames

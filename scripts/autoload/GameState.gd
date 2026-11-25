@@ -33,7 +33,6 @@ var final_load_delivered := 0
 var feedback_count := 0
 ## Tutorial guard: negative stability changes are ignored while true.
 var stability_protected := false
-var _combo_hint_shown := false
 
 var _end_result: Dictionary = {}
 
@@ -67,7 +66,6 @@ func reset(p_seed: int = 0) -> void:
 	final_load_delivered = 0
 	feedback_count = 0
 	stability_protected = false
-	_combo_hint_shown = false
 	_end_result = {}
 
 	stability_changed.emit(stability)
@@ -107,9 +105,6 @@ func register_grade(grade: int) -> void:
 		combo = Config.COMBO_MIN
 	max_combo = maxi(max_combo, combo)
 	combo_changed.emit(combo)
-	if combo >= 4 and not _combo_hint_shown:
-		_combo_hint_shown = true
-		emit_feedback(tr("COMBO ×4: MÁS PUNTOS Y ESTABILIDAD"), &"success")
 
 
 ## Emits one short contextual line. `kind` is one of info | success | danger | rhythm.

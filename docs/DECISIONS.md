@@ -332,3 +332,18 @@ survival tool, not a vanity number. The HUD caption now reads `COMBO · PUNTOS` 
 to `COMBO · +ESTAB` (cyan) at ×4, and the first time the player reaches ×4 a single toast
 explains it. Nothing else about the combo changed (build +2/+1, MISS resets, cap ×8).
 Change: `ScoreRules` + `DeliveryChute` + `HUD._on_combo`.
+
+## D042 — Combo is score only; a wrong load jams the machine; worlds have names
+2026-11-25 · Owner corrections:
+1. **No stability from combo.** D041 reverted: combo multiplies delivery points and nothing
+   else; "I don't want to make the game easier". The HUD caption is a plain `COMBO · PUNTOS`.
+2. **A wrong colour/pattern now goes in and breaks the machine.** `Compatibility` still
+   decides a fit, but a mismatch is no longer bounced: the washer absorbs the item, jams
+   (`WasherFSM.jam()` → `BROKEN` with the 6 s repair timer), ejects the whole load, applies
+   `-12` once, plays the alarm + `¡ATASCADA!` chip and reports `LAVADORA ATASCADA`. This makes
+   the match rule a real trap instead of a nudge. Locked washers still refuse without a cost.
+3. **The fiction is celestial, not laundry.** Player-facing copy says planeta/astro, not ropa
+   or pieza (tutorial, tips, objective). Each item carries a **real catalogue name** from
+   `CelestialNames` (exoplanets for rocky, gas giants for gas, moons for moon, comets for the
+   light one, galaxy cores for the unique one), drawn 10 px under the sprite: KEPLER-452b,
+   TRAPPIST-1e, EUROPA, TITÁN, HALLEY, SAGITARIO A*…

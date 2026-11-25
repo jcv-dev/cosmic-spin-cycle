@@ -214,7 +214,7 @@ func test_director_starts_on_the_first_gate_and_protects_stability() -> void:
 	assert_true(director.is_active())
 	assert_eq(director.current_step(), 0)
 	assert_true(GameState.stability_protected)
-	assert_eq(TutorialSteps.chip_text(director.current_step()), "PASO 1/7 · MUÉVETE A LA PIEZA")
+	assert_eq(TutorialSteps.chip_text(director.current_step()), "PASO 1/7 · MUÉVETE AL PLANETA")
 
 
 func test_director_stages_a_throwable_item_on_the_grab_gate() -> void:

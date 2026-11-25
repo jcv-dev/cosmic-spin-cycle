@@ -161,15 +161,14 @@ func try_deliver(item: Node) -> bool:
 		return false
 	_delivered_ids[key] = true
 	var points := ScoreRules.delivery_points(_item_points(item), GameState.combo)
-	var stability := ScoreRules.delivery_stability(GameState.combo)
-	GameState.add_stability(stability, "chute")
+	GameState.add_stability(Config.STABILITY_CHUTE_DELIVERY, "chute")
 	GameState.delivered_count += 1
 	GameState.add_score(points)
 	_accept_left = ACCEPT_ANIM_S
 	_play_animation(&"accept")
 	_play_oneshot(_chime, CHIME_DB)
 	_spawn_points(points)
-	WasherFX.make_chip(self, "+%d" % int(round(stability)), true, Palette.CLEAN_GREEN)
+	WasherFX.make_chip(self, "+3", true, Palette.CLEAN_GREEN)
 	_begin_swallow(item)
 	if item.has_method(&"report_delivered"):
 		item.call(&"report_delivered")

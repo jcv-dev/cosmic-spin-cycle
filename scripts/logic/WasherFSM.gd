@@ -227,6 +227,23 @@ func strike(grade: int) -> bool:
 	return false
 
 
+## A wrong load jams the machine: it accepts the physical item, then goes BROKEN, drops
+## everything and needs a repair. This is the risk the owner asked for when inserting a
+## colour the machine does not take.
+func jam() -> bool:
+	if locked or state == State.BROKEN:
+		return false
+	_load.clear()
+	_recount()
+	_auto_start_left = -1.0
+	state = State.BROKEN
+	_repair_left = REPAIR_COOLDOWN_S
+	turbulence = 0.0
+	_turbulence_elapsed = 0.0
+	_push(&"jammed")
+	return true
+
+
 ## Adds `amount` (0..1) of turbulence; returns true when it tipped into TURBULENT.
 func add_turbulence(amount: float) -> bool:
 	if amount <= 0.0:

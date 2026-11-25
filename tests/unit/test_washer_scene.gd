@@ -145,19 +145,23 @@ func test_accepting_a_matching_item() -> void:
 	assert_eq(washer.get_state(), WasherFSM.State.IDLE)
 
 
-func test_wrong_washer_penalty_is_applied_once_per_throw() -> void:
+func test_wrong_washer_jams_the_machine_and_costs_twelve() -> void:
 	var item := _make_item(&"sock", &"blue", &"solid")
 	watch_signals(washer)
-	assert_false(washer.try_accept(item))
+	assert_true(washer.try_accept(item), "a wrong colour is accepted, then jams")
+	assert_eq(washer.get_state(), WasherFSM.State.BROKEN, "the machine is broken")
 	assert_almost_eq(GameState.stability, 88.0, 0.001, "-12")
 	assert_eq(GameState.wrong_washer_count, 1)
-	assert_signal_emitted_with_parameters(washer, "item_rejected", [item, "incompatible"])
+	assert_signal_emitted_with_parameters(washer, "item_rejected", [item, "jammed"])
 	assert_eq(washer.get_loaded_items().size(), 0)
 	var chip := washer.get_node_or_null(^"FeedbackChip")
 	assert_not_null(chip, "the wrong-washer chip is local to the machine")
 	assert_eq(str(chip.get(&"text")), "-12")
 	assert_false(bool(chip.get(&"gain")), "a loss uses the down glyph")
 	chip.set_process(false)
+	# A broken machine refuses further loads until it repairs itself.
+	washer.force_finish()
+	assert_eq(washer.get_state(), WasherFSM.State.BROKEN)
 
 
 func test_locked_washer_never_penalises() -> void:

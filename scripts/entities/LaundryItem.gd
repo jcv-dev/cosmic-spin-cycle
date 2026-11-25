@@ -52,6 +52,8 @@ const HEAVY_SHAKE_S := 0.09
 @export var pattern: StringName = &"solid"
 
 var data: ItemData = null
+## Real catalogue name displayed under the item (washers take worlds, not clothes).
+var celestial_name := ""
 var is_held := false
 var is_clean := false
 var throw_count := 0
@@ -567,3 +569,6 @@ func _apply_data() -> void:
 func _sync_visual() -> void:
 	if visual != null and data != null:
 		visual.configure(data, color, pattern, is_clean)
+		if celestial_name == "":
+			celestial_name = CelestialNames.next_name(item_id)
+		visual.set_caption(celestial_name)

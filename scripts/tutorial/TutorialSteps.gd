@@ -51,26 +51,26 @@ static func steps() -> Array[Dictionary]:
 	return [
 		{
 			"id": &"move",
-			"title": "MUÉVETE A LA PIEZA",
-			"prompt": "Muévete para alcanzar la ropa",
+			"title": "MUÉVETE AL PLANETA",
+			"prompt": "Muévete al planeta",
 			"kind": &"travel",
 			"max_words": 5,
 			"hint_after_s": TRAVEL_HINT_AFTER_S,
 		},
 		{
 			"id": &"grab",
-			"title": "AGARRA LA PIEZA",
-			"prompt": "Agarra para poder lavarla",
+			"title": "AGARRA EL PLANETA",
+			"prompt": "Agarra el planeta para lavar",
 			"kind": &"grab",
-			"max_words": 5,
+			"max_words": 6,
 			"hint_after_s": GRAB_HINT_AFTER_S,
 		},
 		{
 			"id": &"throw",
 			"title": "LANZA A LA LAVADORA",
-			"prompt": "Lanza para lavar la ropa",
+			"prompt": "Lanza el planeta a la lavadora",
 			"kind": &"throw",
-			"max_words": 5,
+			"max_words": 6,
 			"hint_after_s": GRAB_HINT_AFTER_S,
 		},
 		{
@@ -84,7 +84,7 @@ static func steps() -> Array[Dictionary]:
 		{
 			"id": &"match",
 			"title": "LAVADORA ROJA",
-			"prompt": "Tira a la roja: lava lo ROJO",
+			"prompt": "Solo la roja: otra la rompe",
 			"kind": &"insert",
 			"max_words": 7,
 			"hint_after_s": GRAB_HINT_AFTER_S,
@@ -100,7 +100,7 @@ static func steps() -> Array[Dictionary]:
 		{
 			"id": &"deliver",
 			"title": "ENTREGA EN LA TAPA",
-			"prompt": "Lleva la limpia a la tapa verde",
+			"prompt": "Lleva el limpio a la tapa verde",
 			"kind": &"deliver",
 			"max_words": 7,
 			"hint_after_s": GRAB_HINT_AFTER_S,
