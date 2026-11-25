@@ -58,6 +58,14 @@ else
 	skip_gate "480 s spawn simulation" "tools/sim_run.gd missing"
 fi
 
+if [[ -f tools/playtest_bot.gd ]]; then
+	# End-to-end "player brain": the loop must be completable, not just unit-tested.
+	run_gate "E2E playtest bot (45 s)" "$GODOT" --headless --path . -s tools/playtest_bot.gd \
+		-- --frames=2700
+else
+	skip_gate "E2E playtest bot" "tools/playtest_bot.gd missing"
+fi
+
 if [[ -f scenes/dev/PlayerSandbox.tscn ]]; then
 	run_gate "player sandbox screenshot" "$GODOT" --path . -s tools/screenshot.gd \
 		--resolution 1280x720 --audio-driver Dummy --display-driver wayland \

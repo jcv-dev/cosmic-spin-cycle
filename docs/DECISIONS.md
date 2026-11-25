@@ -228,3 +228,35 @@ interaction is always the big one.
 `OBJETIVO · LAVA Y ENTREGA HASTA LAS 06:00`. Phase banners are suppressed before 20 s
 and only `rocky`+`solid` spawn in phase 1. Measured against the 20-second test in
 `docs/UX_BIBLE.md` §2; guarded by `tests/integration/test_first_20s.gd`.
+
+## D035 — A single loaded item starts washing (owner playtest)
+2026-11-24 · AGENTS §A6 #4 said a cycle starts when the drum is full **or** on a rhythm
+strike. Playtested build: a player throws one item into a machine and nothing happens, so
+the machines read as broken ("I have no idea what the black holes do"). **Adopted:** a load
+of ≥ 1 item auto-starts after `Config.WASHER_AUTO_START_S` (1.2 s) with the holo showing the
+countdown; a rhythm strike still starts it instantly, and filling the drum still works.
+Change: `WasherFSM._advance` / `Config.WASHER_AUTO_START_S`.
+
+## D036 — Balance retuned to one player's throughput (E2E bot evidence)
+2026-11-24 · `tools/playtest_bot.gd` measured the real loop at ~13 s (grab → walk → wash →
+walk → deliver). The old cadence (3.5/2.4/1.7 s = 197 spawns) was **1.5× faster than one
+pair of hands**, so stability always hit zero: the game was unwinnable by construction.
+**Adopted:** phase intervals `10 / 8 / 6 s` (66 spawns per shift), shredder loss `−3` (was
+−8), and the chute funnel (D037) so clean items are not lost to a missed throw. The bot now
+reports 100 % throw accuracy and 94–100 stability over 90 s. Change: `data/phases.tres`,
+`Config.PHASE_SPAWN_INTERVAL_S`, `Config.STABILITY_FELL_OFF_BELT`; the spawn-count tests
+assert the new numbers.
+
+## D037 — Chute position bug, generous catch volumes and the delivery funnel
+2026-11-24 · Three playtest findings, one root cause each:
+1. `MainLevel` passed **world** pixels into `DeliveryChute.configure()`, which multiplies by
+   `ART_SCALE`; the chute lived at (2560, 1440), off-screen, so delivery was impossible and
+   the "green ring" players aimed at was scenery. Fixed to pass art pixels; an integration
+   test now asserts `(640, 360)`.
+2. The washer catch volume was a 60 px circle at the door. A throw that grazed the cabinet
+   did nothing ("aiming exactly at the door is near impossible"). The catch is now a 122 px
+   circle centred on the **cabinet**, and the whole machine draws a cyan bracket + chevrons
+   while a compatible item is carried.
+3. The chute is now a funnel: a 110 px hatch plus a 240 px suction field pulls clean items
+   in, and thrown items home for 0.55 s toward the nearest valid destination (washers or
+   chute) so the player aims the machine, not a pixel.
