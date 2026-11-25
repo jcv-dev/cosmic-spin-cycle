@@ -222,3 +222,85 @@ func test_reduce_motion_keeps_the_ring_static_but_readable() -> void:
 	assert_almost_eq(_layer.ring_radius(), first_radius, 0.01, "no scale snap")
 	assert_ne(_layer.ring_alpha(), first_alpha, "information moves to alpha instead")
 	assert_almost_eq(_layer.ring_width(), 2.0, 0.01)
+
+
+# --- Aim reticle ------------------------------------------------------------
+
+
+func test_no_target_without_a_held_item() -> void:
+	_add_player()
+	_add_washer(Vector2(840, 360), &"red")
+	_add_layer()
+	assert_eq(
+		_layer.reticle_state(), "none", "the reticle points at a destination for what you carry"
+	)
+	assert_null(_layer.target())
+
+
+func test_reticle_accepts_a_compatible_washer() -> void:
+	_add_player()
+	_add_washer(Vector2(840, 360), &"red")
+	_add_layer()
+	var item := _add_item(Vector2(640, 360), &"red")
+	_hold(item)
+	_layer.refresh_now()
+	assert_eq(_layer.reticle_state(), "washer_ok")
+	assert_not_null(_layer.target())
+
+
+func test_reticle_rejects_an_incompatible_washer() -> void:
+	_add_player()
+	_add_washer(Vector2(840, 360), &"red")
+	_add_layer()
+	var item := _add_item(Vector2(640, 360), &"blue")
+	_hold(item)
+	_layer.refresh_now()
+	assert_eq(_layer.reticle_state(), "washer_no")
+
+
+func test_reticle_rejects_a_locked_washer() -> void:
+	_add_player()
+	var washer := _add_washer(Vector2(840, 360), &"red")
+	washer.locked = true
+	_add_layer()
+	var item := _add_item(Vector2(640, 360), &"red")
+	_hold(item)
+	_layer.refresh_now()
+	assert_eq(_layer.reticle_state(), "washer_no")
+
+
+func test_reticle_turns_green_on_the_chute_with_a_clean_item() -> void:
+	_add_player()
+	_add_chute(Vector2(840, 360))
+	_add_layer()
+	var item := _add_item(Vector2(640, 360), &"red")
+	item.is_clean = true
+	_hold(item)
+	_layer.refresh_now()
+	assert_eq(_layer.reticle_state(), "chute")
+	assert_true(bool(_layer.state_readout()["chute_ok"]))
+
+
+func test_chute_with_a_dirty_item_is_not_deliverable() -> void:
+	_add_player()
+	_add_chute(Vector2(840, 360))
+	_add_layer()
+	var item := _add_item(Vector2(640, 360), &"red")
+	_hold(item)
+	_layer.refresh_now()
+	assert_eq(_layer.reticle_state(), "chute", "the chute is the target under the reticle")
+	assert_false(bool(_layer.state_readout()["chute_ok"]), "but it cannot accept a dirty piece")
+
+
+func test_the_closest_destination_wins() -> void:
+	_add_player()
+	_add_washer(Vector2(880, 360), &"red")
+	_add_chute(Vector2(760, 360))
+	_add_layer()
+	var item := _add_item(Vector2(640, 360), &"red")
+	item.is_clean = true
+	_hold(item)
+	_layer.refresh_now()
+	assert_eq(
+		_layer.reticle_state(), "chute", "the destination closest to the aim ray wins"
+	)
