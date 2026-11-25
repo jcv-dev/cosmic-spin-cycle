@@ -7,7 +7,7 @@ extends Node2D
 ## fresh clone) it falls back to a distinct flat silhouette per item id. The owner keeps
 ## this node unrotated: pixel art must never spin with the RigidBody2D.
 
-const VISUAL_SCALE := 1.6
+const VISUAL_SCALE := 2.2
 const OUTLINE_WIDTH := 2.0
 const OUTLINE_MIX := 0.55
 const PATTERN_SHIFT := 0.3
@@ -183,12 +183,58 @@ func _draw_sock() -> void:
 func _draw_moon() -> void:
 	var r := _radius()
 	var body := _body_color()
-	draw_arc(
-		Vector2.ZERO, r * 0.9, PI * 0.3, PI * 1.7, 24, _outline_color(), r * 0.58 + OUTLINE_WIDTH
+	var points := _crescent(r, Vector2(r * 0.52, -r * 0.12), r * 0.92, 28)
+	if points.is_empty():
+		return
+	draw_colored_polygon(_scaled(points, 1.14), _outline_color())
+	draw_colored_polygon(points, body)
+	draw_circle(Vector2(r * 0.52, -r * 0.52), r * 0.09, body.lightened(PATTERN_SHIFT))
+	draw_circle(Vector2(r * 0.28, r * 0.46), r * 0.07, body.lightened(PATTERN_SHIFT))
+
+
+## Closed outer-minus-cut crescent polygon. `cut_offset` points at the bite.
+func _crescent(
+	outer_radius: float, cut_offset: Vector2, cut_radius: float, steps: int
+) -> PackedVector2Array:
+	var distance := cut_offset.length()
+	if distance < 0.001 or distance >= outer_radius + cut_radius:
+		return PackedVector2Array()
+	var a := (
+		(distance * distance + outer_radius * outer_radius - cut_radius * cut_radius)
+		/ (2.0 * distance)
 	)
-	draw_arc(Vector2.ZERO, r * 0.9, PI * 0.3, PI * 1.7, 24, body, r * 0.58)
-	draw_circle(Vector2(r * 0.62, -r * 0.55), r * 0.1, body.lightened(PATTERN_SHIFT))
-	draw_circle(Vector2(r * 0.36, r * 0.62), r * 0.07, body.lightened(PATTERN_SHIFT))
+	var h := sqrt(maxf(outer_radius * outer_radius - a * a, 0.0))
+	var unit := cut_offset / distance
+	var perpendicular := Vector2(-unit.y, unit.x)
+	var first := unit * a + perpendicular * h
+	var second := unit * a - perpendicular * h
+	var outer := _arc_away_from(Vector2.ZERO, outer_radius, first, second, -unit, steps)
+	var inner := _arc_away_from(cut_offset, cut_radius, second, first, -unit, steps)
+	var out := PackedVector2Array()
+	out.append_array(outer)
+	out.append_array(inner.slice(1, inner.size() - 1))
+	return out
+
+
+func _arc_away_from(
+	center: Vector2,
+	radius: float,
+	start_point: Vector2,
+	end_point: Vector2,
+	away_dir: Vector2,
+	steps: int
+) -> PackedVector2Array:
+	var from_angle := (start_point - center).angle()
+	var to_angle := (end_point - center).angle()
+	var sweep := wrapf(to_angle - from_angle, -PI, PI)
+	var midpoint := from_angle + sweep * 0.5
+	if Vector2.from_angle(midpoint).dot(away_dir) < 0.0:
+		sweep = sweep + TAU if sweep < 0.0 else sweep - TAU
+	var out := PackedVector2Array()
+	for index in range(steps + 1):
+		var angle := from_angle + sweep * float(index) / float(steps)
+		out.append(center + Vector2.from_angle(angle) * radius)
+	return out
 
 
 func _draw_gas_giant() -> void:
