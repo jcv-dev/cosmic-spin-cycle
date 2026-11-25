@@ -34,7 +34,7 @@ verified. Update at each milestone. Status: **M0–M3 implemented; M4+ planned.*
 | §4.1 | Keyboard+mouse and gamepad controls | `tools/setup_project.gd` Input Map | project.godot inspection |
 | §4.2 | Diegetic HUD: pulse ring, clock, stability, combo, washer holos | `HUD` (M6 extends), `PulseRing` (M6) | HUD tests, screenshots |
 | §4.3 | Title → game → end screen, instant restart | M6 | pending |
-| §5.1 | PERFECT ±65 ms, GOOD ±130 ms, MISS | `RhythmEvaluator` | boundary tests (0.065/0.130/0.131) |
+| §5.1 | PERFECT ±90 ms, GOOD ±170 ms, MISS (D039) | `RhythmEvaluator` | boundary tests (0.090/0.170/0.171) |
 | §5.1 | PERFECT +40% force, +2 combo, −3 s wash; GOOD +1, −1 s; MISS reset + turbulence | `Config`, `RhythmEvaluator`, `GameState` | reward tests, state tests; wash application in M4 |
 | §5.2 | 3 slots, WASHING cycle, TURBULENT, explosion, DONE | `WasherFSM` (M4) | pending |
 | §5.3 | Belt constant velocity; phase 3 reversal every 16 measures with 4-beat warning | `ConveyorBelt`, `BeltReversal` (M3) | belt/reversal tests |

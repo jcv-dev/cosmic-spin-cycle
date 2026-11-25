@@ -153,7 +153,7 @@ static func wash_reduction_s(grade: int) -> float      # 3.0 / 1.0 / 0.0
 static func resolves_turbulence(grade: int) -> bool    # GOOD or PERFECT
 ```
 
-Boundaries are inclusive: Δt = 0.065 → PERFECT, 0.130 → GOOD, 0.131 → MISS
+Boundaries are inclusive: Δt = 0.090 → PERFECT, 0.170 → GOOD, 0.171 → MISS (widened in D039)
 (after `window_scale`). **Evaluate rhythm in `_input()`, never `_physics_process()`.**
 
 ### `ArtCatalog` — `res://scripts/visual/ArtCatalog.gd`

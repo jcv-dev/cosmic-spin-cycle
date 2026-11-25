@@ -40,8 +40,10 @@ const DASH_DURATION_S := 0.18
 const STRIKE_RANGE_PX := 96.0
 
 # --- Rhythm (GDD §5.1) ------------------------------------------------------
-const WINDOW_PERFECT_S := 0.065
-const WINDOW_GOOD_S := 0.130
+## Windows widened after playtest #3: +-65/130 ms was only perceptible for players with
+## rhythm-game experience. +-90/170 ms keeps the beat meaningful without becoming automatic.
+const WINDOW_PERFECT_S := 0.090
+const WINDOW_GOOD_S := 0.170
 const PERFECT_FORCE_BONUS := 0.40
 const BEATS_PER_MEASURE := 4
 const COMBO_GAIN := {"PERFECT": 2, "GOOD": 1, "MISS": 0}

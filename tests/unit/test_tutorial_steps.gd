@@ -47,9 +47,9 @@ func test_titles_match_the_frozen_copy() -> void:
 	assert_eq(STEPS.title_for(0), "MUÉVETE A LA PIEZA")
 	assert_eq(STEPS.title_for(1), "AGARRA LA PIEZA")
 	assert_eq(STEPS.title_for(2), "LANZA A LA LAVADORA")
-	assert_eq(STEPS.title_for(3), "LANZA EN EL PULSO")
+	assert_eq(STEPS.title_for(3), "LANZA A TIEMPO")
 	assert_eq(STEPS.title_for(4), "LAVADORA ROJA")
-	assert_eq(STEPS.title_for(5), "GOLPE EN EL PULSO")
+	assert_eq(STEPS.title_for(5), "LAVADORA AGITADA")
 	assert_eq(STEPS.title_for(6), "ENTREGA EN LA TAPA")
 
 
@@ -141,7 +141,7 @@ func test_beat_gate_counts_two_throws_at_good_or_better() -> void:
 func test_beat_gate_accepts_good_inside_the_tutorial_window() -> void:
 	var state := _state_at(&"beat")
 	assert_eq(STEPS.grade_throw(0.2, 0), GOOD)
-	assert_eq(STEPS.grade_throw(0.27, 0), MISS)
+	assert_eq(STEPS.grade_throw(0.35, 0), MISS)
 	_advance(state, {"kind": &"throw", "delta_t": 0.2})
 	assert_eq(state["count"], 1)
 

@@ -4,25 +4,25 @@ extends GutTest
 
 func test_perfect_window_is_inclusive() -> void:
 	assert_eq(RhythmEvaluator.evaluate(0.0), RhythmEvaluator.Grade.PERFECT)
-	assert_eq(RhythmEvaluator.evaluate(0.065), RhythmEvaluator.Grade.PERFECT)
-	assert_eq(RhythmEvaluator.evaluate(-0.065), RhythmEvaluator.Grade.PERFECT)
+	assert_eq(RhythmEvaluator.evaluate(0.090), RhythmEvaluator.Grade.PERFECT)
+	assert_eq(RhythmEvaluator.evaluate(-0.090), RhythmEvaluator.Grade.PERFECT)
 
 
 func test_good_window_is_inclusive() -> void:
-	assert_eq(RhythmEvaluator.evaluate(0.0651), RhythmEvaluator.Grade.GOOD)
-	assert_eq(RhythmEvaluator.evaluate(0.130), RhythmEvaluator.Grade.GOOD)
-	assert_eq(RhythmEvaluator.evaluate(-0.130), RhythmEvaluator.Grade.GOOD)
+	assert_eq(RhythmEvaluator.evaluate(0.0901), RhythmEvaluator.Grade.GOOD)
+	assert_eq(RhythmEvaluator.evaluate(0.170), RhythmEvaluator.Grade.GOOD)
+	assert_eq(RhythmEvaluator.evaluate(-0.170), RhythmEvaluator.Grade.GOOD)
 
 
 func test_outside_good_is_miss() -> void:
-	assert_eq(RhythmEvaluator.evaluate(0.1301), RhythmEvaluator.Grade.MISS)
+	assert_eq(RhythmEvaluator.evaluate(0.1701), RhythmEvaluator.Grade.MISS)
 	assert_eq(RhythmEvaluator.evaluate(1.0), RhythmEvaluator.Grade.MISS)
 
 
 func test_window_scale_widens_windows() -> void:
-	assert_eq(RhythmEvaluator.evaluate(0.130, 2.0), RhythmEvaluator.Grade.PERFECT)
-	assert_eq(RhythmEvaluator.evaluate(0.260, 2.0), RhythmEvaluator.Grade.GOOD)
-	assert_eq(RhythmEvaluator.evaluate(0.261, 2.0), RhythmEvaluator.Grade.MISS)
+	assert_eq(RhythmEvaluator.evaluate(0.170, 2.0), RhythmEvaluator.Grade.PERFECT)
+	assert_eq(RhythmEvaluator.evaluate(0.340, 2.0), RhythmEvaluator.Grade.GOOD)
+	assert_eq(RhythmEvaluator.evaluate(0.341, 2.0), RhythmEvaluator.Grade.MISS)
 
 
 func test_scale_is_clamped_to_positive() -> void:

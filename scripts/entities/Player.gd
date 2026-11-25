@@ -68,8 +68,10 @@ const FEEL_PROFILES := {
 @export var dash_cooldown_s := 0.24
 ## Below this fraction of max speed the idle friction snaps to rest (sub-pixel drift).
 @export var rest_speed_ratio := 0.025
-## Mouse aim keeps priority for this long after the last mouse motion, then stick wins.
-@export var mouse_aim_timeout_ms := 1200
+## Mouse aim is sticky: once the mouse has been used it stays authoritative until the right
+## stick is moved. The old 1.2 s timeout silently reverted aim and made the reticle feel
+## like it stopped following the mouse.
+var mouse_seen := false
 
 var held_item: Node = null
 var aim_direction := Vector2.DOWN
@@ -83,7 +85,6 @@ var feel_preset := FEEL_PRESET
 var _dash_time := 0.0
 var _dash_direction := Vector2.ZERO
 var _dash_origin := Vector2.ZERO
-var _mouse_active_until := 0
 var _aim_override := Vector2.ZERO
 var _has_aim_override := false
 var _pip: AnimatedSprite2D
@@ -132,7 +133,7 @@ func _notification(what: int) -> void:
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion or event is InputEventMouseButton:
-		_mouse_active_until = Time.get_ticks_msec() + mouse_aim_timeout_ms
+		mouse_seen = true
 	if event.is_action_pressed("grab_throw"):
 		_request_action(&"grab_throw")
 	elif event.is_action_pressed("rhythm_strike"):
@@ -441,12 +442,12 @@ func _update_aim() -> void:
 	var target := aim_direction
 	if _has_aim_override:
 		target = _aim_override
-	elif Time.get_ticks_msec() <= _mouse_active_until:
-		target = get_global_mouse_position() - global_position
 	else:
 		var stick := Input.get_vector("aim_left", "aim_right", "aim_up", "aim_down")
 		if stick.length() > STICK_DEADZONE:
 			target = _snap_to_eight(stick)
+		elif mouse_seen:
+			target = get_global_mouse_position() - global_position
 	if target.length() < AIM_EPSILON:
 		return
 	_apply_aim(target.normalized())

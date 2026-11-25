@@ -68,6 +68,7 @@ var _air_active := false
 ## Short homing window after a throw: the player aims the machine, the game covers the last
 ## few pixels (the owner's "aiming exactly at the door is near impossible").
 var _home_time := 0.0
+var _throw_direction := Vector2.ZERO
 var _throw_grade := -1
 var _rng := RandomNumberGenerator.new()
 var _throw_player: AudioStreamPlayer2D = null
@@ -188,6 +189,7 @@ func throw_with_impulse(
 		_boomerang_duration = SOCK_ARC_DURATION_S
 		_boomerang_accel = SOCK_ARC_ACCEL
 	_start_air(grade)
+	_throw_direction = dir
 	_home_time = HOME_IN_TIME_S
 	_play_throw_feedback(dir, grade)
 	throw_count += 1
@@ -289,7 +291,9 @@ func _home_target() -> Vector2:
 		if tree != null:
 			var chute := tree.get_first_node_in_group(Config.GROUP_CHUTE) as Node2D
 			if chute != null:
-				return chute.global_position
+				var to_chute := chute.global_position - global_position
+				if to_chute.length() > 1.0 and _throw_direction.dot(to_chute.normalized()) > 0.35:
+					return chute.global_position
 		return Vector2.INF
 	var target: Variant = _nearest_compatible_mouth()
 	if target is Vector2:
@@ -338,10 +342,41 @@ func _land() -> void:
 func _play_throw_feedback(direction: Vector2, grade: int) -> void:
 	if visual != null:
 		visual.play_smear(direction)
-		visual.show_throw_guide(_nearest_compatible_mouth(), grade)
+		visual.show_throw_guide(_aimed_compatible_mouth(), grade)
 	_play_throw_sound()
 	if data != null and HEAVY_IDS.has(data.id):
 		_juice_shake(HEAVY_SHAKE, HEAVY_SHAKE_S)
+
+
+## Homing target: the compatible machine the player is actually throwing toward. Choosing the
+## nearest one made throws curve into a different washer than the reticle showed.
+func _aimed_compatible_mouth() -> Variant:
+	var tree := get_tree()
+	if tree == null or _throw_direction.length() < 0.01:
+		return null
+	var best: Node2D = null
+	var best_score := -1.0
+	for node in tree.get_nodes_in_group(Config.GROUP_WASHERS):
+		var washer := node as Node2D
+		if washer == null or not is_instance_valid(washer):
+			continue
+		if not _washer_accepts(washer):
+			continue
+		var point := _mouth_position(washer)
+		var offset := point - global_position
+		var distance := offset.length()
+		if distance < 1.0 or distance > HOME_IN_RANGE_PX:
+			continue
+		var alignment := _throw_direction.dot(offset.normalized())
+		if alignment < 0.55:
+			continue
+		var score := alignment - distance / (HOME_IN_RANGE_PX * 4.0)
+		if score > best_score:
+			best_score = score
+			best = washer
+	if best == null:
+		return null
+	return _mouth_position(best)
 
 
 func _nearest_compatible_mouth() -> Variant:

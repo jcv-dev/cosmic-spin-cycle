@@ -34,6 +34,7 @@ var is_playing := false
 var stem_first_beat_offset := 0.0
 
 var _player: AudioStreamPlayer
+var _click: AudioStreamPlayer
 ## Monotonic song time in seconds. Both time sources feed this value.
 var _clock := 0.0
 ## Song time that corresponds to beat index 0 of the current musical grid.
@@ -44,6 +45,7 @@ var _measure_index := 0
 
 func _ready() -> void:
 	process_priority = 100
+	_ensure_click()
 	_player = get_node_or_null("AudioStreamPlayer") as AudioStreamPlayer
 	if _player != null:
 		if AudioServer.get_bus_index("Music") >= 0:
@@ -76,6 +78,31 @@ func start(p_bpm: int = -1) -> void:
 			_player.stop()
 	beat_hit.emit(0)
 	measure_hit.emit(0)
+
+
+## A quiet metronome under the music: the stems alone did not make the beat legible
+## (playtest #3). Accented on the downbeat; intentionally cheap to avoid listener fatigue.
+func _ensure_click() -> void:
+	if _click != null:
+		return
+	var path := "res://assets/audio/sfx/ui_click.ogg"
+	if not ResourceLoader.exists(path):
+		return
+	_click = AudioStreamPlayer.new()
+	_click.name = "Click"
+	_click.stream = load(path) as AudioStream
+	_click.volume_db = -19.0
+	if AudioServer.get_bus_index("SFX") >= 0:
+		_click.bus = "SFX"
+	add_child(_click)
+
+
+func _play_click(downbeat: bool) -> void:
+	if _click == null or _click.stream == null:
+		return
+	_click.pitch_scale = 2.4 if downbeat else 1.9
+	_click.volume_db = -15.0 if downbeat else -19.0
+	_click.play()
 
 
 func stop() -> void:
@@ -245,6 +272,7 @@ func _advance_beats(t: float) -> void:
 	while _beat_index < target and guard < MAX_BEATS_PER_STEP:
 		guard += 1
 		_beat_index += 1
+		_play_click(_beat_index % BEATS_PER_MEASURE == 0)
 		beat_hit.emit(_beat_index)
 		if _beat_index % BEATS_PER_MEASURE == 0:
 			_measure_index = int(_beat_index / BEATS_PER_MEASURE)

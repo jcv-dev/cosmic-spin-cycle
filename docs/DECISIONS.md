@@ -278,3 +278,24 @@ assert the new numbers.
 5. **Cadence:** 7/6/5 s (83 spawns/shift) after the owner asked for more pressure; the E2E
    bot remains the gate that proves it stays survivable.
 6. **Conveyor audio:** a −24 dB belt hum loop plus a pitched-down arrival click on each spawn.
+
+## D039 — Playtest #3: wider windows, an audible beat, sticky aim and aim-based homing
+2026-11-25 · The owner could not feel the beat and could not tell where a throw was going.
+1. **Windows widened**: PERFECT ±90 ms, GOOD ±170 ms (was ±65/±130). Random on-beat rate
+   rises to ~60 % at 105 BPM and ~80 % at 142 BPM — the deliberate trade is a lower skill
+   ceiling for a beat that a non-rhythm player can actually hit. Change:
+   `Config.WINDOW_PERFECT_S` / `WINDOW_GOOD_S` and the boundary tests.
+2. **Audible metronome**: `BeatConductor` plays a quiet click on every beat (−19 dB, pitch
+   1.9) with a louder, higher accent on the downbeat (−15 dB, pitch 2.4), mixed under the
+   stems. The stems alone were not legible. The click is driven by the same audio-derived
+   beat emission as gameplay, so it is the reference, not a parallel timer.
+3. **HUD beat dots**: radius 4/6 px with a white core and a 1.5 px halo on the active dot,
+   so the current beat is readable without comparing sizes.
+4. **Aim is sticky**: once the mouse has been used it stays authoritative until the right
+   stick is moved (the old 1.2 s timeout silently reverted aim, which is why the arrow
+   seemed to stop following the mouse).
+5. **Homing follows the aim**: thrown items curve toward the compatible machine best aligned
+   with the throw (dot ≥ 0.55), not simply the nearest one. Clean items only home to the
+   chute when the throw points at it. This removes "it went to the wrong washer".
+6. **Copy**: gate 4 `Lanza al cerrarse el anillo`; gate 6 `Golpéala para que no explote`
+   (turbulence named as the threat, not "calmar").

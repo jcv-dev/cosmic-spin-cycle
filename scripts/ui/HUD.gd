@@ -26,9 +26,9 @@ const BAR_RECT := Rect2(24, 26, 200, 16)
 const SEGMENTS := 12
 const BEAT_DOT_ORIGIN := Vector2(232, 34)
 const BEAT_DOT_STEP := 16.0
-const DOT_RADIUS := 3.0
-const DOT_RADIUS_ACTIVE := 4.0
-const DOT_DOWNBEAT_SCALE := 1.3
+const DOT_RADIUS := 4.0
+const DOT_RADIUS_ACTIVE := 6.0
+const DOT_DOWNBEAT_SCALE := 1.4
 const STABILITY_DIAMOND_CENTER := Vector2(280, 16)
 const STABILITY_DIAMOND_RADIUS := 6.0
 const RIBBON_RECT := Rect2(400, 6, 480, 28)
@@ -364,6 +364,11 @@ func _draw_beat_dots(target: CanvasItem) -> void:
 		if is_active and not Settings.reduce_motion:
 			radius += pulse * 1.5
 		target.draw_circle(center, radius, color)
+		if is_active:
+			# A bright core + a thin halo make the current beat readable at a glance, not
+			# only by comparing dot sizes.
+			target.draw_circle(center, maxf(radius - 2.0, 1.0), Palette.METAL_4)
+			target.draw_arc(center, radius + 3.0, 0.0, TAU, 20, Color(color, 0.55), 1.5, true)
 
 
 ## 0 → 1 decay after each beat; 0 when the conductor is idle (and always 0 under
