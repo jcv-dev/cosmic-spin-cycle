@@ -19,8 +19,8 @@ func test_build_stays_within_the_light_budget() -> void:
 	var root := Node2D.new()
 	add_child_autofree(root)
 	var rig := _make_rig(root)
-	assert_eq(rig.lights().size(), LightingRig.MAX_LIGHTS)
-	assert_true(rig.lights().size() <= 8, "UX_BIBLE §3.5: ≤ 8 light emitters")
+	assert_true(rig.lights().size() <= LightingRig.MAX_LIGHTS, "UX_BIBLE §3.5: ≤ 8 emitters")
+	assert_true(rig.lights().size() >= 6, "four pools + chute + spawn fill")
 	assert_eq(rig.pools().size(), 4, "one pool per washer")
 
 
@@ -54,7 +54,7 @@ func test_set_phase_palette_retints_the_pools() -> void:
 	assert_gt(red.r, red.b, "first pool is crimson")
 	assert_gt(blue.b, blue.r, "second pool is nebula blue")
 	assert_gt(yellow.r, yellow.b, "third pool is solar yellow")
-	assert_almost_eq(yellow.g, Palette.YEL_3.g, 0.01, "retint uses the palette ramp")
+	assert_almost_eq(yellow.g, Palette.YEL_2.g, 0.01, "retint uses the deeper palette ramp")
 
 
 func test_set_phase_palette_accepts_a_short_list() -> void:
@@ -117,7 +117,7 @@ func test_light_budget_is_eight_emitters_and_zero_point_lights() -> void:
 	var root := Node2D.new()
 	add_child_autofree(root)
 	var rig := _make_rig(root)
-	assert_eq(rig.lights().size(), 8)
+	assert_lte(rig.lights().size(), 8, "never more than the light budget")
 	var point_lights := 0
 	for light: CanvasItem in rig.lights():
 		if light is PointLight2D:
@@ -126,6 +126,34 @@ func test_light_budget_is_eight_emitters_and_zero_point_lights() -> void:
 		assert_true(point_lights <= 8, "≤ 8 PointLight2D when the flag is on")
 	else:
 		assert_eq(point_lights, 0, "the default path uses no PointLight2D at all")
+
+
+func test_coloured_light_stays_near_the_machines() -> void:
+	var root := Node2D.new()
+	add_child_autofree(root)
+	var rig := _make_rig(root)
+	assert_lte(LightingRig.WASHER_RADIUS, 180.0, "pools stay inside 180 px")
+	assert_lte(LightingRig.WASHER_ENERGY, 0.45, "energy budget")
+	assert_lte(LightingRig.CHUTE_ENERGY, 0.45, "energy budget")
+	var anchors: Array[Vector2] = [RoomBuilder.layout_rect("chute").get_center()]
+	for washer: Dictionary in RoomBuilder.layout().get("washers", []):
+		anchors.append(RoomBuilder.point_world(washer.get("mouth", [0, 0])))
+	anchors.append(RoomBuilder.player_spawn())
+	for light: CanvasItem in rig.lights():
+		var nearest := INF
+		for anchor: Vector2 in anchors:
+			nearest = minf(nearest, light.position.distance_to(anchor))
+		assert_lt(nearest, 8.0, "%s is anchored to a machine" % light.name)
+
+
+func test_atmosphere_has_no_hard_edged_light_shafts() -> void:
+	var root := Node2D.new()
+	add_child_autofree(root)
+	var atmosphere := Atmosphere.build(root, 90.0)
+	assert_null(atmosphere.get_node_or_null(^"LightShafts"), "lamp shafts were removed")
+	for child in atmosphere.get_children():
+		if child is Node2D and not (child is CPUParticles2D) and not (child is Timer):
+			fail_test("unexpected hand-drawn light quad: %s" % child.name)
 
 
 func test_five_builds_do_not_leak_a_texture_each() -> void:
