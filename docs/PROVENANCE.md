@@ -21,7 +21,9 @@ pixels.
 
 | Asset | Author / source | License | Retrieved | Transformations |
 |---|---|---|---|---|
-| *(pending A1/A2)* | | | | |
+| *(art assets pending — session A1)* | | | | |
+| `100 CC0 SFX` (source pack) | rubberduck — https://opengameart.org/content/100-cc0-sfx | CC0 1.0 Universal | 2026-11-24 | Source pack for the seven one-shots; clips used: `plop_02`, `splash_02`, `bell_02`, `gong_01`, `explosion`, `slam_01`, `switch_01`, `noise_02`, `other_06`; each decoded to mono 44.1 kHz and rebuilt as listed in the rows below |
+| `General Household Sound Effects` (source pack) | bretbernhoft — https://opengameart.org/content/general-household-sound-effects | CC0 1.0 Universal | 2026-11-24 | Source pack for the two loops: `computerfans01.wav` → `belt_hum.ogg`, `washer01.wav` → `washer_drum.ogg`; excerpts crossfaded, mono 44.1 kHz |
 | `art/sources/audio/music/holizna_bassic_{01_eat,02_sleep,03_breath,04_make_money}.ogg` | HoliznaCC0 — *BASSIC* (2020-01-10), Free Music Archive — https://freemusicarchive.org/music/holiznacc0/bassic | CC0 1.0 Universal | 2026-11-24 | Kept verbatim as the build source; SHA-256 pinned in `art/sources/audio/SOURCES.json`, CC0 legal text vendored at `art/sources/audio/LICENSE-CC0-1.0.txt` |
 | `assets/audio/music/phase1_105.ogg` | HoliznaCC0 — "Breath" (*BASSIC*) | CC0 1.0 Universal | 2026-11-24 | 16-bar excerpt from bar 1 (downbeat-aligned), atempo 0.98954 (106.00 → 105.00 BPM), exact 64-beat trim, 5 ms seam fades, decoded peak −2.14 dBFS, Vorbis q6 44.1 kHz stereo |
 | `assets/audio/music/phase2_118.ogg` | HoliznaCC0 — "Sleep" (*BASSIC*) | CC0 1.0 Universal | 2026-11-24 | 16 bars from bar 3, atempo 0.98333 (120.00 → 118.00 BPM), 5 ms seam fades, decoded peak −2.18 dBFS |
