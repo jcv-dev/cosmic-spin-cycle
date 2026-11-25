@@ -86,6 +86,21 @@ static func table(phase: int) -> Array[Dictionary]:
 	return rows
 
 
+## Phase -> `{ "washer_nw": {"requirement": &"red", "locked": false}, ... }`.
+##
+## Always four entries, so `MainLevel` can configure a phase in one loop. Locked rows carry
+## the requirement they will have when they unlock (pre-wiring), which keeps `set_locked`
+## the only change a boundary needs.
+static func for_phase(phase: int) -> Dictionary:
+	var out := {}
+	for row in table(phase):
+		out[str(row["washer_id"])] = {
+			"requirement": StringName(str(row["requirement"])),
+			"locked": bool(row["locked"]),
+		}
+	return out
+
+
 ## Requirement of one washer in one phase; `&"wild"` when the id is unknown.
 static func requirement_for(phase: int, washer_id: StringName) -> StringName:
 	for row in table(phase):

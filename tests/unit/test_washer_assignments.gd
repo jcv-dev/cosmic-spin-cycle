@@ -31,6 +31,35 @@ func test_phase_tables_match_the_ramp() -> void:
 			)
 
 
+func test_for_phase_returns_the_mainlevel_shape() -> void:
+	var phase_one := WasherAssignments.for_phase(0)
+	assert_eq(phase_one.size(), 4, "always four washers")
+	assert_true(phase_one.has("washer_nw"))
+	assert_eq(StringName(str(phase_one["washer_nw"]["requirement"])), &"red")
+	assert_false(bool(phase_one["washer_nw"]["locked"]))
+	assert_false(bool(phase_one["washer_ne"]["locked"]))
+	assert_true(bool(phase_one["washer_sw"]["locked"]), "P1 south-west offline")
+	assert_true(bool(phase_one["washer_se"]["locked"]), "P1 south-east offline")
+	for washer_id: String in phase_one:
+		var key := StringName(washer_id)
+		assert_eq(
+			StringName(str(phase_one[washer_id]["requirement"])),
+			WasherAssignments.requirement_for(0, key),
+			"for_phase agrees with requirement_for for %s" % washer_id
+		)
+		assert_eq(
+			bool(phase_one[washer_id]["locked"]),
+			WasherAssignments.is_locked(0, key),
+			"for_phase agrees with is_locked for %s" % washer_id
+		)
+	var phase_four := WasherAssignments.for_phase(3)
+	assert_eq(StringName(str(phase_four["washer_nw"]["requirement"])), &"yellow")
+	assert_eq(StringName(str(phase_four["washer_ne"]["requirement"])), &"red")
+	assert_eq(StringName(str(phase_four["washer_sw"]["requirement"])), &"solid")
+	assert_eq(StringName(str(phase_four["washer_se"]["requirement"])), &"ringed")
+	assert_false(bool(phase_four["washer_se"]["locked"]))
+
+
 func test_lookup_helpers() -> void:
 	assert_eq(WasherAssignments.requirement_for(0, &"washer_nw"), &"red")
 	assert_eq(WasherAssignments.requirement_for(3, &"washer_nw"), &"yellow")
