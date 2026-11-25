@@ -111,6 +111,38 @@ func test_ledger_captions_are_the_six_contract_stats() -> void:
 	assert_eq(captions, ["LAVADAS", "ENTREGADAS", "PRECISIÓN", "COMBO MÁX", "PUNTOS", "SEMILLA"])
 
 
+func test_four_primary_stats_are_bigger_than_the_secondary_pair() -> void:
+	await _open(_result())
+	var plaque := _screen.get_node("Plaque")
+	for index in [0, 2, 3, 4]:
+		var label := plaque.get_node("Stat%dValue" % index) as Label
+		assert_eq(label.get_theme_font_size("font_size"), 28, "primary stat %d size" % index)
+	for index in [1, 5]:
+		var label := plaque.get_node("Stat%dValue" % index) as Label
+		assert_eq(label.get_theme_font_size("font_size"), 14, "secondary stat %d size" % index)
+
+
+func test_secondary_stats_sit_inline_with_their_caption() -> void:
+	await _open(_result())
+	var plaque := _screen.get_node("Plaque")
+	var caption := plaque.get_node("Stat5Caption") as Label
+	var value := plaque.get_node("Stat5Value") as Label
+	assert_gt(value.position.x, caption.position.x + 40.0, "SEMILLA and its value share a line")
+	assert_eq(value.position.y, caption.position.y)
+
+
+func test_buttons_carry_the_measured_ring() -> void:
+	await _open(_result())
+	for name in ["RetryButton", "MenuButton", "NewSeedButton"]:
+		var button := _screen.get_node("Plaque/%s" % name) as Button
+		assert_not_null(button.get_node_or_null("FocusRing"), "%s needs a focus ring" % name)
+
+
+func test_no_text_below_the_type_floor() -> void:
+	await _open(_result())
+	assert_gte(_min_font_size(_screen), 12, "no player-facing text below 12 px")
+
+
 func test_rhythm_line_reports_grades() -> void:
 	await _open(_result())
 	var rhythm := _screen.get_node("Plaque/Rhythm") as Label
@@ -144,10 +176,11 @@ func test_buttons_are_the_contract_labels() -> void:
 	assert_eq((plaque.get_node("NewSeedButton") as Button).text, "NUEVA SEMILLA")
 
 
-func test_rank_is_full_size_when_reduce_motion_is_on() -> void:
+func test_rank_is_96px_and_skips_the_scale_in_with_reduce_motion() -> void:
 	Settings.reduce_motion = true
 	await _open(_result())
 	var rank := _screen.get_node("Plaque/Rank") as Label
+	assert_eq(rank.get_theme_font_size("font_size"), 96, "rank sits in the 48-96 px band")
 	assert_eq(rank.scale, Vector2.ONE, "reduce motion must skip the 240 ms scale-in")
 
 
@@ -160,3 +193,13 @@ func test_escape_returns_to_the_menu() -> void:
 
 func test_score_grouping_matches_the_title_screen() -> void:
 	assert_eq(END_SCENE.instantiate()._format_score(12500), "12 500")
+
+
+## Walks the screen and returns the smallest font size in use (UX_RESEARCH §9: floor 12 px).
+func _min_font_size(node: Node) -> int:
+	var smallest := 999
+	if node is Label or node is Button:
+		smallest = mini(smallest, (node as Control).get_theme_font_size("font_size"))
+	for child in node.get_children():
+		smallest = mini(smallest, _min_font_size(child))
+	return smallest
