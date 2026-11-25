@@ -108,7 +108,11 @@ func get_shake_offset() -> Vector2:
 	var amplitude := _fallback_trauma * _fallback_trauma * MAX_SHAKE_PX
 	var x := sin(_shake_time * SHAKE_FREQ_X + SHAKE_PHASE_X) * amplitude
 	var y := cos(_shake_time * SHAKE_FREQ_Y + SHAKE_PHASE_Y) * amplitude
-	return Vector2(roundf(x), roundf(y))
+	var offset := Vector2(roundf(x), roundf(y))
+	if offset.length() > MAX_SHAKE_PX:
+		offset = offset.normalized() * MAX_SHAKE_PX
+		offset = offset.sign() * offset.abs().floor()
+	return offset
 
 
 ## Lead vector actually applied this frame, clamped to `MAX_LEAD_PX` (halved when reduced).

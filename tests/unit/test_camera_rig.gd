@@ -9,6 +9,10 @@ var _target: CharacterBody2D = null
 
 
 func before_each() -> void:
+	# The real game shares one Juice trauma pool; tests must not inherit another test's shake.
+	var juice := get_node_or_null("/root/Juice")
+	if juice != null and juice.has_method("release_motion"):
+		juice.call("release_motion")
 	_target = CharacterBody2D.new()
 	add_child_autofree(_target)
 	_target.global_position = Vector2(640.0, 360.0)
@@ -19,6 +23,9 @@ func before_each() -> void:
 
 func after_each() -> void:
 	_rig.set_reduce_motion(false)
+	var juice := get_node_or_null("/root/Juice")
+	if juice != null and juice.has_method("release_motion"):
+		juice.call("release_motion")
 
 
 func _step(frames: int, duration: float = 1.0 / 60.0) -> void:

@@ -141,7 +141,12 @@ func get_shake_offset() -> Vector2:
 		return Vector2.ZERO
 	var x := sin(_shake_time * SHAKE_FREQ_X + SHAKE_PHASE_X) * amplitude
 	var y := cos(_shake_time * SHAKE_FREQ_Y + SHAKE_PHASE_Y) * amplitude
-	return Vector2(roundf(x), roundf(y))
+	var offset := Vector2(roundf(x), roundf(y))
+	# Per-axis rounding can push the diagonal past the cap; step down without leaving the grid.
+	if offset.length() > MAX_SHAKE_PX:
+		offset = offset.normalized() * MAX_SHAKE_PX
+		offset = offset.sign() * offset.abs().floor()
+	return offset
 
 
 func get_zoom_punch() -> float:
