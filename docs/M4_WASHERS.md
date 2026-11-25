@@ -78,6 +78,50 @@ Rules as implemented (all covered by tests):
 Locked rows are **pre-wired** with the requirement they will have when they unlock, so a
 phase change only flips the lock. A locked washer never accepts and never costs stability.
 
+`MainLevel` reads a phase with one call:
+
+```gdscript
+var assignments := WasherAssignments.for_phase(phase)
+# { "washer_nw": {"requirement": &"red",   "locked": false},
+#   "washer_ne": {"requirement": &"blue",  "locked": false},
+#   "washer_sw": {"requirement": &"solid", "locked": true},
+#   "washer_se": {"requirement": &"spotted", "locked": true} }   # P1
+for washer_id in assignments:
+    var washer: CosmicWasher = washers[StringName(washer_id)]
+    var row: Dictionary = assignments[washer_id]
+    washer.set_requirement(StringName(str(row["requirement"])))
+    washer.set_locked(bool(row["locked"]))
+```
+
+`for_phase`, `requirement_for`, `is_locked` and `coverage_ok` are the four public names.
+
+### Why this ramp
+
+* **P1 — red/blue only.** The two first item colours of the GDD, one machine each, and the
+  south half *visible but offline*. The first 20 seconds ask one question ("which colour?"),
+  and an offline machine teaches the `FUERA DE SERVICIO` language without punishing anyone.
+* **P2 — add `solid`.** Colour reading is established, so the first *pattern* home arrives.
+  `ringed` items already have a colour home; the pattern washer is a shortcut, not a new
+  failure mode, which keeps the phase-2 difficulty curve about throughput, not reading.
+* **P3 — add `spotted`.** The phase where turbulence starts, so the player must read colour
+  **and** pattern while the orange alarm is running. Yellow spawns from P3, and the blue/red
+  colour homes still cover their own variants.
+* **P4 — `yellow` + `red`, `solid` + `ringed`.** The final load is the climax: the north
+  pair swaps blue for yellow so the *palette* visibly changes at 05:15 (warm machines, warm
+  convoy) without changing the verb. `solid` stays (it has been online since P2) and `ringed`
+  replaces `spotted` to keep the two pattern homes the ramp has taught. Red and yellow
+  variants always fall back to a colour home; a blue variant can only reach `solid`/`ringed`,
+  which is exactly the documented gap.
+
+### The mathematical limit behind the gap
+
+`Compatibility.item_fits` matches a washer on **one** channel: colour *or* pattern. Two
+colour washers cover `2 × 3 = 6` variants; two pattern washers can cover the third colour in
+only two of its three patterns. Four washers therefore top out at **8 of 9** variants. The
+shipped ramp reaches that maximum; the missing one is `yellow_ringed` in P3 and `blue_spotted`
+in P4. A `wild` washer (or a per-colour pattern restriction in `data/phases.tres`) would close
+it, but both are outside this file's ownership.
+
 ### Known coverage gap (reported, not silently patched)
 
 A requirement is a colour **or** a pattern, so four washers split 2 colours + 2 patterns cover
@@ -99,6 +143,10 @@ Root `StaticBody2D` on `WASHER | WORLD` (**deviation:** the frozen player/item m
 collide with `WORLD`, so the machine body carries both bits; masks are `0`). The root sits on
 the mouth, so `mach_washer`'s bottom-centre pivot lands on the machine base.
 
+State ordinals are a frozen contract for the camera punctuation: `IDLE=0`, `WASHING=1`,
+`TURBULENT=2`, `DONE=3`, `BROKEN=4` (`CosmicWasher.State`, mirrored by `WasherFSM.State` and
+asserted in `test_washer_scene.gd`).
+
 Children after `_ready`: `Visual` (AnimatedSprite2D ×4, `centered=false`, `offset=-pivot`,
 never rotated), `Holo` (procedural plaque + two `ui_holo_icons` glyphs + one text line),
 `ProgressRing` (procedural arc around the drum), `Mouth` (Area2D, layer 0, mask ITEMS,
@@ -116,7 +164,8 @@ a wildcard rejection never cost stability; a full washer is not "wrong" either.
 
 ## 5. DeliveryChute node
 
-Root `Area2D` on `CHUTE`, mask `ITEMS`. Only `item.is_clean` delivers: `+3` stability,
+Root `Area2D` on `CHUTE`, mask `ITEMS`. Signals: `delivered(item, points)` and
+`dirty_rejected(item)`. Only `item.is_clean` delivers: `+3` stability,
 `delivered_count += 1`, `score += item.points × combo` through `GameState.add_score`, chime,
 `accept` animation, floating `+points` label, item freed. Dirty items bounce out with
 `LAVA PRIMERO` for 1.2 s and **no** penalty. Delivery is guarded per instance id, so a double
@@ -143,9 +192,11 @@ are procedural; the hatch is the shipped `env_chute` sheet, with palette rings a
 # once, from layout.json (washers: rect + mouth in art px)
 washer.configure(&"washer_nw", Rect2(36, 32, 48, 48), Vector2(60, 80), &"red")
 
-# at a phase boundary
-for row in WasherAssignments.table(phase):
-    var w: CosmicWasher = washers[StringName(str(row["washer_id"]))]
+# at a phase boundary (one call, then a loop over four entries)
+var assignments := WasherAssignments.for_phase(phase)
+for washer_id in assignments:
+    var w: CosmicWasher = washers[StringName(washer_id)]
+    var row: Dictionary = assignments[washer_id]
     w.set_phase(phase)
     w.set_requirement(StringName(str(row["requirement"])))
     w.set_locked(bool(row["locked"]))
