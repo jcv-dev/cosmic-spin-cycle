@@ -19,6 +19,7 @@ locked, centre chute carrying a clean item.*
 | `scripts/logic/ScoreRules.gd` | Delivery points, S/A/B/C rank, end-screen summary |
 | `scripts/logic/ShiftRules.gd` | Win/lose evaluation, Final Load kept as stats only |
 | `scripts/entities/CosmicWasher.gd` + `.tscn` | Machine node: renderer + event forwarder |
+| `scripts/entities/WasherFX.gd` | Procedural holo/ring/gauge/chip/text visuals (no assets) |
 | `scripts/environment/DeliveryChute.gd` + `.tscn` | The goal: clean-only delivery |
 | `scenes/dev/WasherSandbox.gd` + `.tscn` | Dev/screenshot playground |
 | `tests/unit/test_washer_fsm.gd` etc. | 64 new tests (suite total 379) |
@@ -137,6 +138,33 @@ gap so a future fix updates both. Fix options for the lead (both outside this wo
 ownership): restrict a phase's `allowed_patterns` per colour in the frozen `data/phases.tres`,
 or make one washer per phase `wild`. Until then those two variants can be washed nowhere.
 
+## 3.5 Feedback (measured UX notes)
+
+The UX research measured the greybox feedback and fixed these rules; they override the
+earlier "juice" defaults.
+
+| Event | Local feedback | Duration |
+|---|---|---|
+| Correct insert | mouth rim `clean_green` 1 frame; drum loop + chime start **on the next beat** | 1 frame + beat |
+| Wrong washer | `-12` chip at the mouth (down triangle + number + orange), porthole `red_1` 1 frame, item bounced, ~120 ms buzz. **No camera shake.** | 180 ms |
+| Turbulence | persistent `TURBULENTO` label (14 px), 3-segment gauge + deadline countdown, orange porthole, 1 art px vibration @ 2 Hz, **2 alarm beeps then silence** | persistent |
+| Clean done | `fx_bubbles` loop, 1 px `clean_green` rim, two bell notes | 180 ms + hold |
+| Explosion | `fx_explosion` (6 frames @ 12 fps), `¡EXPLOSIÓN!` 24 px at the machine, 8 px shake in 4 px steps | 180 ms |
+| Chute delivery | `accept` 3 authored frames, item shrinks into the iris, `+points` flies ≤ 200 px to the counter, `+3` chip at the chute | 200 ms / 180 ms |
+
+* **Feedback budget:** every action feedback is `0.45 x T_beat` or shorter — 257/229/208/190 ms
+  at 105/118/142 BPM. `CosmicWasher.FEEDBACK_S = 0.18` is the fixed value used for chips,
+  flashes, the explosion shout and the points flight; only the turbulence label and gauge are
+  persistent. The one authored exception is the chute's `accept` animation, which is exactly
+  the 3 frames the sheet provides (250 ms at 12 fps); every added flash, chip or flight is
+  `FEEDBACK_S`.
+* **Colour is never the only channel.** Stability chips always carry a triangle glyph, the
+  number and the colour (`red_1` alone is 1.82:1 on the background — effectively invisible).
+* **Out of this workstream:** the camera hitstop (33 ms max), camera shake (8 px max) and the
+  ≥ 300 ms stability-bar slide belong to `MainLevel`; the shredder's `-8` chip + 6 px sparks
+  belong to `scripts/environment/Shredder.gd` (M3 owner). This branch only emits the events
+  and keeps the local feedback small.
+
 ## 4. CosmicWasher node
 
 Root `StaticBody2D` on `WASHER | WORLD` (**deviation:** the frozen player/item masks only
@@ -155,7 +183,7 @@ r = 60), `Audio` (`washer_drum` loop on SFX) plus three one-shot players, `Steam
 **Holo anchors adapt to the frozen layout.** The north machines carry the panel 40 px above
 them; the south row has only 64 world px between rows, so its panel is drawn 40 px **below**
 the machine (`HOLO_ORIGIN_BELOW`). Colour is never the only channel: every state has a glyph
-and Spanish text (`ROJO`, `NO COMPATIBLE`, `LAVANDO 64%`, `¡GOLPE!`, `LISTO`, `AVERIADA`,
+and Spanish text (`ROJO`, `NO COMPATIBLE`, `LAVANDO 64%`, `TURBULENTO`, `LISTO`, `AVERIADA`,
 `FUERA DE SERVICIO`). Locked machines dim the sprite to 55 % and drop their glow.
 
 Side effects (the authority): wrong washer `-12` + `wrong_washer_count`; explosion `-25` +
@@ -167,7 +195,9 @@ a wildcard rejection never cost stability; a full washer is not "wrong" either.
 Root `Area2D` on `CHUTE`, mask `ITEMS`. Signals: `delivered(item, points)` and
 `dirty_rejected(item)`. Only `item.is_clean` delivers: `+3` stability,
 `delivered_count += 1`, `score += item.points × combo` through `GameState.add_score`, chime,
-`accept` animation, floating `+points` label, item freed. Dirty items bounce out with
+`accept` animation, a `+3` chip at the chute and a `+points` label that flies at most 200 px
+towards the HUD counter (no flight under reduce motion; the counter pulse is the HUD's). The
+item shrinks into the iris for 200 ms (capped at `0.45 x T_beat`) and is then freed. Dirty items bounce out with
 `LAVA PRIMERO` for 1.2 s and **no** penalty. Delivery is guarded per instance id, so a double
 callback cannot pay twice.
 
@@ -182,8 +212,13 @@ are procedural; the hatch is the shipped `env_chute` sheet, with palette rings a
 `EJECT_OFFSET`, `EJECT_IMPULSE`, `EXPLODE_IMPULSE`, `BOUNCE_IMPULSE`, `REJECT_COOLDOWN_S = 0.6`,
 `RELEASE_COOLDOWN_S = 0.4`, `HOLO_GAP = 40`, `HOLO_ORIGIN(_BELOW)`, `SHAKE_PX = 6`,
 `SHAKE_TIME_S = 0.26`, `LOAD_FLASH_S = 0.18`, `ALARM_MAX = 3`, audio dB values.
+`CosmicWasher` feedback: `FEEDBACK_S = 0.18`, `RIM_FRAME_S = 0.02`, `BUZZ_S = 0.12`,
+`BELL_GAP_S = 0.15`, `EXPLOSION_SHAKE_PX = 8`, `SHAKE_STEP_PX = 4`,
+`TURBULENCE_VIBRATION_PX = 4` (1 art px @ 2 Hz), `ALARM_BEEPS = 2`.
 `DeliveryChute`: `BEACON_RADIUS = 44`, `HINT_RADIUS = 84`, `HATCH_RADIUS = 64`,
-`REJECT_LABEL_S = 1.2`, `ACCEPT_ANIM_S = 0.5`, `BOUNCE_IMPULSE = 340`.
+`REJECT_LABEL_S = 1.2`, `ACCEPT_ANIM_S = 0.25` (3 frames @ 12 fps), `SWALLOW_S = 0.2`,
+`POINTS_FLIGHT_PX = 200`, `COUNTER_HINT = (1124, 52)`, `FEEDBACK_S = 0.18`,
+`BOUNCE_IMPULSE = 340`.
 `ScoreRules.REFERENCE_COMBO = 4` (the documented max-possible assumption).
 
 ## 7. Wiring checklist for the lead
