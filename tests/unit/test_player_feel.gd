@@ -101,6 +101,30 @@ func test_braking_stops_the_player_in_about_two_hundred_ms() -> void:
 	assert_gte(frames, 8, "braking keeps some weight instead of stopping instantly")
 
 
+func _measure_turnaround(boost: float, window: float) -> int:
+	_player._reversal_boost = boost
+	_player._turn_boost_s = window
+	_player.velocity = Vector2(Config.PLAYER_MAX_SPEED, 0.0)
+	var start_frame := Engine.get_physics_frames()
+	Input.action_press(&"move_left")
+	while _player.velocity.x > -Config.PLAYER_MAX_SPEED * 0.9:
+		await wait_physics_frames(1)
+	var frames := Engine.get_physics_frames() - start_frame
+	Input.action_release(&"move_left")
+	_player.velocity = Vector2.ZERO
+	await wait_physics_frames(2)
+	return frames
+
+
+func test_reversal_boost_is_faster_than_unboosted_acceleration_directly() -> void:
+	var unboosted := await _measure_turnaround(1.0, 0.0)
+	var boosted := await _measure_turnaround(Player.FEEL_REVERSAL_BOOST, Player.FEEL_TURN_BOOST_S)
+	assert_lt(boosted, unboosted, "the boosted turnaround uses fewer physics frames")
+	assert_gt(boosted, 2, "the boosted turnaround still takes real frames")
+	_player._reversal_boost = Player.FEEL_REVERSAL_BOOST
+	_player._turn_boost_s = Player.FEEL_TURN_BOOST_S
+
+
 func test_stick_aim_snaps_within_twelve_degrees() -> void:
 	var near := _player._snap_to_eight(Vector2.from_angle(deg_to_rad(10.0)))
 	assert_almost_eq(near.angle(), 0.0, 0.0001, "10° off the cardinal snaps to it")
