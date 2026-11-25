@@ -18,6 +18,7 @@ const END_SCENE := "res://scenes/ui/EndScreen.tscn"
 const OPTIONS_SCENE := "res://scenes/ui/OptionsScreen.tscn"
 const CALIBRATION_SCENE := "res://scenes/ui/CalibrationModal.tscn"
 const TUTORIAL_SCENE := "res://scenes/main/Tutorial.tscn"
+const SCORE_RULES := "res://scripts/logic/ScoreRules.gd"
 const MUSIC_MANIFEST := "res://assets/audio/music.json"
 const MUSIC_DIR := "res://assets/audio/music/"
 
@@ -31,6 +32,8 @@ var _ui: CanvasLayer
 var _fade: ColorRect
 var _screen: Control = null
 var _options: Control = null
+var _calibration: Control = null
+var _prompt: Control = null
 var _ambient: AudioStreamPlayer
 var _fade_tween: Tween
 var _busy := false
@@ -44,12 +47,12 @@ func _ready() -> void:
 	add_child(_ui)
 	_build_fade()
 	_setup_ambient()
+	Settings.settings_changed.connect(_on_settings_changed)
 	var boot := _boot_screen()
 	if boot == &"shift" or boot == &"tutorial":
 		start_shift(boot == &"tutorial")
 	else:
 		show_title(true)
-	Settings.settings_changed.connect(_on_settings_changed)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -79,7 +82,7 @@ func show_title(instant: bool = false) -> void:
 	_play_ambient()
 	var title := _instance(TITLE_SCENE)
 	if title == null:
-		title = _fallback_title()
+		title = FallbackScreens.title(self)
 	_screen = title
 	_ui.add_child(title)
 	_connect_screen(
@@ -101,7 +104,7 @@ func show_title(instant: bool = false) -> void:
 		_fade_in(0.22)
 
 
-## Starts a shift. `with_tutorial` starts the tutorial instead of the shift.
+## Starts a shift, or the tutorial when `with_tutorial` is true.
 func start_shift(with_tutorial: bool = false) -> void:
 	if _busy:
 		return
@@ -124,8 +127,7 @@ func start_shift(with_tutorial: bool = false) -> void:
 
 
 func restart_shift() -> void:
-	var was_tutorial := current_screen == &"tutorial"
-	start_shift(was_tutorial)
+	start_shift(current_screen == &"tutorial")
 
 
 func quit_to_menu() -> void:
@@ -159,63 +161,42 @@ func _on_title_quit() -> void:
 
 
 func _show_first_run_prompt() -> void:
-	var prompt := _instance(FIRST_RUN_SCENE)
-	if prompt == null:
+	_prompt = _instance(FIRST_RUN_SCENE)
+	if _prompt == null:
 		# No prompt authored yet: go straight to the shift but remember the choice.
 		Settings.mark_first_run_done()
 		start_shift(false)
 		return
-	_ui.add_child(prompt)
+	_ui.add_child(_prompt)
+	_focus_first(_prompt)
 	_connect_screen(
-		prompt,
+		_prompt,
 		{
-			"tutorial_selected":
-			func() -> void:
-## Application shell: owns the screen flow and the lifetime of a shift.
-##
-## Title → (first-run prompt) → shift or tutorial → pause / options → end → title.
-## The game world lives in a child `MainLevel`; every other screen is a Control instanced
-## in `UI` (a CanvasLayer above the world). Screens are pure presentation: they emit
-## intent signals, this node decides.
-##
-## Screens are optional at runtime (`ResourceLoader.exists` guards) so the project always
-## boots even while a screen is being authored by another workstream.
-
-# --- Public flow ------------------------------------------------------------
-
-## Starts a shift. `with_tutorial` starts the tutorial instead of the shift.
-
-# --- Screen wiring ----------------------------------------------------------
-
-				# No prompt authored yet: go straight to the shift but remember the choice.
-
-				prompt.queue_free()
-				start_shift(true),
-			"skip_selected":
-			func() -> void:
-## Application shell: owns the screen flow and the lifetime of a shift.
-##
-## Title → (first-run prompt) → shift or tutorial → pause / options → end → title.
-## The game world lives in a child `MainLevel`; every other screen is a Control instanced
-## in `UI` (a CanvasLayer above the world). Screens are pure presentation: they emit
-## intent signals, this node decides.
-##
-## Screens are optional at runtime (`ResourceLoader.exists` guards) so the project always
-## boots even while a screen is being authored by another workstream.
-
-# --- Public flow ------------------------------------------------------------
-
-## Starts a shift. `with_tutorial` starts the tutorial instead of the shift.
-
-# --- Screen wiring ----------------------------------------------------------
-
-				# No prompt authored yet: go straight to the shift but remember the choice.
-
-				prompt.queue_free()
-				start_shift(false),
-			"closed": prompt.queue_free,
+			"tutorial_selected": _on_prompt_tutorial,
+			"skip_selected": _on_prompt_skip,
+			"closed": _on_prompt_closed,
 		}
 	)
+
+
+func _on_prompt_tutorial() -> void:
+	_dismiss_prompt()
+	start_shift(true)
+
+
+func _on_prompt_skip() -> void:
+	_dismiss_prompt()
+	start_shift(false)
+
+
+func _on_prompt_closed() -> void:
+	_dismiss_prompt()
+
+
+func _dismiss_prompt() -> void:
+	if _prompt != null and is_instance_valid(_prompt):
+		_prompt.queue_free()
+	_prompt = null
 
 
 func _spawn_level(with_tutorial: bool) -> Node:
@@ -227,25 +208,20 @@ func _spawn_level(with_tutorial: bool) -> Node:
 		push_error("APP: cannot load level scene")
 		return null
 	var node := packed.instantiate()
-	if with_tutorial and node.has_method("is_tutorial_level"):
-		pass
-	elif node.get("mode") != null:
+	if node.get("mode") != null:
 		node.set("mode", &"tutorial" if with_tutorial else &"shift")
 	add_child(node)
 	if node.has_signal("shift_finished"):
 		node.connect("shift_finished", _on_shift_finished)
 	if node.has_signal("tutorial_completed"):
 		node.connect("tutorial_completed", _on_tutorial_completed)
-	if node.has_signal("shift_started"):
-		node.emit_signal("shift_started")
 	return node
 
 
 func _on_shift_finished(result: Dictionary) -> void:
 	last_result = result.duplicate(true)
-	last_result["rank"] = _rank_for(result)
-	var rank_letter := String(last_result.get("rank", "C"))
-	Settings.record_result(int(result.get("score", 0)), rank_letter)
+	last_result["rank"] = _rank_for(last_result)
+	Settings.record_result(int(result.get("score", 0)), String(last_result.get("rank", "C")))
 	_show_end(last_result)
 
 
@@ -267,51 +243,37 @@ func _show_end(result: Dictionary) -> void:
 	_connect_screen(
 		screen,
 		{
-			"retry_requested": restart_shift,
-			"new_seed_requested":
-			func() -> void:
-## Application shell: owns the screen flow and the lifetime of a shift.
-##
-## Title → (first-run prompt) → shift or tutorial → pause / options → end → title.
-## The game world lives in a child `MainLevel`; every other screen is a Control instanced
-## in `UI` (a CanvasLayer above the world). Screens are pure presentation: they emit
-## intent signals, this node decides.
-##
-## Screens are optional at runtime (`ResourceLoader.exists` guards) so the project always
-## boots even while a screen is being authored by another workstream.
-
-# --- Public flow ------------------------------------------------------------
-
-## Starts a shift. `with_tutorial` starts the tutorial instead of the shift.
-
-# --- Screen wiring ----------------------------------------------------------
-
-				# No prompt authored yet: go straight to the shift but remember the choice.
-
-				Settings.db_seed = 0
-				restart_shift(),
+			"retry_requested": _on_end_retry,
+			"new_seed_requested": _on_end_new_seed,
 			"menu_requested": quit_to_menu,
 		}
 	)
 
 
+func _on_end_retry() -> void:
+	restart_shift()
+
+
+func _on_end_new_seed() -> void:
+	Settings.db_seed = 0
+	restart_shift()
+
+
 func _rank_for(result: Dictionary) -> String:
-	var score := int(result.get("score", 0))
 	var accuracy := float(result.get("accuracy", 0.0))
 	var victory := bool(result.get("victory", false))
-	if ResourceLoader.exists("res://scripts/logic/ScoreRules.gd"):
-		var rules := load("res://scripts/logic/ScoreRules.gd") as Script
-		if rules.has_method("rank"):
-			return String(
-				rules.call("rank", float(result.get("score_ratio", 0.0)), accuracy, victory)
-			)
+	if ResourceLoader.exists(SCORE_RULES):
+		var rules := load(SCORE_RULES) as Script
+		if rules != null and rules.has_method("rank"):
+			var ratio := float(result.get("score_ratio", 0.0))
+			return String(rules.call("rank", ratio, accuracy, victory))
 	if not victory:
 		return "C"
-	if accuracy >= Config.RANK_S_ACCURACY and score >= 12000:
+	if accuracy >= Config.RANK_S_ACCURACY and int(result.get("score", 0)) >= 12000:
 		return "S"
-	if score >= 8000:
+	if int(result.get("score", 0)) >= 8000:
 		return "A"
-	if score >= 4000:
+	if int(result.get("score", 0)) >= 4000:
 		return "B"
 	return "C"
 
@@ -333,7 +295,7 @@ func pause_game() -> void:
 	get_tree().paused = true
 	var overlay := _instance(PAUSE_SCENE)
 	if overlay == null:
-		overlay = _fallback_pause()
+		overlay = FallbackScreens.pause(self)
 	_ui.add_child(overlay)
 	_screen = overlay
 	_focus_first(overlay)
@@ -341,58 +303,26 @@ func pause_game() -> void:
 		overlay,
 		{
 			"resume_requested": resume_game,
-			"restart_requested":
-			func() -> void:
-## Application shell: owns the screen flow and the lifetime of a shift.
-##
-## Title → (first-run prompt) → shift or tutorial → pause / options → end → title.
-## The game world lives in a child `MainLevel`; every other screen is a Control instanced
-## in `UI` (a CanvasLayer above the world). Screens are pure presentation: they emit
-## intent signals, this node decides.
-##
-## Screens are optional at runtime (`ResourceLoader.exists` guards) so the project always
-## boots even while a screen is being authored by another workstream.
-
-# --- Public flow ------------------------------------------------------------
-
-## Starts a shift. `with_tutorial` starts the tutorial instead of the shift.
-
-# --- Screen wiring ----------------------------------------------------------
-
-				# No prompt authored yet: go straight to the shift but remember the choice.
-
-# --- Pause and options ------------------------------------------------------
-
-				resume_game()
-				restart_shift(),
-			"options_requested": func() -> void: _open_options(true),
-			"menu_requested":
-			func() -> void:
-## Application shell: owns the screen flow and the lifetime of a shift.
-##
-## Title → (first-run prompt) → shift or tutorial → pause / options → end → title.
-## The game world lives in a child `MainLevel`; every other screen is a Control instanced
-## in `UI` (a CanvasLayer above the world). Screens are pure presentation: they emit
-## intent signals, this node decides.
-##
-## Screens are optional at runtime (`ResourceLoader.exists` guards) so the project always
-## boots even while a screen is being authored by another workstream.
-
-# --- Public flow ------------------------------------------------------------
-
-## Starts a shift. `with_tutorial` starts the tutorial instead of the shift.
-
-# --- Screen wiring ----------------------------------------------------------
-
-				# No prompt authored yet: go straight to the shift but remember the choice.
-
-# --- Pause and options ------------------------------------------------------
-
-				resume_game()
-				quit_to_menu(),
+			"restart_requested": _on_pause_restart,
+			"options_requested": _on_pause_options,
+			"menu_requested": _on_pause_menu,
 		}
 	)
 	_screen_name(&"pause")
+
+
+func _on_pause_restart() -> void:
+	resume_game()
+	restart_shift()
+
+
+func _on_pause_options() -> void:
+	_open_options(true)
+
+
+func _on_pause_menu() -> void:
+	resume_game()
+	quit_to_menu()
 
 
 func resume_game() -> void:
@@ -400,17 +330,15 @@ func resume_game() -> void:
 		return
 	get_tree().paused = false
 	is_paused = false
-	if _options != null:
-		_options.queue_free()
-		_options = null
-	if _screen != null and current_screen == &"pause":
+	_close_options()
+	if _screen != null and is_instance_valid(_screen) and current_screen == &"pause":
 		_screen.queue_free()
 		_screen = null
-	current_screen = &"shift" if not _is_tutorial() else &"tutorial"
+	current_screen = &"tutorial" if _is_tutorial() else &"shift"
 	screen_changed.emit(current_screen)
 
 
-func _open_options(from_pause: bool) -> void:
+func _open_options(_from_pause: bool) -> void:
 	if _options != null:
 		return
 	var options := _instance(OPTIONS_SCENE)
@@ -419,9 +347,15 @@ func _open_options(from_pause: bool) -> void:
 	_options = options
 	options.process_mode = Node.PROCESS_MODE_ALWAYS
 	_ui.add_child(options)
-	if options.has_method("open"):
-		options.call("open", from_pause)
-	_connect_screen(options, {"closed": _close_options})
+	_connect_screen(
+		options,
+		{
+			"closed": _close_options,
+			"calibration_requested": _open_calibration,
+		}
+	)
+	if options.has_method("focus_first"):
+		options.call_deferred("focus_first")
 
 
 func _close_options() -> void:
@@ -432,14 +366,24 @@ func _close_options() -> void:
 
 
 func _open_calibration() -> void:
+	if _calibration != null:
+		return
 	var modal := _instance(CALIBRATION_SCENE)
 	if modal == null:
 		return
 	modal.process_mode = Node.PROCESS_MODE_ALWAYS
 	_ui.add_child(modal)
+	_calibration = modal
 	if modal.has_method("open"):
 		modal.call("open", -1, false)
-	_connect_screen(modal, {"closed": modal.queue_free})
+	_connect_screen(modal, {"closed": _close_calibration})
+
+
+func _close_calibration() -> void:
+	if _calibration == null:
+		return
+	_calibration.queue_free()
+	_calibration = null
 
 
 # --- Level lifetime ---------------------------------------------------------
@@ -497,14 +441,12 @@ func _clear_screens() -> void:
 	if _screen != null and is_instance_valid(_screen):
 		_screen.queue_free()
 	_screen = null
-	if _options != null and is_instance_valid(_options):
-		_options.queue_free()
-	_options = null
+	_dismiss_prompt()
+	_close_options()
 	for child in _ui.get_children():
 		if child is Control and child != _fade:
 			child.queue_free()
 	current_screen = &""
-	# A screen may have paused the tree; never leave it paused across screens.
 	get_tree().paused = false
 	is_paused = false
 
@@ -602,70 +544,3 @@ func _boot_screen() -> StringName:
 			if value == "shift" or value == "tutorial":
 				return StringName(value)
 	return &"title"
-
-
-# --- Fallbacks (only used when a screen scene is missing) -------------------
-
-
-func _fallback_title() -> Control:
-	var root := Control.new()
-	root.name = "TitleFallback"
-	root.set_anchors_preset(Control.PRESET_FULL_RECT)
-	root.theme = UITheme.theme()
-	var dim := UITheme.dimmer(0.55)
-	root.add_child(dim)
-	var logo := UITheme.label("COSMIC SPIN CYCLE", UITheme.FONT_TITLE, UITheme.INK, true)
-	logo.position = Vector2(120, 120)
-	root.add_child(logo)
-	var column := VBoxContainer.new()
-	column.position = Vector2(120, 300)
-	column.custom_minimum_size = Vector2(360, 0)
-	root.add_child(column)
-	var start := UITheme.button("INICIAR TURNO")
-	start.pressed.connect(_on_title_start)
-	column.add_child(start)
-	var tutorial := UITheme.button("TUTORIAL")
-	tutorial.pressed.connect(_on_title_tutorial)
-	column.add_child(tutorial)
-	var options := UITheme.button("OPCIONES")
-	options.pressed.connect(_on_title_options)
-	column.add_child(options)
-	var quit := UITheme.button("SALIR")
-	quit.pressed.connect(_on_title_quit)
-	column.add_child(quit)
-	return root
-
-
-func _fallback_pause() -> Control:
-	var root := Control.new()
-	root.name = "PauseFallback"
-	root.set_anchors_preset(Control.PRESET_FULL_RECT)
-	root.process_mode = Node.PROCESS_MODE_ALWAYS
-	root.theme = UITheme.theme()
-	root.add_child(UITheme.dimmer(0.6))
-	var plaque := UITheme.panel(Rect2(380, 200, 520, 320))
-	root.add_child(plaque)
-	var column := VBoxContainer.new()
-	column.position = Vector2(404, 224)
-	column.custom_minimum_size = Vector2(472, 0)
-	column.add_theme_constant_override("separation", 8)
-	plaque.add_child(column)
-	column.add_child(UITheme.label("PAUSA", UITheme.FONT_TITLE, UITheme.INK, true))
-	var resume := UITheme.button("REANUDAR")
-	resume.pressed.connect(resume_game)
-	column.add_child(resume)
-	var restart := UITheme.button("REINICIAR")
-	restart.pressed.connect(
-		func() -> void:
-			resume_game()
-			restart_shift()
-	)
-	column.add_child(restart)
-	var menu := UITheme.button("MENÚ")
-	menu.pressed.connect(
-		func() -> void:
-			resume_game()
-			quit_to_menu()
-	)
-	column.add_child(menu)
-	return root

@@ -1,9 +1,13 @@
 extends SceneTree
-## Dev-only screenshot harness. Renders the real main scene for N frames and writes a PNG.
+## Dev-only screenshot harness. Renders a scene offscreen at an exact pixel size and saves
+## a PNG.
 ##
-##   godot --path . -s tools/screenshot.gd --resolution 1280x720 --audio-driver Dummy \
-##         --display-driver x11 --rendering-method gl_compatibility
+##   godot --path . -s tools/screenshot.gd --audio-driver Dummy --display-driver wayland \
+##         --rendering-method gl_compatibility -- \
+##         --scene=res://scenes/main/Main.tscn --out=res://docs/media/title.png --frames=12
 ##
+## The scene is rendered into a 1280x720 SubViewport, so the PNG is exactly one art frame
+## regardless of the compositor's HiDPI scale (Wayland otherwise opens at 1900x1068).
 ## Not shipped in exports (tools/ is excluded from export presets).
 
 const DEFAULT_OUT := "res://.work/screens/main.png"
@@ -15,6 +19,10 @@ var _target := DEFAULT_FRAMES
 var _out := DEFAULT_OUT
 var _scene_path := DEFAULT_SCENE
 var _time := -1.0
+var _size := Vector2i(1280, 720)
+
+var _viewport: SubViewport
+var _instance: Node
 
 
 func _initialize() -> void:
@@ -27,15 +35,26 @@ func _initialize() -> void:
 			_scene_path = arg.trim_prefix("--scene=")
 		elif arg.begins_with("--time="):
 			_time = float(arg.trim_prefix("--time="))
+		elif arg.begins_with("--size="):
+			var parts := arg.trim_prefix("--size=").split("x")
+			if parts.size() == 2:
+				_size = Vector2i(int(parts[0]), int(parts[1]))
 	var scene := load(_scene_path) as PackedScene
 	if scene == null:
 		push_error("cannot load scene " + _scene_path)
 		quit(1)
 		return
-	var instance := scene.instantiate()
-	root.add_child(instance)
+	_viewport = SubViewport.new()
+	_viewport.name = "ScreenshotViewport"
+	_viewport.size = _size
+	_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	_viewport.handle_input_locally = false
+	_viewport.gui_disable_input = true
+	root.add_child(_viewport)
+	_instance = scene.instantiate()
+	_viewport.add_child(_instance)
 	if _time >= 0.0:
-		var level := _find_shift_level(instance)
+		var level := _find_shift_level(_instance)
 		if level != null:
 			if level.has_method("warp_to"):
 				level.call("warp_to", _time)
@@ -43,8 +62,8 @@ func _initialize() -> void:
 				level.call("set_shift_time", _time)
 	print(
 		(
-			"SCREENSHOT_BOOT ok scene=%s time=%.1f frames=%d out=%s"
-			% [_scene_path, _time, _target, _out]
+			"SCREENSHOT_BOOT ok scene=%s time=%.1f frames=%d size=%s out=%s"
+			% [_scene_path, _time, _target, str(_size), _out]
 		)
 	)
 
@@ -63,8 +82,8 @@ func _process(_delta: float) -> bool:
 	_frames += 1
 	if _frames < _target:
 		return false
-	var items := root.find_child("Items", true, false)
-	var level := _find_shift_level(root)
+	var items := _viewport.find_child("Items", true, false)
+	var level := _find_shift_level(_viewport)
 	var state := root.get_node_or_null("GameState")
 	print(
 		(
@@ -76,7 +95,11 @@ func _process(_delta: float) -> bool:
 			]
 		)
 	)
-	var img := root.get_texture().get_image()
+	var texture := _viewport.get_texture()
+	if texture == null:
+		push_error("no viewport texture")
+		return true
+	var img := texture.get_image()
 	if img == null:
 		push_error("no viewport image (headless?)")
 		return true
