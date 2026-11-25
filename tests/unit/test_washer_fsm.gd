@@ -115,6 +115,18 @@ func test_capacity_and_slots_table() -> void:
 	assert_eq(guarded.last_reject, WasherFSM.REJECT_WILDCARD_NEEDS_EMPTY)
 
 
+func test_locking_mid_cycle_keeps_the_load_but_rejects_new_work() -> void:
+	var machine := _new_fsm(&"red", 0)
+	machine.insert(_item(&"rocky", 8.0))
+	machine.start_cycle()
+	machine.set_locked(true)
+	assert_eq(machine.get_state(), WasherFSM.State.WASHING, "the current load finishes")
+	assert_false(machine.insert(_item(&"sock", 4.0)), "no new work is accepted")
+	assert_eq(machine.last_reject, WasherFSM.REJECT_LOCKED)
+	machine.tick(8.1)
+	assert_eq(machine.get_state(), WasherFSM.State.DONE, "the wash still completes")
+
+
 func test_requirement_lock_and_busy_table() -> void:
 	var spot := _new_fsm(&"spotted", 0)
 	assert_true(spot.insert(_item(&"rocky", 6.0, 1, &"blue", &"spotted")))
