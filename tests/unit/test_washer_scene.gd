@@ -83,6 +83,18 @@ func test_scene_contract() -> void:
 	assert_almost_eq((body.shape as RectangleShape2D).size.x, 176.0, 0.001)
 	var mouth_shape := mouth.get_node(^"CollisionShape2D") as CollisionShape2D
 	assert_almost_eq((mouth_shape.shape as CircleShape2D).radius, 60.0, 0.001)
+	assert_eq(CosmicWasher.State.IDLE, 0)
+	assert_eq(CosmicWasher.State.WASHING, 1)
+	assert_eq(CosmicWasher.State.TURBULENT, 2)
+	assert_eq(CosmicWasher.State.DONE, 3)
+	assert_eq(CosmicWasher.State.BROKEN, 4)
+	for ordinal in range(5):
+		assert_eq(
+			int(CosmicWasher.State.values()[ordinal]),
+			int(WasherFSM.State.values()[ordinal]),
+			"the node mirrors the FSM ordinal %d" % ordinal
+		)
+	assert_eq(washer.get_state(), CosmicWasher.State.IDLE)
 
 
 func test_configure_positions_the_mouth_and_requirement() -> void:
@@ -176,7 +188,6 @@ func test_cycle_marks_items_clean_and_counts_them_once() -> void:
 	washer.tick(2.1)
 	assert_eq(washer.get_state(), WasherFSM.State.DONE)
 	assert_signal_emitted(washer, "cycle_done")
-	assert_signal_emitted(washer, "delivered_ready")
 	assert_eq(GameState.washed_count, 3, "one count per item")
 	for item in items:
 		assert_true(item.is_clean, "cycle_done marks the load clean")

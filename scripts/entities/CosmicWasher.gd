@@ -1,7 +1,6 @@
 class_name CosmicWasher
 extends StaticBody2D
 ## One washing machine: the pure [WasherFSM] plus every pixel, sound and stability effect.
-##
 ## The node owns no washer rule. It turns a throw into `WasherFSM.insert`, forwards strikes,
 ## renders the state and applies the authoritative consequences (wrong washer -12,
 ## explosion -25, clean items bumped into `GameState.washed_count`, once per item).
@@ -18,7 +17,9 @@ signal state_changed(old_state: int, new_state: int)
 signal cycle_done(items: Array)
 signal exploded
 signal turbulence_resolved(grade: int)
-signal delivered_ready(washer: Node)
+
+## Frozen ordinals for `MainLevel`'s camera punctuation; identical to `WasherFSM.State`.
+enum State { IDLE = 0, WASHING = 1, TURBULENT = 2, DONE = 3, BROKEN = 4 }
 
 enum HoloState { IDLE, MATCH, MISMATCH, WASHING, TURBULENT, DONE, BROKEN, LOCKED }
 
@@ -328,7 +329,6 @@ func _on_cycle_done(items: Array) -> void:
 	_play_oneshot("done", DONE_DB)
 	_spawn_burst(Palette.CLEAN_GREEN, 14, 200.0, 3.0)
 	cycle_done.emit(items)
-	delivered_ready.emit(self)
 
 
 func _on_exploded(items: Array) -> void:
