@@ -122,13 +122,15 @@ func test_warp_skips_past_spawns() -> void:
 
 func test_stability_zero_stops_the_shift() -> void:
 	var level := _spawn_level()
+	var results: Array = []
+	level.shift_finished.connect(func(result: Dictionary) -> void: results.append(result))
 	assert_false(level.is_ended())
 	GameState.add_stability(-500.0, "test")
 	assert_true(level.is_ended())
 	assert_false(BeatConductor.is_playing)
-	var label := level.get_node("UI/EndLabel") as Label
-	assert_true(label.visible)
-	assert_string_contains(label.text, "DESGARRO")
+	assert_eq(results.size(), 1, "the level announces the end exactly once")
+	assert_eq(String(results[0].get("reason", "")), "test")
+	assert_false(bool(results[0].get("victory", true)))
 
 
 func test_phase_three_beat_flips_the_north_belt() -> void:
