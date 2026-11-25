@@ -192,3 +192,28 @@ func test_tutorial_step_replaces_the_clock() -> void:
 	assert_eq(hud.readout()["clock"], "03:22", "leaving the tutorial restores the clock")
 	assert_true(hud.readout()["bpm_visible"])
 	assert_true(hud.readout()["score_visible"])
+
+
+func test_hud_scale_scales_only_the_plaques() -> void:
+	var hud := _open_hud()
+	assert_almost_eq(hud.scale_factor(), 1.0, 0.001)
+	Settings.ui_scale = 1.25
+	Settings.settings_changed.emit()
+	assert_almost_eq(hud.scale_factor(), 1.25, 0.001)
+	assert_eq(hud.get_node("PlaqueA").pivot_offset, Vector2.ZERO, "plaque A grows from the corner")
+	assert_eq(
+		hud.get_node("PlaqueB").pivot_offset,
+		Vector2(312, 0),
+		"plaque B grows toward the field, never off-screen"
+	)
+	assert_eq(hud.get_node("Ribbon").scale, Vector2.ONE, "the ribbon never scales")
+	Settings.ui_scale = 1.0
+	Settings.settings_changed.emit()
+
+
+func test_hud_scale_is_clamped_to_the_offered_options() -> void:
+	var hud := _open_hud()
+	hud.set_hud_scale(4.0)
+	assert_almost_eq(hud.scale_factor(), 1.25, 0.001)
+	hud.set_hud_scale(0.1)
+	assert_almost_eq(hud.scale_factor(), 1.0, 0.001)

@@ -124,6 +124,7 @@ func _ready() -> void:
 	_on_combo(GameState.combo)
 	_on_score(GameState.score)
 	_on_phase(GameState.phase_index)
+	_apply_ui_scale()
 	set_objective(tr(String(DEFAULT_OBJECTIVE)))
 	queue_redraw()
 
@@ -320,6 +321,7 @@ func _connect_state() -> void:
 	GameState.score_changed.connect(_on_score)
 	GameState.phase_changed.connect(_on_phase)
 	GameState.feedback.connect(_on_feedback)
+	Settings.settings_changed.connect(_apply_ui_scale)
 
 
 # --- Painting ---------------------------------------------------------------
@@ -576,6 +578,21 @@ func set_danger(on: bool) -> void:
 		_slot_b.queue_redraw()
 
 
+## HUD scale (100 % / 125 %) scales only the two plaques, from the screen-edge corner, and
+## never the world or the ribbon (docs/UX_BIBLE.md §11.5).
+func set_hud_scale(factor: float) -> void:
+	var options := Config.HUD_SCALE_OPTIONS
+	var clamped := clampf(factor, options[0], options[options.size() - 1])
+	if _plaque_a != null:
+		_plaque_a.scale = Vector2(clamped, clamped)
+	if _plaque_b != null:
+		_plaque_b.scale = Vector2(clamped, clamped)
+
+
+func _apply_ui_scale() -> void:
+	set_hud_scale(Settings.ui_scale)
+
+
 ## Tutorial mode hides the tempo and the score — they are noise while learning — and lets the
 ## clock become the step counter. Stability stays: it is the fail state the step teaches
 ## (docs/UX_BIBLE.md §7). Safe to call before any step exists.
@@ -666,6 +683,10 @@ func plaque_rect(plaque_name: String) -> Rect2:
 
 
 ## One snapshot of everything the layout tests assert, so they never walk node paths.
+func scale_factor() -> float:
+	return _plaque_a.scale.x if _plaque_a != null else 1.0
+
+
 func readout() -> Dictionary:
 	return {
 		"clock": _clock_label.text,
