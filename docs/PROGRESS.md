@@ -10,9 +10,9 @@ Updated after every milestone/workstream. Times are local (America/Bogota).
 | M1 Beat engine & calibration | **done** | `BeatConductor` audio clock, 4 click tracks, overlay, calibration wizard, BeatLab |
 | M2 Player & item physics | **done** | `Player`, `MagneticGrabber`, 5 behaviours, `PlayerSandbox`, 20-item stability test |
 | M3 Belts, spawning, phases | **done** | belts, shredders, `SpawnSchedule`, `SpawnDirector`, 480 s sim, warp/phase wiring |
-| M4 Washers | planned | FSM, holograms, turbulence, chute — next |
-| M5 Shift flow | planned | real win/lose, cheats, final-load validation |
-| M6 UI & flow | planned | title/pause/end/restart, pulse ring |
+| M4 Washers | **done** | `WasherFSM`, `CosmicWasher` ×4, holograms, turbulence/strike, `DeliveryChute`, score rules |
+| M5 Shift flow | **done** | real win/lose, `shift_finished`, `ShiftRules`, F1–F4 cheats, final-load data |
+| M6 UI & flow | **done** | title, first-run, tutorial, pause, options, end, instant restart, HUD redesign |
 | M7 Art integration | **partially done early** | sprite sheets + SpriteSheet loader are live; M7 becomes polish |
 | M8 Audio | **partially done early** | four phase stems, SFX, buses live; transition modes remain |
 | M9 Balance/polish | planned | balance sim, export presets |
@@ -106,10 +106,79 @@ Updated after every milestone/workstream. Times are local (America/Bogota).
 - The test suite reports engine ObjectDB/RID leak warnings at exit (GUT scene instancing);
   they do not fail the run, but M7 should investigate.
 
+## M4 — done (owner UX phase)
+
+- Pure `WasherFSM` (549 lines, table-driven) + `WasherAssignments` + `ScoreRules` + `ShiftRules`.
+- `CosmicWasher` ×4 instantiated from `data/layout.json`; capacity 3, wildcard core, beat
+  reductions once per insert, turbulence rule (`min(5 s, 8 beats)`, grade ≥ GOOD resolves),
+  explosion (−25) and repair, DONE ejection of clean items.
+- Holograms carry the requirement as glyph + label (colour + pattern, never colour alone);
+  the shipped `solid`/`spotted` icons were replaced procedurally because they read as a cloud
+  and plus signs.
+- `DeliveryChute` at the room centre: clean only, +3 stability, points × combo, chirp, accept
+  animation; dirty items bounce with `LAVA PRIMERO` and no penalty.
+- `WasherAssignments` ramp: P1 red/blue with two locked machines, P2 +solid, P3 +spotted,
+  P4 yellow/red/solid/ringed. Coverage is unit-tested for every variant a phase can spawn.
+- Wrong washer −12, explosion −25, delivery +3 are all asserted in the stability ledger.
+
+## M5 — done
+
+- `MainLevel` announces `shift_finished(result)` exactly once; `App` shows the end screen.
+- Victory = stability > 0 at 06:00 (D027), defeat = stability 0; rank S/A/B/C from
+  `ScoreRules`; best score/rank persisted and shown on the title only when a real run exists.
+- F1 (+60 s), F2 (+25 stability), F3 (+500 score), F4 (spawn item) exist only in debug builds.
+- Full loop test: `tests/integration/test_full_loop.gd` drives grab → wash → deliver.
+
+## M6 — done (the owner's three asks)
+
+- **Menu**: title with a living diorama (real room rendered in a SubViewport), logo, five
+  entries with three type tiers, focus ring + caret, hover, ambient stem, fade-in.
+- **First run**: pressing Play opens `¿PRIMERA VEZ?` with the tutorial as the default focus and
+  `EMPEZAR EL TURNO` as the persistent skip. Never asks again; tutorial always replayable.
+- **Tutorial**: 7 gated steps on the real level (`mode = "tutorial"`), scripted items, phase 1,
+  fixed seed 7001, stability protected until gate 7, ESC skip with confirm, TAB soft-skip after
+  12 s, completion persists.
+- **HUD redesign**: two corner plaques + mission ribbon, no bottom strip, segmented stability
+  with numeric value and glyph, beat dots, combo/score, tutorial mode.
+- **Diegetic layer**: 2-beat pulse ring, four-state reticle with `LANZAR`/`NO`/`ENTREGAR`,
+  contextual prompt, carried-item label, grade at the event, turbulence path.
+- **Pause / options / end**: resume/restart/options/menu; volumes, calibration, fullscreen,
+  reduce motion, HUD scale, haptics, reset; verdict + rank + stats + retry/new seed/menu.
+- **Feel**: `Juice` autoload (trauma² shake in 4 px steps, wall-clock hitstop, flash, zoom,
+  rumble, reduce-motion), `CameraRig` fixed at the room centre with shake/kick/zoom, input
+  buffering, reversal-boosted movement, afterimages, dust, item shadow height.
+- **Environment**: layered room (backdrop/floor/dressing/lighting/atmosphere/foreground), 6
+  tinted light pools, 3 particle emitters, hazard shredders, deleted lamp-shaft artifacts.
+
+## Measurements (owner UX phase)
+
+| Metric | Value | Where |
+|---|---|---|
+| Test suite | **668 tests, 10,214 asserts** | GUT summary |
+| Washer/chute tests | FSM transitions, coverage 4 phases, rank bounds, scene smoke | `tests/unit/test_washer*`, `test_delivery_chute.gd` |
+| Screen flow tests | title, first-run, pause, options, end, app flow | `tests/unit/test_*_screen.gd`, `test_pause_overlay.gd`, `tests/integration/test_app_flow.gd` |
+| Tutorial tests | 7 gates, skip, completion persistence, real level | `tests/unit/test_tutorial_*`, `tests/integration/test_tutorial_full.gd` |
+| First 20 s | starter item ≤ 130 px from Pip, no shredder contact | `tests/integration/test_first_20s.gd` |
+| Movement feel | stop 483 → **200 ms**, turnaround 267 → **167 ms**, accel 0→90 % in 150 ms | `docs/FEEL.md` |
+| In-game frame | median **12.8 ms**, p95 ~14 ms, worst 43.7 FPS single frame | `docs/ENVIRONMENT.md` |
+| Light budget | 6 pools + 1 chute + neutral fill (no lamp shafts) | `docs/ENVIRONMENT.md` |
+| Tutorial length | ≈150 s at average pace, hard cap 240 s | `docs/TUTORIAL.md` |
+
+## Known issues (honest)
+
+- 60 FPS is met on the median on this llvmpipe box (12.8 ms) but not with headroom; the
+  worst single frames drop into the 40s during explosions/particles.
+- The tutorial's step 3–4 prompts were authored from the research sheet; the *human* playtest
+  protocol in `docs/UX_BIBLE.md` §2 (5 strangers, 20 s) has not been run — the automated
+  `test_first_20s` covers the affordances, not a person's comprehension.
+- `%` and `×` glyphs in Silkscreen render ambiguously at small sizes; the UI avoids `%`
+  (uses `/100`) and keeps `×` only at ≥20 px.
+- Windows export/CI and the two §8.2 open questions remain M9 work.
+- `docs/media/` before/after stills are from this box; the menu diorama's camera framing is
+  authored for 1280×720 only.
+
 ## Next
 
-1. **M4** — `WasherFSM`, `CosmicWasher`, holograms, turbulence/strike, chute, −12 % wrong
-   washer, +3 % delivery. Use the shipped `mach_washer`, `ui_holo_icons`, `env_chute`,
-   `fx_*` sheets.
-2. **M5** — ShiftManager win/lose, score/combo at chute, F1–F4 cheats, Supernova flag.
-3. **M6** — title, pause, end/restart, pulse ring, calibration from title.
+1. Human playtest of the 20-second test + tutorial with 5 strangers.
+2. Perf: move the atmosphere to a lower update rate or cut embers on the software renderer.
+3. M9: balance sim across four phases, Windows export preset, §8.2 A/B toggles.
