@@ -24,7 +24,15 @@ const HINT_RADIUS := 84.0
 const HATCH_RADIUS := 64.0
 const REJECT_LABEL_S := 1.2
 const REJECT_COOLDOWN_S := 0.6
-const ACCEPT_ANIM_S := 0.5
+## 3 frames at 12 fps (`env_chute` accept animation).
+const ACCEPT_ANIM_S := 0.25
+## The item shrinks into the iris over 200 ms, capped by 0.45 x T_beat.
+const SWALLOW_S := 0.2
+## The +points label flies at most 200 px towards the HUD counter (top-right plaque).
+const COUNTER_HINT := Vector2(1124.0, 52.0)
+const POINTS_FLIGHT_PX := 200.0
+## Every action feedback stays under 0.45 x T_beat (190 ms at 142 BPM).
+const FEEDBACK_S := 0.18
 const BOUNCE_IMPULSE := 340.0
 const CHIME_DB := -7.0
 const CLICK_DB := -10.0
@@ -48,6 +56,11 @@ var _delivered_ids: Dictionary = {}
 var _reject_cooldown: Dictionary = {}
 var _reject_left := 0.0
 var _accept_left := 0.0
+var _swallow_item: Node = null
+var _swallow_visual: Node2D = null
+var _swallow_scale := Vector2.ONE
+var _swallow_left := 0.0
+var _swallow_total := SWALLOW_S
 var _animate_time := 0.0
 var _hint_item: Node = null
 var _has_hatch_art := false
@@ -118,11 +131,12 @@ func try_deliver(item: Node) -> bool:
 	_accept_left = ACCEPT_ANIM_S
 	_play_animation(&"accept")
 	_play_oneshot(_chime, CHIME_DB)
-	_float_points(points)
+	_spawn_points(points)
+	WasherFX.make_chip(self, "+3", true, Palette.CLEAN_GREEN)
+	_begin_swallow(item)
 	if item.has_method(&"report_delivered"):
 		item.call(&"report_delivered")
 	delivered.emit(item, points)
-	item.queue_free()
 	return true
 
 
@@ -132,6 +146,7 @@ func tick(delta: float) -> void:
 	_reject_left = maxf(_reject_left - delta, 0.0)
 	_accept_left = maxf(_accept_left - delta, 0.0)
 	_decay(_reject_cooldown, delta)
+	_advance_swallow(delta)
 	if _reject_left <= 0.0:
 		_refresh_hint()
 	_apply_animation()
@@ -204,22 +219,51 @@ func _bounce(item: Node) -> void:
 	body.apply_central_impulse(away.normalized() * BOUNCE_IMPULSE * maxf(body.mass, 0.1))
 
 
-func _float_points(points: int) -> void:
+func _spawn_points(points: int) -> void:
 	if points <= 0:
 		return
-	var label := Label.new()
-	label.name = "FloatingPoints"
-	label.text = "+%d" % points
-	label.add_theme_font_override("font", Fonts.pixel_font())
-	label.add_theme_font_size_override("font_size", 20)
-	label.add_theme_color_override("font_color", Palette.CLEAN_GREEN)
-	label.position = Vector2(-24.0, -72.0)
-	add_child(label)
-	var tween := create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(label, "position:y", label.position.y - 48.0, 0.6)
-	tween.tween_property(label, "modulate:a", 0.0, 0.6)
-	tween.chain().tween_callback(label.queue_free)
+	var pop := WasherFX.TextPop.new()
+	pop.name = "PointsPop"
+	pop.text = "+%d" % points
+	pop.color = Palette.CLEAN_GREEN
+	pop.font_size = 16
+	pop.lifetime = FEEDBACK_S
+	var travel := (COUNTER_HINT - global_position).normalized() * POINTS_FLIGHT_PX
+	pop.travel = Vector2.ZERO if Settings.reduce_motion else travel
+	pop.position = Vector2(0.0, -30.0)
+	pop.z_index = 4
+	add_child(pop)
+
+
+## Starts the 200 ms shrink into the iris. `tick` finishes and frees the item.
+func _begin_swallow(item: Node) -> void:
+	_swallow_item = item
+	_swallow_total = SWALLOW_S
+	if BeatConductor.is_playing:
+		_swallow_total = minf(SWALLOW_S, 0.45 * BeatConductor.beat_seconds())
+	_swallow_left = _swallow_total
+	var visual: Variant = item.get(&"visual")
+	_swallow_visual = visual as Node2D if visual is Node2D else item as Node2D
+	_swallow_scale = _swallow_visual.scale if _swallow_visual != null else Vector2.ONE
+	var body := item as RigidBody2D
+	if body != null:
+		body.set_deferred(&"freeze", true)
+		body.set_deferred(&"collision_layer", 0)
+		body.set_deferred(&"collision_mask", 0)
+
+
+func _advance_swallow(delta: float) -> void:
+	if _swallow_left <= 0.0:
+		return
+	_swallow_left = maxf(_swallow_left - delta, 0.0)
+	var t := 1.0 - _swallow_left / maxf(_swallow_total, 0.001)
+	if _swallow_visual != null and is_instance_valid(_swallow_visual):
+		_swallow_visual.scale = _swallow_scale * lerpf(1.0, 0.15, t)
+		_swallow_visual.modulate.a = 1.0 - t
+	if _swallow_left <= 0.0 and _swallow_item != null and is_instance_valid(_swallow_item):
+		_swallow_item.queue_free()
+		_swallow_item = null
+		_swallow_visual = null
 
 
 func _is_clean(item: Node) -> bool:

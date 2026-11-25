@@ -66,7 +66,14 @@ func test_clean_delivery_pays_points_stability_and_count() -> void:
 	assert_eq(GameState.delivered_count, 1)
 	assert_eq(GameState.score, 120, "points * x1")
 	assert_true(item.delivered_reported, "the item hears it was delivered")
-	assert_true(item.is_queued_for_deletion(), "the item leaves the room")
+	assert_false(item.is_queued_for_deletion(), "the item shrinks into the iris first")
+	var chip := chute.get_node_or_null(^"FeedbackChip")
+	assert_not_null(chip, "the +3 stability chip is local to the chute")
+	assert_eq(str(chip.get(&"text")), "+3")
+	assert_true(bool(chip.get(&"gain")), "gain glyph, not colour alone")
+	assert_not_null(chute.get_node_or_null(^"PointsPop"), "the +points label spawns")
+	chute.tick(0.3)
+	assert_true(item.is_queued_for_deletion(), "then it leaves the room")
 
 
 func test_combo_multiplies_the_delivery() -> void:
