@@ -30,6 +30,7 @@ var _entities: Node2D
 var _items: Node2D
 var _environment: Node2D
 var _stems: Array = []
+var _spawn_turn := 0
 
 
 func _ready() -> void:
@@ -52,6 +53,7 @@ func _ready() -> void:
 	_build_spawner()
 	_build_ui()
 	_setup_music()
+	BeatConductor.beat_hit.connect(_on_beat)
 	BeatConductor.start(Config.PHASE_BPM[0])
 	_apply_phase(0, true)
 	print(
@@ -77,6 +79,8 @@ func _process(delta: float) -> void:
 	var next_phase := Config.phase_index_at(shift_time)
 	if next_phase != phase_index:
 		_apply_phase(next_phase, false)
+	if _spawner != null and _spawner.has_method("advance_to"):
+		_spawner.call("advance_to", shift_time)
 	if shift_time >= Config.SHIFT_DURATION_S:
 		_finish(GameState.stability > 0.0, "shift_complete")
 
@@ -104,44 +108,67 @@ func _build_camera() -> void:
 func _build_environment() -> void:
 	var layout := RoomBuilder.layout()
 	for belt in layout.get("belts", []):
-		var node := _spawn_area(BELT_SCENE, belt)
+		var node := _instantiate_scene(BELT_SCENE)
 		if node == null:
 			continue
 		var belt_id := StringName(belt.get("id", ""))
 		node.name = String(belt_id).to_pascal_case()
-		node.set("belt_id", belt_id)
 		var flow: Array = belt.get("flow", [1, 0])
-		node.set("flow_direction", Vector2(float(flow[0]), float(flow[1])))
+		var flow_vector := Vector2(float(flow[0]), float(flow[1]))
+		if node.has_method("configure"):
+			node.call("configure", belt_id, RoomBuilder.art_rect(belt), flow_vector)
+		else:
+			_configure_area_fallback(node, RoomBuilder.rect_world(belt))
+			node.set("belt_id", belt_id)
+			node.set("flow_direction", flow_vector)
 		node.set("active", false)
 		node.z_index = -5
 		_environment.add_child(node)
 		_belts[belt_id] = node
 	for shredder in layout.get("shredders", []):
-		var node := _spawn_area(SHREDDER_SCENE, shredder)
+		var node := _instantiate_scene(SHREDDER_SCENE)
 		if node == null:
 			continue
-		node.name = String(StringName(shredder.get("id", ""))).to_pascal_case()
+		var shredder_id := StringName(shredder.get("id", ""))
+		node.name = String(shredder_id).to_pascal_case()
+		if node.has_method("configure"):
+			node.call("configure", shredder_id, RoomBuilder.art_rect(shredder))
+		else:
+			_configure_area_fallback(node, RoomBuilder.rect_world(shredder))
 		node.z_index = 6
 		_environment.add_child(node)
 
 
-## Instantiates an Area2D scene centred on a layout rect and sizes its rectangle shape.
-func _spawn_area(scene_path: String, entry: Dictionary) -> Node:
+func _instantiate_scene(scene_path: String) -> Node:
 	if not ResourceLoader.exists(scene_path):
 		return null
 	var packed := load(scene_path) as PackedScene
 	if packed == null:
 		return null
-	var node := packed.instantiate() as Area2D
-	var rect := RoomBuilder.rect_world(entry)
-	node.position = rect.get_center()
+	return packed.instantiate()
+
+
+## Fallback for a scene that does not implement `configure()`: centre it on the rect and
+## resize its first rectangle or circle shape.
+func _configure_area_fallback(node: Node, rect: Rect2) -> void:
+	if node is Node2D:
+		(node as Node2D).position = rect.get_center()
+	if not (node is Area2D):
+		return
 	for child in node.get_children():
-		if child is CollisionShape2D and child.shape is RectangleShape2D:
-			var shape := child.shape.duplicate() as RectangleShape2D
-			shape.size = rect.size
-			child.shape = shape
-			child.position = Vector2.ZERO
-	return node
+		if not (child is CollisionShape2D):
+			continue
+		var shape := (child as CollisionShape2D).shape
+		if shape is RectangleShape2D:
+			var box := shape.duplicate() as RectangleShape2D
+			box.size = rect.size
+			(child as CollisionShape2D).shape = box
+			(child as CollisionShape2D).position = Vector2.ZERO
+		elif shape is CircleShape2D:
+			var circle := shape.duplicate() as CircleShape2D
+			circle.radius = minf(rect.size.x, rect.size.y) * 0.5
+			(child as CollisionShape2D).shape = circle
+			(child as CollisionShape2D).position = Vector2.ZERO
 
 
 func _build_player() -> void:
@@ -167,6 +194,7 @@ func _build_spawner() -> void:
 	if ResourceLoader.exists(Config.SCENE_LAUNDRY_ITEM):
 		node.set("item_scene", load(Config.SCENE_LAUNDRY_ITEM))
 	node.set("items_parent_path", NodePath("../Items"))
+	node.set("position_resolver", Callable(self, "_resolve_spawn_position"))
 	add_child(node)
 	_spawner = node
 	if node.has_method("start"):
@@ -228,11 +256,57 @@ func _activate_belts(index: int) -> void:
 		if not _belts.has(belt_id):
 			continue
 		var node: Node = _belts[belt_id]
-		var active := (belt.get("active_phases", []) as Array).has(index)
+		var active := _belt_active_in_phase(belt, index)
+		var flow: Array = belt.get("flow", [1, 0])
+		var base_flow := Vector2(float(flow[0]), float(flow[1]))
+		if node.has_method("set_flow_direction"):
+			node.call("set_flow_direction", base_flow)
+		else:
+			node.set("flow_direction", base_flow)
 		if node.has_method("set_active"):
 			node.call("set_active", active)
 		else:
 			node.set("active", active)
+
+
+## Deterministic belt choice for the current phase: cycles the belts active in that phase.
+func _resolve_spawn_position(event: Dictionary, _phase: PhaseData) -> Vector2:
+	var layout := RoomBuilder.layout()
+	var phase := int(event.get("phase", 0))
+	var candidates: Array = []
+	for belt in layout.get("belts", []):
+		if _belt_active_in_phase(belt, phase):
+			candidates.append(belt)
+	if candidates.is_empty():
+		candidates = layout.get("belts", [])
+	if candidates.is_empty():
+		return Vector2(336, 72)
+	var entry: Dictionary = candidates[_spawn_turn % candidates.size()]
+	_spawn_turn += 1
+	return RoomBuilder.point_world(entry.get("spawn", [84, 18]))
+
+
+## JSON numbers arrive as floats; compare phase ids as ints.
+func _belt_active_in_phase(belt: Dictionary, index: int) -> bool:
+	for phase_value in belt.get("active_phases", []):
+		if int(phase_value) == index:
+			return true
+	return false
+
+
+func _on_beat(beat: int) -> void:
+	if _ended:
+		return
+	var measure := BeatConductor.get_measure_index()
+	for belt_id in _belts:
+		var node: Node = _belts[belt_id]
+		if node == null or not is_instance_valid(node):
+			continue
+		var active := bool(node.get("active")) if node.get("active") != null else false
+		if not active:
+			continue
+		if node.has_method("on_beat"):
+			node.call("on_beat", beat, measure, phase_index)
 
 
 func _setup_music() -> void:
@@ -295,6 +369,12 @@ func _on_shift_ended(result: Dictionary) -> void:
 	_end_label.visible = true
 	if _end_label.text == "":
 		_end_label.text = "FIN DEL TURNO\nsemilla %d" % int(result.get("seed", 0))
+
+
+## Debug/QA hook: jump the shift clock and immediately consume spawns/phase changes.
+func set_shift_time(t: float) -> void:
+	shift_time = clampf(t, 0.0, Config.SHIFT_DURATION_S)
+	_process(0.0)
 
 
 func get_shift_time() -> float:

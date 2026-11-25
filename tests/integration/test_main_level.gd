@@ -38,3 +38,65 @@ func test_clock_reaches_phase_two() -> void:
 	level._process(0.0)
 	assert_eq(level.get_phase_index(), 1)
 	BeatConductor.stop()
+
+
+func test_environment_belts_and_shredders_from_layout() -> void:
+	var level := _spawn_level()
+	var env := level.get_node("Environment")
+	var belts: Array[Node] = []
+	var shredders: Array[Node] = []
+	for child in env.get_children():
+		if child is ConveyorBelt:
+			belts.append(child)
+		elif child is Shredder:
+			shredders.append(child)
+	assert_eq(belts.size(), 3, "north, south and west belts")
+	assert_eq(shredders.size(), 3, "one shredder at each belt end")
+	var west := env.get_node("BeltWest") as ConveyorBelt
+	assert_eq(west.position, Vector2(72, 400), "west belt centred from layout")
+	assert_eq(west.world_size(), Vector2(64, 320))
+	assert_eq(west.flow_direction, Vector2.UP)
+	BeatConductor.stop()
+
+
+func test_spawner_emits_an_item_on_the_first_interval() -> void:
+	var level := _spawn_level()
+	level.shift_time = 3.4
+	level._process(0.2)
+	var spawner := level.get_node_or_null("SpawnDirector")
+	assert_not_null(spawner)
+	assert_gt(level.get_node("Items").get_child_count(), 0, "first item at 3.5 s")
+	assert_gt(int(spawner.call("alive_count")), 0)
+	spawner.call("stop")
+	BeatConductor.stop()
+
+
+func test_phase_two_activates_the_south_belt() -> void:
+	var level := _spawn_level()
+	level.shift_time = 120.1
+	level._process(0.0)
+	var env := level.get_node("Environment")
+	var north := env.get_node("BeltNorth") as ConveyorBelt
+	var south := env.get_node("BeltSouth") as ConveyorBelt
+	var west := env.get_node("BeltWest") as ConveyorBelt
+	assert_true(north.is_active())
+	assert_true(south.is_active())
+	assert_false(west.is_active())
+	BeatConductor.stop()
+
+
+func test_spawned_item_rides_the_north_belt() -> void:
+	var level := _spawn_level()
+	level.set_shift_time(4.0)
+	var items := level.get_node("Items")
+	assert_gt(items.get_child_count(), 0, "an item exists at t=4.0")
+	var item := items.get_child(0) as Node2D
+	var belt := level.get_node("Environment/BeltNorth") as ConveyorBelt
+	assert_true(belt.is_active(), "phase 1 activates the north belt")
+	var start_x := item.position.x
+	await wait_physics_frames(30)
+	assert_gt(item.position.x, start_x + 5.0, "belt carries the item east")
+	var spawner := level.get_node_or_null("SpawnDirector")
+	if spawner != null:
+		spawner.call("stop")
+	BeatConductor.stop()
