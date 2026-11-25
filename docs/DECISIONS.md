@@ -94,3 +94,57 @@ the project, runs GUT, then gdlint/gdformat and `tools/lint_sprites.py` when it 
 gettext-style). This keeps the UI readable now and lets English be added later without
 rewriting call sites. M6 must add `data/i18n/es.*`/`en.*` keyed by these strings and switch
 to stable `HUD_*` keys only if the Spanish copy changes.
+
+## D018 — Runtime art scale and physics units
+2026-11-24 · Sprites ship at art size; Godot renders them at exactly ×4 (`Config.ART_SCALE`)
+with Nearest filtering and the JSON pivot. `ItemData.radius` is stored in **art pixels** and
+multiplied by ×4 only when creating the physics circle (rocky 8 art px → 32 world px,
+gas 12→48, core 16→64), so collisions match the visible silhouette. The hold point is
+`HOLD_DISTANCE + item radius`, so a 96 px gas giant clears the 96 px Pip instead of covering
+him. No other scale factors are used; non-integer scaling is forbidden.
+
+## D019 — Audio buses created at runtime
+2026-11-24 · `Settings._ready()` creates `Music` (−6 dB), `SFX` (−6 dB) and `UI` (−6 dB)
+buses sent to Master, idempotently. `BeatConductor` sends its player to `Music`, item
+squelch and the belt warning to `SFX`. AGENTS M8 recommends a persisted
+`default_bus_layout.tres` and a `Loops` bus; that is deferred to M8 because the current
+three-bus split is sufficient and avoids checking in a generated binary resource before the
+mix exists.
+
+## D020 — HUD occupies the top wall band
+2026-11-24 · The frozen layout places the north belt at y = 40–104 world px. A 74 px HUD
+hid it. The HUD is now a 48 px full-width bar (clock, stability, beat dots, combo, score)
+sitting over the 32 px wall band; belts and items are visible. The bottom hint is below the
+south belt. M6 may restyle it, but it must not cover the north belt.
+
+## D021 — QA warp uses seek, not replay
+2026-11-24 · `MainLevel.warp_to(t)` jumps to a phase without instantiating every historical
+spawn: it applies the phase, then `SpawnDirector.seek(t)` skips the past events and play
+continues from `t`. It is deferred until `_ready` completes (the first `add_child` in a
+`SceneTree` script happens before `_ready`, which caused replay piles). `set_shift_time(t)`
+remains the replay path used by tests. M5's F1 cheat will use `warp_to`.
+
+## D022 — Belt-reversal warning sound placeholder
+2026-11-24 · Belts turn their chevrons orange and emit `reverse_warning(beats_left)` four
+beats before a flip; `MainLevel` plays `turbulent_alarm.ogg` at −7 dB on the warning beat.
+M8 should replace it with a dedicated two-note belt alarm; the signal and timing are final.
+
+## D023 — Placeholder provenance policy (owner override of M0 placeholders)
+2026-11-24 · Every shipped sprite is either adapted/composed from a pinned CC0 Kenney pack
+or explicitly `authored-fallback` with a recorded reason (Pip: the character pack transfer
+failed twice and the industrial pack has no characters; sock/core: no 16/32 px CC0
+silhouette reads correctly). No AI images, no unlicensed material. Full table and hashes in
+`docs/PROVENANCE.md`. The owner may keep any of these assets; replacements must preserve the
+same ids, frame sizes and JSON.
+
+## D024 — M3 level scope
+2026-11-24 · `MainLevel` runs the complete 480 s spine: clock, phase changes, BPM/stem
+switch, belt activation, seeded spawns, item physics, shredders, HUD, music, belt warning
+and a temporary end label. Washers, chute and the real win/lose evaluation are M4/M5, so
+today ending at 480 s only checks stability > 0. This is deliberate and documented rather
+than faking M4 systems.
+
+## D025 — Sprite import settings
+2026-11-24 · `assets/sprites/*.import` are committed with Lossless compression, mipmaps
+off, no alpha-border fix, no 3D detection; Bronze/source scans under `art/sources/` are
+excluded with `.gdignore`. Re-importing must not change pixels or filtering.

@@ -216,3 +216,12 @@ mouth (layout.json positions) is free.
 * FMA serves this album through its web player only, so `fetch` cannot
   re-download the music headlessly; the sources are vendored instead and the
   hashes pinned.
+
+
+## Implementation status (lead, 2026-11-24)
+
+`Settings._ensure_buses()` creates `Music`, `SFX` and `UI` at runtime (D019); the
+`BeatConductor` stream and the item squelch are routed to them. `Loops` and the persisted
+`default_bus_layout.tres` are deferred to M8. The four stems are wired in `MainLevel`:
+phase changes call `set_stream` + `set_bpm`, which restarts the new stem at its downbeat.
+The belt-reversal warning uses `turbulent_alarm.ogg` as a placeholder (D022).

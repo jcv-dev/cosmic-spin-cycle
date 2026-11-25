@@ -138,3 +138,10 @@ run the HUD reads 60 FPS and the measured physics cost.
   those files for M3+ balance.
 - `Performance.TIME_PHYSICS_PROCESS` reads 0 in the isolated sandbox capture environment; the
   integration test measures it correctly (0.544 ms/tick).
+
+## Integration note (lead, 2026-11-24)
+
+The radii in `data/items.tres` are **art pixels**; `LaundryItem` multiplies them by
+`Config.ART_SCALE` when creating the physics circle, and `ItemVisual` uses the same ×4 scale
+for the shipped sheets. The hold point adds the held item's radius so 96 px items clear a
+96 px Pip. The original M2 sandbox uses this path too; see D018.

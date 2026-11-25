@@ -75,3 +75,21 @@ verified. Update at each milestone. Status: **M0–M3 implemented; M4+ planned.*
 - M4–M9 systems are not implemented yet; rows marked "pending" are the roadmap, not claims.
 - Windows audio latency and gamepad feel need the owner's hardware (documented protocol).
 - The public GitHub remote is not configured in this checkout; the owner must create/push.
+
+## Status 2026-11-24 — M0–M3 evidence
+
+M0–M3 are implemented and green: **313 tests / 7,163 assertions**, `tools/lint_sprites.py`
+29/29, `tools/verify_audio.py` 16/16, `tools/sim_run.gd` 197 spawns.
+
+| Area | Primary evidence |
+|---|---|
+| Beat windows / clock | `tests/unit/test_rhythm_evaluator.gd`, `test_beat_clock.gd`, `test_beat_compensation.gd`, `tests/integration/test_beat_480s.gd` |
+| Calibration | `test_calibration_math.gd`, `test_calibration_modal.gd`, `docs/CALIBRATION.md` |
+| Player/item physics | `test_player_*.gd`, `test_item_*.gd`, `test_physics_items.gd`, `docs/M2_PHYSICS.md` |
+| Belts / reversal / shredder | `test_belt_*.gd`, `test_shredder.gd`, `docs/M3_WORLD.md` |
+| Phases / spawning | `test_phase_*.gd`, `test_spawn_*.gd`, `test_world_simulation.gd`, `tools/sim_run.gd` |
+| Level integration | `tests/integration/test_main_level.gd` (belts, activation, first spawn, belt transport, warp) |
+| Art / audio / font | `tools/lint_sprites.py`, `tools/verify_audio.py`, `docs/PROVENANCE.md` |
+
+Rows above marked "pending" are M4–M9 work, not regressions. The M3 level intentionally has
+no washers/chute yet (D024).

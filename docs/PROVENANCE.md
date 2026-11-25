@@ -1,7 +1,9 @@
-# Provenance — Cosmic Spin Cycle art
+# Provenance — Cosmic Spin Cycle assets
 
 Every shipped asset is traceable to a pinned CC0/OFL source, or is explicitly marked as
-authored when no source fitted. Art is covered first; audio, SFX and the font follow.  Packs are downloaded by `tools/fetch_sources.py`,
+authored when no source fitted. Art is covered first; audio, SFX and the font follow.
+
+Packs are downloaded by `tools/fetch_sources.py`,
 verified against the archive SHA-256, and their licence text is committed next to them in
 `art/sources/<pack>/LICENSE.txt`.
 
