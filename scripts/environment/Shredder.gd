@@ -123,13 +123,55 @@ func _draw() -> void:
 	var hazard := EnvironmentPalette.color("hazard_orange")
 	var metal := EnvironmentPalette.color("metal_1")
 
-	draw_circle(Vector2.ZERO, r, void_color)
-	draw_circle(Vector2.ZERO, r * 0.86, deep)
-	draw_arc(Vector2.ZERO, r, 0.0, TAU, 32, hazard, 2.0, true)
+	# A recessed floor well, not a black hole: the mouth must read as machinery in the
+	# floor, never as a portal or a target.
+	draw_circle(Vector2.ZERO, r, Color(deep.r, deep.g, deep.b, 0.55))
+	draw_circle(Vector2.ZERO, r * 0.60, Color(void_color.r, void_color.g, void_color.b, 0.72))
+	_draw_throat_chevrons(r, hazard)
+	# One 2 px marking ring at 55 % — a hazard label, not a glow.
+	draw_arc(
+		Vector2.ZERO, r - 1.0, 0.0, TAU, 48, Color(hazard.r, hazard.g, hazard.b, 0.55), 2.0, false
+	)
+	# A single tick shows the grinder is running without drawing three spinning rings.
+	var tick := Vector2(cos(_spin), sin(_spin))
+	draw_line(tick * r * 0.20, tick * r * 0.42, Color(metal.r, metal.g, metal.b, 0.55), 2.0, false)
+	_draw_loss_marker(r, hazard, void_color)
+
+
+## Hazard chevrons across the throat, pointing into the machine.
+func _draw_throat_chevrons(r: float, hazard: Color) -> void:
+	var ink := Color(hazard.r, hazard.g, hazard.b, 0.34)
+	var half := r * 0.16
 	for index in range(3):
-		var phase := _spin + TAU * float(index) / 3.0
-		var start := phase
-		var end := phase + TAU * 0.42
-		var arc_radius := r * (0.30 + 0.22 * float(index))
-		draw_arc(Vector2.ZERO, arc_radius, start, end, 16, metal, 3.0, true)
-	draw_circle(Vector2.ZERO, r * 0.12, hazard)
+		var y := -r * 0.26 + float(index) * r * 0.26
+		var points := PackedVector2Array(
+			[
+				Vector2(-half, y),
+				Vector2(0.0, y + half * 0.8),
+				Vector2(half, y),
+				Vector2(half, y + 3.0),
+				Vector2(0.0, y + half * 0.8 + 3.0),
+				Vector2(-half, y + 3.0),
+			]
+		)
+		draw_colored_polygon(points, ink)
+
+
+## The honest tell: a small "−8" chip under the mouth instead of a glowing hub.
+func _draw_loss_marker(r: float, hazard: Color, void_color: Color) -> void:
+	var chip := Rect2(-18.0, r + 2.0, 36.0, 22.0)
+	draw_rect(chip, Color(void_color.r, void_color.g, void_color.b, 0.85))
+	draw_rect(chip, Color(hazard.r, hazard.g, hazard.b, 0.45), false, 2.0)
+	var ink := Color(hazard.r, hazard.g, hazard.b, 0.9)
+	var rows := [["000", "000", "111", "000", "000"], ["111", "101", "111", "101", "111"]]
+	var pixel := 4.0
+	var origin := chip.position + Vector2(4.0, 2.0)
+	for glyph in range(rows.size()):
+		var bits: Array = rows[glyph]
+		for row in range(bits.size()):
+			var line: String = bits[row]
+			for column in range(line.length()):
+				if line[column] != "1":
+					continue
+				var at := Vector2(float(glyph) * 12.0 + float(column) * pixel, float(row) * pixel)
+				draw_rect(Rect2(origin + at, Vector2(pixel, pixel)), ink)
