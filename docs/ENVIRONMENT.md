@@ -41,6 +41,8 @@ new keys are `backdrop`, `floor`, `dressing`, `belt_glow`, `belt_shadow`, `atmos
 | −4 | `Shredders` | `Shredder` scenes (unchanged) | |
 | −3 | `BeltShade` | 30 % dark wash so the washers/chute stay the brightest things | 3 quads |
 | 0 | `Machines` | display washers + chute (sandbox/diorama only; the shift uses M4 entities) | |
+| 2 | `PanelReadouts` | one recessed 3-bar readout per cabinet, replacing the sheet's raw LED square | ~20 |
+| 19 | `MenuScrim` (diorama only) | 3-step screen-anchored scrim under the title menu, stops at 470 px | 3 |
 | 5 | `Items` / `DioramaItems` | laundry | |
 | 6 | light emitters | 4 washer pools, chute pool, 2 cold lamps, warm spawn lamp | 8 quads (+2 shafts) |
 | 8 | `Atmosphere` | 3 `CPUParticles2D` emitters (36 steam + 24 dust + 4 embers) | |
@@ -103,19 +105,39 @@ Box: llvmpipe (`Mesa 26.3.1`, `llvmpipe LLVM 23.1.5`), GL Compatibility, 1280×7
 `tools/fps_probe.gd` renders into a fixed 1280×720 `SubViewport` (the Wayland compositor
 resizes the real window, which silently changed the resolution in an earlier run).
 
-60 s runs, v-sync off:
+Method: v-sync off, 1280×720 fixed `SubViewport`, 20 s runs × 3 per configuration, **median**
+of the three (this box is shared and single runs vary by up to 2×). `fps_min` is the worst
+single frame of a 60 s run.
 
-| Scene | FPS avg | FPS min | Frame ms avg | p95 | p99 | Draw calls |
-|---|---|---|---|---|---|---|
-| `--bare` (greybox room only) | 154.5 | 28.8 | 6.47 | 7.41 | 8.73 | 148 |
-| `EnvironmentSandbox` (full pass) | 69.4 | 22.6 | 14.40 | 17.52 | 20.83 | 254 |
-| `Diorama` (menu) | 76.1 | 29.5 | 13.15 | 16.67 | 18.81 | 199 |
+| Scene | Frame ms (median) | FPS (median) | FPS min (60 s) | p95 ms | Draw calls |
+|---|---|---|---|---|---|
+| `--bare` (greybox room only) | **6.76** | 148 | 78.2 | 8.33 | 148 |
+| `EnvironmentSandbox` (full pass) | **11.69** | 86 | 43.7 | 13.89 | 263 |
+| `Diorama` (menu) | **14.57** | 69 | 31.6 | 15.28 | 172 |
 
-So the pass costs **+7.9 ms/frame** over the shipped room, and the menu diorama costs
-**+6.7 ms** — the diorama adds nothing measurable over the sandbox (it drops the third belt
-and adds the beacon/Pip/items). Both clear 60 FPS on average; the p95 sits at ~16.7 ms, so
-the frame is at the 60 Hz budget with the room alone, and the ~100 GPU-less draw calls of
-the shipped belts/washers are the bigger half of the bill.
+So the pass costs **≈ +4.9 ms/frame** over the shipped room, and the menu diorama
+**≈ +7.8 ms** (it renders at 1.25× zoom, so every full-screen layer costs 1.56× the fill,
+while it drops the third belt: 172 draw calls vs 263). Both sit at or under the 60 Hz budget
+on the median frame; the `fps_min` column is a single spike, not a sustained drop.
+
+### 6.1 Confirmation checklist
+
+* **FPS min/avg at 1280×720** — sandbox **86 avg / 43.7 min**, diorama **69 avg / 31.6 min**,
+  bare room **148 avg / 78.2 min** (medians of three 20 s runs; min is the worst single frame
+  of a 60 s run). See the table above.
+* **`PointLight2D` count** — **0** on the shipped path, **8** (exactly the budget) if
+  `LightingRig.USE_POINT_LIGHTS` is flipped on. `test_light_budget_is_eight_emitters_and_zero_point_lights`
+  asserts both the 8-emitter cap and the zero point-light count.
+* **Particles** — 3 `CPUParticles2D` emitters, **64 particles** total: steam 36 (one emitter,
+  9 per washer, `STEAM_BOOSTED = 60` while a washer is TURBULENT), dust 24, embers 4. Below
+  the UX §14 ceiling of 3 emitters / 120 particles.
+* **`Settings.reduce_motion`** — `LightingRig.beat_envelope()` returns 0 (every emitter pinned
+  to its base energy), `Atmosphere` stops all three emitters and pauses the ember timer
+  (`particles_active()` is false), `BeltGlow.beat_envelope()` returns 0, the diorama beacon
+  stops stepping, Pip's `Z` fades out and the camera pan continues (it is not juice).
+  Proven by `test_reduce_motion_pins_the_pulse` and `test_reduce_motion_stops_the_atmosphere`.
+* **Foreground vs the goal** — `test_overlay_never_covers_the_chute_ring_or_the_drums` samples
+  the overlay texture on the beacon ring and on all four drum windows: alpha < 0.07.
 
 Approximate per-feature cost (20 s runs, ±0.5 ms on this noisy box):
 
@@ -127,6 +149,10 @@ Approximate per-feature cost (20 s runs, ±0.5 ms on this noisy box):
 | floor decals (~110 quads) | ~1.5 |
 | dressing + foreground props (~69 quads) | ~1.5 |
 | particles, shafts, belt rails | ~0.6 |
+| readouts + diorama scrim (diorama only) | ~0.3 |
+
+Measured by hiding one layer at a time (`--no-lights`, `--no-backdrop`, `--no-dressing`,
+`--no-floordecals`, `--no-glow`, `--no-atmosphere`); each delta is ±0.5 ms on this box.
 
 Actions taken because of the budget (each is in the code with the reason):
 
@@ -138,7 +164,7 @@ Actions taken because of the budget (each is in the code with the reason):
 6. Belt glow redraws only when the beat envelope changes by > 0.02.
 
 **Honest limit:** 60 FPS is reachable *with the room only*. The full game adds physics,
-items and the HUD on top of these 14.4 ms, so the lead should expect ~45–55 FPS on this
+items and the HUD on top of these ~11.7 ms, so the lead should expect ~45–55 FPS on this
 llvmpipe box and treat §14 of the UX bible as a hardware-GL target. Nothing in this pass is
 needed for correctness: `RoomBuilder` still builds without any of it if a layer is hidden.
 
@@ -178,13 +204,18 @@ Probe/sandbox flags for A/B work: `--bare`, `--no-lights`, `--no-backdrop`,
 | `RoomDressing.SNAP` | `4.0` | decal vertex grid (1 art px) |
 | `RoomDressing.GRIME_COUNT` / `PUDDLES` | 6 / 2 | floor story density |
 | `Backdrop.STAR_COUNT` / `DRIFT_PX_S` | 90 / 2.0 | starfield density and parallax |
-| `LightingRig.WASHER_RADIUS` / `_ENERGY` / `_PULSE` | 220 / 0.34 / 0.07 | pool size, base energy, beat amplitude |
+| `LightingRig.WASHER_RADIUS` / `_ENERGY` / `_PULSE` | 220 / 0.30 / 0.07 | pool size, base energy, beat amplitude |
+| `LightingRig.CHUTE_ENERGY` | 0.55 | destination gets more light than the cabinets |
 | `LightingRig.ROOM_TINT` | `(0.70, 0.72, 0.84)` | how dark/cool the room sits |
 | `LightingRig.PULSE_DECAY` | 0.28 s | neon decay after each beat |
 | `Atmosphere.STEAM_AMOUNT` / `BOOSTED` | 36 / 60 | calm vs TURBULENT steam |
 | `Atmosphere.RAIL_ALPHA_MIN/MAX` | 0.05 / 0.16 | belt neon breathing |
 | `Diorama.CAMERA_ZOOM` | 1.25 | 1 art px = 5 screen px exactly |
-| `Diorama.PAN_X` / `PAN_Y` / `PAN_PERIOD_S` | 18 / 6 / 24 | drift of the menu camera |
+| `Diorama.CAMERA_HOME` | `(640, 316)` | centred so the ±18 pan never clips a cabinet; high enough for the top belt |
+| `Diorama.PAN_X` / `PAN_Y` / `PAN_PERIOD_S` | 18 / 6 / 24 | drift of the menu camera (worst case crops 2 world px) |
+| `Diorama.SCRIM_STEPS` / `SCRIM_ALPHAS` | `[160,320,470]` / `[.34,.20,.09]` | quiet left third; last edge clears the chute ring |
+| `Diorama.CHUTE_RING_RADIUS` | 96 | beacon ring; the scrim test reads it |
+| `RoomDressing.MACHINE_ALBEDO` | `(0.87, 0.88, 0.93)` | cabinet dimming so the chute stays the only destination |
 | `Diorama.AMBIENT_BPM` | 90 | menu pulse and beacon step |
 
 ## 9. What the lead must wire in `MainLevel`
@@ -211,7 +242,9 @@ diorama.set_paused(true)     # while hidden
 diorama.play_intro()         # 1.2 s camera settle when returning from a shift
 ```
 
-`Diorama` never starts `BeatConductor`; its 90 BPM ambient clock is local.
+`Diorama` never starts `BeatConductor`; its 90 BPM ambient clock is local. It also dims its
+own left third (`MenuScrim`, a camera child at z 19) and trims the cabinet albedo — the title
+screen must not add a second scrim or the menu will sit on a double-darkened column.
 
 ## 10. Deviations from the brief
 
@@ -224,6 +257,8 @@ diorama.play_intro()         # 1.2 s camera settle when returning from a shift
 | foreground dust layer | dust motes at ≤ 5 % inside the lane, none of the vignette | the lane must stay legible (§3.6.6) |
 | "2 px" belt rails | 1 art px (4 world px) | the pixel grid has no 2 px unit in world space |
 | `env_before.png` from `main` | same sandbox with `--bare` | identical camera/machinery isolates the pass |
+| diorama pan +90 px right | camera stays centred; quiet left third from a screen-anchored 3-step scrim | +90 put the NW/SW cabinets half out of frame, which reads as a bug |
+| washers at full album + pool 0.5 | cabinets at 87 % albedo, pool 0.30, chute 0.55, beacon 0.85 | four equal focal points competed with the destination |
 
 ## 11. Known issues
 
