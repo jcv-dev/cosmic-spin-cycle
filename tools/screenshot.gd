@@ -8,10 +8,12 @@ extends SceneTree
 
 const DEFAULT_OUT := "res://.work/screens/main.png"
 const DEFAULT_FRAMES := 12
+const DEFAULT_SCENE := "res://scenes/main/Main.tscn"
 
 var _frames := 0
 var _target := DEFAULT_FRAMES
 var _out := DEFAULT_OUT
+var _scene_path := DEFAULT_SCENE
 
 
 func _initialize() -> void:
@@ -20,13 +22,15 @@ func _initialize() -> void:
 			_out = arg.trim_prefix("--out=")
 		elif arg.begins_with("--frames="):
 			_target = int(arg.trim_prefix("--frames="))
-	var scene := load("res://scenes/main/Main.tscn") as PackedScene
+		elif arg.begins_with("--scene="):
+			_scene_path = arg.trim_prefix("--scene=")
+	var scene := load(_scene_path) as PackedScene
 	if scene == null:
-		push_error("cannot load main scene")
+		push_error("cannot load scene " + _scene_path)
 		quit(1)
 		return
 	root.add_child(scene.instantiate())
-	print("SCREENSHOT_BOOT ok frames=%d out=%s" % [_target, _out])
+	print("SCREENSHOT_BOOT ok scene=%s frames=%d out=%s" % [_scene_path, _target, _out])
 
 
 func _process(_delta: float) -> bool:

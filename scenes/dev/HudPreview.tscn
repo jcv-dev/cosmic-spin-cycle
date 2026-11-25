@@ -1,0 +1,19 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scenes/dev/HudPreview.gd" id="1_preview"]
+
+[sub_resource type="Gradient" id="Gradient_bg"]
+colors = PackedColorArray(0.043137, 0.047059, 0.062745, 1, 0.078431, 0.090196, 0.164706, 1)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_bg"]
+gradient = SubResource("Gradient_bg")
+width = 1280
+height = 720
+
+[node name="HudPreview" type="Node2D"]
+script = ExtResource("1_preview")
+
+[node name="Background" type="Sprite2D" parent="."]
+texture_filter = 2
+position = Vector2(640, 360)
+texture = SubResource("GradientTexture2D_bg")
