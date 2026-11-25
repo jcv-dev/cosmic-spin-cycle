@@ -7,3 +7,7 @@
 
 # Parallel session worktrees
 .worktrees/
+
+# Python tooling
+__pycache__/
+*.pyc
