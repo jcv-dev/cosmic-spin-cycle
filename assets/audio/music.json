@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "stems": [
+    {
+      "id": "phase1",
+      "file": "phase1_105.ogg",
+      "bpm": 105,
+      "bars": 16,
+      "beats_per_bar": 4,
+      "duration_s": 36.571429,
+      "first_beat_offset_s": 0.0,
+      "loop_start_s": 0.0,
+      "loop_end_s": 36.571429,
+      "source": "HoliznaCC0 - Breath (BASSIC (2020-01-10))",
+      "license": "CC0-1.0",
+      "sha256": "3ae7282ee591ecce654db8bbd2c2361403b4b3a64dc300e912428855cbbb4296"
+    },
+    {
+      "id": "phase2",
+      "file": "phase2_118.ogg",
+      "bpm": 118,
+      "bars": 16,
+      "beats_per_bar": 4,
+      "duration_s": 32.542381,
+      "first_beat_offset_s": 0.0,
+      "loop_start_s": 0.0,
+      "loop_end_s": 32.542381,
+      "source": "HoliznaCC0 - Sleep (BASSIC (2020-01-10))",
+      "license": "CC0-1.0",
+      "sha256": "97b26b61b5a0e6e94f2a8a0aecc8df107c212173e5e4619c15d0b2ea243cb9ba"
+    },
+    {
+      "id": "phase3",
+      "file": "phase3_130.ogg",
+      "bpm": 130,
+      "bars": 16,
+      "beats_per_bar": 4,
+      "duration_s": 29.538458,
+      "first_beat_offset_s": 0.0,
+      "loop_start_s": 0.0,
+      "loop_end_s": 29.538458,
+      "source": "HoliznaCC0 - Eat (BASSIC (2020-01-10))",
+      "license": "CC0-1.0",
+      "sha256": "04b2ce1049eb056999343bd927b0a927034e85a93573f2ee66610fbbf10b34b1"
+    },
+    {
+      "id": "phase4",
+      "file": "phase4_142.ogg",
+      "bpm": 142,
+      "bars": 16,
+      "beats_per_bar": 4,
+      "duration_s": 27.042245,
+      "first_beat_offset_s": 0.0,
+      "loop_start_s": 0.0,
+      "loop_end_s": 27.042245,
+      "source": "HoliznaCC0 - Make Money (BASSIC (2020-01-10))",
+      "license": "CC0-1.0",
+      "sha256": "291d7c9ad68cd0cb8a3200c8aeca9f4d3a938cbe8169f2f2afa229f3b67c2ad1"
+    }
+  ]
+}

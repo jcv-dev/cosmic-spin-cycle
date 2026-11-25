@@ -1,7 +1,7 @@
 # Provenance — Cosmic Spin Cycle art
 
-Every shipped sprite is traceable to a pinned CC0 source, or is explicitly marked as
-authored when no source fitted.  Packs are downloaded by `tools/fetch_sources.py`,
+Every shipped asset is traceable to a pinned CC0/OFL source, or is explicitly marked as
+authored when no source fitted. Art is covered first; audio, SFX and the font follow.  Packs are downloaded by `tools/fetch_sources.py`,
 verified against the archive SHA-256, and their licence text is committed next to them in
 `art/sources/<pack>/LICENSE.txt`.
 
@@ -22,6 +22,7 @@ without network access.
 
 | id | class | source | transform | png sha-256 (16) |
 |---|---|---|---|---|
+
 | `item_rocky` | adapted | kenney-planets `planets/planet03.png` | Content-cropped 64x64 thumbnail, box-downscaled to 16x16, dark structure thresholded at p58, morphologically cleaned to 3 blobs, used as the continent mask inside an authored sphere; luminance mapped onto the crimson/blue/solar ramps; sel-out outline. | `60ecb73b0d52a591` |
 | `item_moon` | composed | kenney-planets `planets/planet04.png` | Crater field taken from the source at p34 and used only on lit pixels; crescent silhouette authored as outer disc minus bite disc; 4-connected spur removed. | `5334d33c30d08e64` |
 | `item_gas` | adapted | kenney-planets `planets/planet07.png` | Storm mask at p54 cleaned to 2 blobs, modulated into an authored banded sphere; belts authored; ramps swapped for the 3 colours. | `a70a930987d76977` |
@@ -83,3 +84,28 @@ All pixels were produced by the in-repo deterministic pipeline (`tools/pxlib.py`
 `tools/make_art.py`, builders in `art/src/`) on 2026-11-24.  No AI-generated images were
 used, and Open Design was not available in this environment (see `art/TOOLS.md`), so
 `art/od/` boards were not produced; review happens through `art/preview/`.
+
+## Audio, SFX and font provenance
+
+The game audio is CC0 except the font, which is OFL. Source packs are pinned by
+SHA-256 in `art/sources/audio/SOURCES.json`; licence texts are committed under
+`art/sources/audio/` and `assets/fonts/OFL.txt`.
+
+| Asset | Author / source | License | Retrieved | Transformations |
+|---|---|---|---|---|
+| `100 CC0 SFX` (source pack) | rubberduck — https://opengameart.org/content/100-cc0-sfx | CC0 1.0 Universal | 2026-11-24 | Source pack for the seven one-shots; clips used: `plop_02`, `splash_02`, `bell_02`, `gong_01`, `explosion`, `slam_01`, `switch_01`, `noise_02`, `other_06`; each decoded to mono 44.1 kHz and rebuilt as listed in the rows below |
+| `General Household Sound Effects` (source pack) | bretbernhoft — https://opengameart.org/content/general-household-sound-effects | CC0 1.0 Universal | 2026-11-24 | Source pack for the two loops: `computerfans01.wav` → `belt_hum.ogg`, `washer01.wav` → `washer_drum.ogg`; excerpts crossfaded, mono 44.1 kHz |
+| `art/sources/audio/music/holizna_bassic_{01_eat,02_sleep,03_breath,04_make_money}.ogg` | HoliznaCC0 — *BASSIC* (2020-01-10), Free Music Archive — https://freemusicarchive.org/music/holiznacc0/bassic | CC0 1.0 Universal | 2026-11-24 | Kept verbatim as the build source; SHA-256 pinned in `art/sources/audio/SOURCES.json`, CC0 legal text vendored at `art/sources/audio/LICENSE-CC0-1.0.txt` |
+| `assets/audio/music/phase1_105.ogg` | HoliznaCC0 — "Breath" (*BASSIC*) | CC0 1.0 Universal | 2026-11-24 | 16-bar excerpt from bar 1 (downbeat-aligned), atempo 0.98954 (106.00 → 105.00 BPM), exact 64-beat trim, 5 ms seam fades, decoded peak −2.14 dBFS, Vorbis q6 44.1 kHz stereo |
+| `assets/audio/music/phase2_118.ogg` | HoliznaCC0 — "Sleep" (*BASSIC*) | CC0 1.0 Universal | 2026-11-24 | 16 bars from bar 3, atempo 0.98333 (120.00 → 118.00 BPM), 5 ms seam fades, decoded peak −2.18 dBFS |
+| `assets/audio/music/phase3_130.ogg` | HoliznaCC0 — "Eat" (*BASSIC*) | CC0 1.0 Universal | 2026-11-24 | 16 bars from bar 16, atempo 1.08333 (120.00 → 130.00 BPM), 5 ms seam fades, decoded peak −2.05 dBFS |
+| `assets/audio/music/phase4_142.ogg` | HoliznaCC0 — "Make Money" (*BASSIC*) | CC0 1.0 Universal | 2026-11-24 | 16 bars from bar 70, atempo 1.09797 (129.34 → 142.00 BPM), 5 ms seam fades, decoded peak −2.05 dBFS |
+| `assets/audio/sfx/{squelch_grab,washer_done,washer_explode,ui_click,throw_whoosh,delivery_chime,turbulent_alarm}.ogg` | rubberduck — *100 CC0 SFX* — https://opengameart.org/content/100-cc0-sfx | CC0 1.0 Universal | 2026-11-24 | One-shots layered from `plop_02`/`splash_02`, `bell_02`, `explosion`+`slam_01`, `switch_01`, `noise_02`+`other_06`, `gong_01`, `bell_02` (×4, odd hits pitched ×1.26); decay-shaped, mono 44.1 kHz Vorbis q5, peak −1.3…−1.6 dBFS |
+| `assets/audio/sfx/belt_hum.ogg` | bretbernhoft — *General Household Sound Effects*, `computerfans01.wav` — https://opengameart.org/content/general-household-sound-effects | CC0 1.0 Universal | 2026-11-24 | 4.0 s excerpt, equal-power 120 ms crossfade loop, mono Vorbis q5 |
+| `assets/audio/sfx/washer_drum.ogg` | bretbernhoft — *General Household Sound Effects*, `washer01.wav` | CC0 1.0 Universal | 2026-11-24 | 4.5 s excerpt of a real washing machine, equal-power 250 ms crossfade loop |
+| `assets/fonts/Silkscreen-Regular.ttf`, `assets/fonts/Silkscreen-Bold.ttf` | Jason Kottke / The Silkscreen Project Authors — https://fonts.google.com/specimen/Silkscreen | SIL Open Font License 1.1 (`assets/fonts/OFL.txt`) | 2026-11-24 | Unmodified; cmap verified for `á é í ó ú ñ ü ¿ ¡` plus uppercase; SHA-256 in `assets/fonts/font.json` |
+
+## Audio licence texts
+
+* `art/sources/audio/LICENSE-CC0-1.0.txt` — CC0 1.0 Universal legal text.
+* `assets/fonts/OFL.txt` — SIL Open Font License 1.1 for Silkscreen (Jason Kottke / The Silkscreen Project Authors).
