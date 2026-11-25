@@ -79,6 +79,11 @@ from phase 3 to 4 without changing pitch.
    *decoded* peak lands at −2 dBFS (Vorbis overshoots the PCM peak by up to
    3 dB on dense masters; normalising before encoding would ship files that
    decode above budget).
+8. **Pin the Ogg serial** and recompute every page CRC (`normalise_ogg_serial`):
+   ffmpeg otherwise derives a random serial per encode, so two builds of the
+   same samples differed in 24 header bytes. With that fixed, `music`/`sfx`
+   rebuilds are byte-identical, which is what the manifest SHA-256 values rely
+   on (verified by rebuilding twice and comparing hashes).
 
 ### Measurements (from `tools/verify_audio.py` and `tools/bpm_analyze.py`)
 

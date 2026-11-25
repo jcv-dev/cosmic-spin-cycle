@@ -12,7 +12,7 @@
       "sample_rate": 44100,
       "source": "plop_02 + splash_02",
       "license": "CC0-1.0",
-      "sha256": "c14895a91b2ba40e5b9975e262c4aa049141415c8e934f2a41655096c7ba1ad8",
+      "sha256": "d057326d8c3f0c9f97aa5722c13ed25ab55de2ca1cbd9aff035ec325036aa88c",
       "note": "wet plop layered with a short splash, 0.52 s"
     },
     {
@@ -26,7 +26,7 @@
       "sample_rate": 44100,
       "source": "computerfans01",
       "license": "CC0-1.0",
-      "sha256": "5623806f2015c851f3dcb29a30a48e3c0104a86b8a1b20aadff2338ea9be5e4c",
+      "sha256": "40a3bb0f3d4ebc052b4e6c96eec15d4d54c8e1106c5dfbaa60bb2bdc742d9734",
       "note": "steady fan hum, 4.0 s, equal-power 120 ms crossfade loop"
     },
     {
@@ -40,7 +40,7 @@
       "sample_rate": 44100,
       "source": "washer01",
       "license": "CC0-1.0",
-      "sha256": "f46699de22707f3b2f3cbcd69ac1e874d9bc8bfdc4459332a118a060156bd882",
+      "sha256": "219a059bb0d5207b6276032bff0cac6d51db3ce476419f77297c415d1f00220a",
       "note": "real washing machine drum, 4.5 s, equal-power 120 ms crossfade loop"
     },
     {
@@ -54,7 +54,7 @@
       "sample_rate": 44100,
       "source": "bell_02",
       "license": "CC0-1.0",
-      "sha256": "74a4bea2d5f2c9ac18196fc164bb386602556a910f97c2b1c151ee3cb7aacca9",
+      "sha256": "a8058b168a189a927fd9a933b02bbdcb4d580b48d1f14cfea1ee72f5c485b376",
       "note": "short ding"
     },
     {
@@ -68,7 +68,7 @@
       "sample_rate": 44100,
       "source": "explosion + slam_01",
       "license": "CC0-1.0",
-      "sha256": "85dfaf7f573ac49b71f3c127874e31378a560d22b1b55ac94d57467e97d41f41",
+      "sha256": "289761e7a1e9b45f40f20dca19454e9d6d4ce79b41ca0c4515552b93f4072665",
       "note": "explosion + metal debris"
     },
     {
@@ -82,7 +82,7 @@
       "sample_rate": 44100,
       "source": "switch_01",
       "license": "CC0-1.0",
-      "sha256": "c1a5319003dabcec064d10403aa3f20a0bd5dcad2884360ec3a5e3b10d726418",
+      "sha256": "c0c3602e73c3fbddda4dc894ad1794ee9d7161361c2cfcf98f088e397b89d762",
       "note": "switch click, 0.10 s"
     },
     {
@@ -96,7 +96,7 @@
       "sample_rate": 44100,
       "source": "noise_02 + other_06",
       "license": "CC0-1.0",
-      "sha256": "6081bdbf9765344582293923d2de6dbd27f137cd90a6af46b36ae8e5abcaf288",
+      "sha256": "d254e9f6ebbd0ec69c31dd90b8f180496da0f05fbe90e439c0e0e2d7a8afab02",
       "note": "noise swish + flick, 0.48 s"
     },
     {
@@ -110,7 +110,7 @@
       "sample_rate": 44100,
       "source": "gong_01",
       "license": "CC0-1.0",
-      "sha256": "bd737340cf0304151e00c4652d9858791c859e00e9b80ac0869c4b76745edb0c",
+      "sha256": "c086d7169cdff954cffae05c57791c2863f37204e6e09acf3d60385d855db9e0",
       "note": "warm delivery chime, 1.6 s"
     },
     {
@@ -124,7 +124,7 @@
       "sample_rate": 44100,
       "source": "bell_02",
       "license": "CC0-1.0",
-      "sha256": "758ce693392ccd71350eab5aac0aaecae57f34e5880029459b62feec407c222a",
+      "sha256": "fa153b72c87ca0e73a7614d88806ff8a314d87daeb03a5a72463c5fc39685533",
       "note": "two-tone repeated alarm, 4 x 0.26 s"
     }
   ]

@@ -13,7 +13,7 @@
       "loop_end_s": 36.571429,
       "source": "HoliznaCC0 - Breath (BASSIC (2020-01-10))",
       "license": "CC0-1.0",
-      "sha256": "466020ebb049372f84af2f84fc47eaf8eda3982627d2bee02a27bcd910c95473"
+      "sha256": "3ae7282ee591ecce654db8bbd2c2361403b4b3a64dc300e912428855cbbb4296"
     },
     {
       "id": "phase2",
@@ -27,7 +27,7 @@
       "loop_end_s": 32.542381,
       "source": "HoliznaCC0 - Sleep (BASSIC (2020-01-10))",
       "license": "CC0-1.0",
-      "sha256": "f61e98b5f4abb62c4b5a848c3dddc7c1ce4fa422a4dbe0bb6381664f83360b66"
+      "sha256": "97b26b61b5a0e6e94f2a8a0aecc8df107c212173e5e4619c15d0b2ea243cb9ba"
     },
     {
       "id": "phase3",
@@ -41,7 +41,7 @@
       "loop_end_s": 29.538458,
       "source": "HoliznaCC0 - Eat (BASSIC (2020-01-10))",
       "license": "CC0-1.0",
-      "sha256": "1ec3443446b3ca7f2f72809961d9effef11747e4691375c1a6547c3877e9d5ed"
+      "sha256": "04b2ce1049eb056999343bd927b0a927034e85a93573f2ee66610fbbf10b34b1"
     },
     {
       "id": "phase4",
@@ -55,7 +55,7 @@
       "loop_end_s": 27.042245,
       "source": "HoliznaCC0 - Make Money (BASSIC (2020-01-10))",
       "license": "CC0-1.0",
-      "sha256": "096f67e965d247b09e2e1bd9a6e85672b4ce805392fc47de4759bea969b7aace"
+      "sha256": "291d7c9ad68cd0cb8a3200c8aeca9f4d3a938cbe8169f2f2afa229f3b67c2ad1"
     }
   ]
 }

@@ -226,10 +226,13 @@ def read_wav(path: str) -> np.ndarray:
 
 def encode_ogg(wav_path: str, out_path: str, stereo: bool, quality: int) -> None:
     ensure_dir(os.path.dirname(out_path))
+    # A fixed Ogg serial makes the container byte-reproducible, not just the
+    # decoded audio (ffmpeg otherwise derives a random one per run).
     run(["ffmpeg", "-nostdin", "-v", "error", "-y", "-fflags", "+bitexact",
          "-i", wav_path, "-c:a", "libvorbis", "-q:a", str(quality),
          "-ar", str(SR), "-ac", "2" if stereo else "1",
          "-flags:a", "+bitexact", out_path])
+    normalise_ogg_serial(out_path)
 
 
 def encode_normalised(samples: np.ndarray, out_path: str, stereo: bool,
@@ -254,6 +257,55 @@ def encode_normalised(samples: np.ndarray, out_path: str, stereo: bool,
             break                          # inside the window: never above budget
         work = work * (10.0 ** ((target_db - decoded_peak - 0.05) / 20.0))
     return decoded_peak, sha256_file(out_path)
+
+
+_CRC_TABLE: list[int] = []
+
+
+def _ogg_crc_table() -> list[int]:
+    global _CRC_TABLE
+    if not _CRC_TABLE:
+        poly = 0x04C11DB7
+        for i in range(256):
+            r = i << 24
+            for _ in range(8):
+                r = ((r << 1) ^ poly) & 0xFFFFFFFF if r & 0x80000000 else (r << 1) & 0xFFFFFFFF
+            _CRC_TABLE.append(r)
+    return _CRC_TABLE
+
+
+def _ogg_crc(buf: bytes) -> int:
+    table = _ogg_crc_table()
+    crc = 0
+    for byte in buf:
+        crc = ((crc << 8) & 0xFFFFFFFF) ^ table[((crc >> 24) & 0xFF) ^ byte]
+    return crc
+
+
+def normalise_ogg_serial(path: str, serial: int = 0x43534331) -> None:
+    """Rewrite every Ogg page with one fixed serial and recomputed CRCs.
+
+    ffmpeg derives a random stream serial per encode, so two builds of the same
+    samples differ in 24 header bytes.  Pinning the serial makes the shipped
+    files byte-reproducible, which is what the manifests' SHA-256 rely on.
+    """
+    data = bytearray(open(path, "rb").read())
+    i = 0
+    pages = 0
+    while i < len(data):
+        if data[i:i + 4] != b"OggS":
+            raise SystemExit(f"error: {path}: bad Ogg page at {i}")
+        segments = data[i + 26]
+        body = sum(data[i + 27:i + 27 + segments])
+        page_len = 27 + segments + body
+        data[i + 14:i + 18] = serial.to_bytes(4, "little")
+        data[i + 22:i + 26] = b"\x00\x00\x00\x00"
+        crc = _ogg_crc(bytes(data[i:i + page_len]))
+        data[i + 22:i + 26] = crc.to_bytes(4, "little")
+        i += page_len
+        pages += 1
+    with open(path, "wb") as fh:
+        fh.write(data)
 
 
 def peak_db(x: np.ndarray) -> float:
