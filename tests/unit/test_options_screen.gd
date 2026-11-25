@@ -68,7 +68,7 @@ func test_readouts_reflect_settings_on_open() -> void:
 	assert_eq(
 		(_screen.get_node("Plaque/Toggle%d/Value" % 0) as Label).text, "SÍ", "fullscreen readout"
 	)
-	assert_eq((_screen.get_node("Plaque/Toggle%d/Value" % 2) as Label).text, "125 %")
+	assert_eq((_screen.get_node("Plaque/Toggle%d/Value" % 2) as Label).text, "125")
 
 
 func test_fullscreen_toggle_flips_the_setting() -> void:

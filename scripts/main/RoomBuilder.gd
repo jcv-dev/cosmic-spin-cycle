@@ -65,16 +65,28 @@ static func room_rect() -> Rect2:
 static func build(root: Node2D) -> Dictionary:
 	var nodes := {}
 	_build_background(root)
-	nodes["backdrop"] = Backdrop.build(root)
-	nodes["floor"] = _build_floor(root)
-	nodes["dressing"] = RoomDressing.build_dressing(root)
-	nodes["belt_shadow"] = _build_belt_shadow(root)
-	nodes["belt_glow"] = Atmosphere.build_belt_glow(root)
-	nodes["atmosphere"] = Atmosphere.build(root)
-	nodes["lighting"] = LightingRig.build(root)
-	nodes["foreground"] = RoomDressing.build_foreground(root)
+	# `--env-bare` is the A/B and before/after switch: it builds the shipped greybox room
+	# only, so `docs/media/env_before.png` and the perf probe describe the same camera.
+	var layered := not _has_cli_flag("--env-bare")
+	if layered:
+		nodes["backdrop"] = Backdrop.build(root)
+	nodes["floor"] = _build_floor(root, layered)
+	if layered:
+		nodes["dressing"] = RoomDressing.build_dressing(root)
+		nodes["belt_shadow"] = _build_belt_shadow(root)
+		nodes["belt_glow"] = Atmosphere.build_belt_glow(root)
+		nodes["atmosphere"] = Atmosphere.build(root)
+		nodes["lighting"] = LightingRig.build(root)
+		nodes["foreground"] = RoomDressing.build_foreground(root)
 	nodes["walls"] = _build_walls(root)
 	return nodes
+
+
+static func _has_cli_flag(flag: String) -> bool:
+	for arg: String in OS.get_cmdline_user_args():
+		if arg == flag:
+			return true
+	return false
 
 
 static func _build_background(root: Node2D) -> void:
@@ -100,7 +112,7 @@ static func _build_background(root: Node2D) -> void:
 	root.add_child(bg)
 
 
-static func _build_floor(root: Node2D) -> Node2D:
+static func _build_floor(root: Node2D, layered: bool = true) -> Node2D:
 	var floor_layer := Node2D.new()
 	floor_layer.name = "Floor"
 	floor_layer.z_index = -90
@@ -123,7 +135,8 @@ static func _build_floor(root: Node2D) -> Node2D:
 
 	if has_room_art:
 		# The floor story rides on top of the shipped floor plate.
-		RoomDressing.build_floor_decals(floor_layer)
+		if layered:
+			RoomDressing.build_floor_decals(floor_layer)
 		return floor_layer
 
 	var x := 0.0

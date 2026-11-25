@@ -29,32 +29,9 @@ const SEED := 522023
 ## Star colours by brightness class (palette ramps only).
 const STAR_COLORS := [Palette.METAL_1, Palette.METAL_2, Palette.METAL_3]
 
-## First nebula band: a wide diagonal wash that runs off every screen edge, so only its
-## soft interior is visible and no hard polygon border is ever on screen.
-const BAND_A := [
-	Vector2(-320.0, -120.0),
-	Vector2(1600.0, 40.0),
-	Vector2(1600.0, 460.0),
-	Vector2(-320.0, 300.0),
-]
-
-## Third band: a low warm haze under the south belt, the only plum in the room.
-const BAND_C := [
-	Vector2(-320.0, 640.0),
-	Vector2(1600.0, 520.0),
-	Vector2(1600.0, 900.0),
-	Vector2(-320.0, 980.0),
-]
-
-## Second band, crossing the first at a shallower angle.
-const BAND_B := [
-	Vector2(-320.0, 430.0),
-	Vector2(1600.0, 210.0),
-	Vector2(1600.0, 540.0),
-	Vector2(-320.0, 760.0),
-]
-
 static var _star_texture: ImageTexture = null
+static var _nebula_texture: ImageTexture = null
+static var _nebula_tile: Image = null
 
 var _stars: Sprite2D
 var _drift := 0.0
@@ -70,15 +47,18 @@ static func build(root: Node2D) -> Backdrop:
 	return backdrop
 
 
-## Generated 640×180 star sheet (two seamless 320-wide tiles). Cached for the session.
+## Generated 640×180 backdrop sheet (two seamless 320-wide tiles, stars over the nebula).
+## One texture means the whole backdrop is a single blended quad; cached for the session.
 static func star_texture() -> ImageTexture:
 	if _star_texture != null:
 		return _star_texture
-	var image := generate_stars(TILE_ART_W, SHEET_ART_H, STAR_COUNT, SEED)
+	var tile := nebula_tile()
+	var stars := generate_stars(TILE_ART_W, SHEET_ART_H, STAR_COUNT, SEED)
+	tile.blend_rect(stars, Rect2i(0, 0, TILE_ART_W, SHEET_ART_H), Vector2i.ZERO)
 	var sheet := Image.create(SHEET_ART_W, SHEET_ART_H, false, Image.FORMAT_RGBA8)
 	sheet.fill(Color(0.0, 0.0, 0.0, 0.0))
-	sheet.blit_rect(image, Rect2i(0, 0, TILE_ART_W, SHEET_ART_H), Vector2i.ZERO)
-	sheet.blit_rect(image, Rect2i(0, 0, TILE_ART_W, SHEET_ART_H), Vector2i(TILE_ART_W, 0))
+	sheet.blit_rect(tile, Rect2i(0, 0, TILE_ART_W, SHEET_ART_H), Vector2i.ZERO)
+	sheet.blit_rect(tile, Rect2i(0, 0, TILE_ART_W, SHEET_ART_H), Vector2i(TILE_ART_W, 0))
 	_star_texture = ImageTexture.create_from_image(sheet)
 	return _star_texture
 
@@ -113,6 +93,87 @@ static func generate_stars(w: int, h: int, count: int, seed_value: int) -> Image
 ## Drops the cached sheet (tests only).
 static func clear_cache() -> void:
 	_star_texture = null
+	_nebula_texture = null
+	_nebula_tile = null
+
+
+## Generated 320×180 nebula image: two diagonal bands, a low plum haze and the planet limb,
+## composited per art pixel. Baking it (instead of four large polygons) is what keeps the
+## backdrop at one blended quad.
+static func nebula_tile() -> Image:
+	if _nebula_tile != null:
+		return _nebula_tile
+	var image := Image.create(TILE_ART_W, SHEET_ART_H, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.0, 0.0, 0.0, 0.0))
+	# Blue-grey only: the plum haze used to push the whole floor toward magenta.
+	var bands := [
+		[Palette.BLUE_1, 0.14, 0.05, 15.0, 75.0],
+		[Palette.SPACE_HAZE, 0.10, -0.06, 150.0, 65.0],
+	]
+	for y in range(SHEET_ART_H):
+		for x in range(TILE_ART_W):
+			var colour := Color(0.0, 0.0, 0.0, 0.0)
+			for band: Array in bands:
+				var tint: Color = band[0]
+				var peak: float = band[1]
+				var slope: float = band[2]
+				var offset: float = band[3]
+				var reach: float = band[4]
+				var centre := slope * float(x) + offset
+				var alpha := peak * clampf(1.0 - absf(float(y) - centre) / reach, 0.0, 1.0)
+				if alpha > 0.0:
+					colour = _blend(colour, tint, alpha)
+			var limb := _planet_limb_alpha(x, y)
+			if limb > 0.0:
+				colour = _blend(colour, Palette.BLUE_3, limb)
+			image.set_pixel(x, y, colour)
+	_nebula_tile = image
+	return _nebula_tile
+
+
+## Nebula-only sheet (two tiles) for previews and tests.
+static func nebula_texture() -> ImageTexture:
+	if _nebula_texture != null:
+		return _nebula_texture
+	var tile := nebula_tile()
+	var sheet := Image.create(SHEET_ART_W, SHEET_ART_H, false, Image.FORMAT_RGBA8)
+	sheet.fill(Color(0.0, 0.0, 0.0, 0.0))
+	sheet.blit_rect(tile, Rect2i(0, 0, TILE_ART_W, SHEET_ART_H), Vector2i.ZERO)
+	sheet.blit_rect(tile, Rect2i(0, 0, TILE_ART_W, SHEET_ART_H), Vector2i(TILE_ART_W, 0))
+	_nebula_texture = ImageTexture.create_from_image(sheet)
+	return _nebula_texture
+
+
+## Alpha of the planet limb at one art pixel: a body tint plus three rim rings.
+static func _planet_limb_alpha(x: int, y: int) -> float:
+	var centre := Vector2(345.0, -140.0)
+	var radius := 180.0
+	var delta := Vector2(float(x), float(y)) - centre
+	var distance := delta.length()
+	if distance > radius + 12.0:
+		return 0.0
+	var rim := radius - distance
+	if rim >= 0.0 and rim < 1.5:
+		return 0.30
+	if rim < 0.0 and rim > -1.5:
+		return 0.12
+	if rim < 0.0 and rim > -3.0:
+		return 0.06
+	if rim >= 1.5:
+		# Planet body: a dim disc so the rim reads as a limb instead of a scratch.
+		return 0.055
+	return 0.0
+
+
+## Straight-alpha "source over" onto a premultiplied-by-hand pixel colour.
+static func _blend(destination: Color, source: Color, alpha: float) -> Color:
+	var out_alpha := alpha + destination.a * (1.0 - alpha)
+	if out_alpha <= 0.0:
+		return Color(0.0, 0.0, 0.0, 0.0)
+	var red := (source.r * alpha + destination.r * destination.a * (1.0 - alpha)) / out_alpha
+	var green := (source.g * alpha + destination.g * destination.a * (1.0 - alpha)) / out_alpha
+	var blue := (source.b * alpha + destination.b * destination.a * (1.0 - alpha)) / out_alpha
+	return Color(red, green, blue, out_alpha)
 
 
 func _setup() -> void:
@@ -124,10 +185,7 @@ func _setup() -> void:
 	_stars.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_stars.position = Vector2.ZERO
 	add_child(_stars)
-	add_child(_make_band(BAND_A, Palette.BLUE_1, 0.18))
-	add_child(_make_band(BAND_B, Palette.SPACE_HAZE, 0.14))
-	add_child(_make_band(BAND_C, Palette.FUNK_PLUM, 0.07))
-	add_child(_make_limb())
+	# Stars and nebula share one drifting sheet (both are "infinitely far" parallax).
 
 
 func _process(delta: float) -> void:
@@ -137,65 +195,4 @@ func _process(delta: float) -> void:
 	# Whole pixels only: a fractional star sprite shimmers on llvmpipe.
 	_stars.position.x = -float(roundi(_drift))
 
-
 # --- nebula bands ------------------------------------------------------------
-
-
-func _make_band(points: Array, color: Color, alpha: float) -> Node2D:
-	var band := BandLayer.new()
-	band.name = "Nebula"
-	band.setup(PackedVector2Array(points), color, alpha)
-	return band
-
-
-# --- planet limb -------------------------------------------------------------
-
-
-func _make_limb() -> Node2D:
-	var limb := PlanetLimb.new()
-	limb.name = "PlanetLimb"
-	return limb
-
-
-## Flat alpha nebula polygon. Dither-free by design (UX_BIBLE §3.4).
-class BandLayer:
-	extends Node2D
-
-	var _points := PackedVector2Array()
-	var _color := Color.WHITE
-	var _alpha := 0.1
-
-	func setup(points: PackedVector2Array, color: Color, alpha: float) -> void:
-		_points = points
-		_color = color
-		_alpha = alpha
-		queue_redraw()
-
-	func _draw() -> void:
-		draw_colored_polygon(_points, Color(_color.r, _color.g, _color.b, _alpha))
-
-
-## A distant planet in the top-right: three concentric rim arcs plus a 5 % body tint. Only
-## the limb is drawn strongly so the play field keeps its contrast.
-class PlanetLimb:
-	extends Node2D
-
-	const CENTER := Vector2(1380.0, -560.0)
-	const RADIUS := 720.0
-
-	func _draw() -> void:
-		draw_circle(
-			CENTER, RADIUS, Color(Palette.BLUE_1.r, Palette.BLUE_1.g, Palette.BLUE_1.b, 0.07)
-		)
-		var rims := [
-			[0.0, 0.30, 6.0],
-			[-12.0, 0.16, 8.0],
-			[-26.0, 0.08, 10.0],
-			[-44.0, 0.05, 12.0],
-		]
-		for rim: Array in rims:
-			var radius: float = RADIUS + float(rim[0])
-			var alpha: float = float(rim[1])
-			var width: float = float(rim[2])
-			var color := Color(Palette.BLUE_3.r, Palette.BLUE_3.g, Palette.BLUE_3.b, alpha)
-			draw_arc(CENTER, radius, 0.0, TAU, 96, color, width, false)

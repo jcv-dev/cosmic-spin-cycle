@@ -157,17 +157,6 @@ func _setup_particles() -> void:
 	_spark_timer.autostart = true
 	_spark_timer.timeout.connect(_on_spark_timeout)
 	add_child(_spark_timer)
-	var falloff := CeilingFalloff.new()
-	falloff.name = "CeilingFalloff"
-	falloff.z_index = -2
-	add_child(falloff)
-	falloff.setup()
-	var shafts := LightShafts.new()
-	shafts.name = "LightShafts"
-	shafts.z_index = -1
-	shafts.pulse_bpm = pulse_bpm
-	add_child(shafts)
-	shafts.setup()
 	_apply_reduce_motion()
 
 
@@ -335,89 +324,6 @@ class BeltGlow:
 		for index in range(_colors.size()):
 			_colors[index] = Atmosphere.requirement_color(requirements[index % requirements.size()])
 		queue_redraw()
-
-
-## Additive light falloff from the ceiling: ten stacked bands that fade out by y ≈ 420.
-## This is what makes the floor read as a lit plane instead of a flat fill.
-class CeilingFalloff:
-	extends Node2D
-
-	const BANDS := 10
-	const HEIGHT := 420.0
-
-	func setup() -> void:
-		var additive := CanvasItemMaterial.new()
-		additive.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-		material = additive
-		queue_redraw()
-
-	func _draw() -> void:
-		var band_height := HEIGHT / float(BANDS)
-		for index in range(BANDS):
-			var fraction := 1.0 - float(index) / float(BANDS)
-			var alpha := 0.055 * fraction * fraction
-			draw_rect(
-				Rect2(0.0, float(index) * band_height, 1280.0, band_height),
-				Color(Palette.SPACE_HAZE.r, Palette.SPACE_HAZE.g, Palette.SPACE_HAZE.b, alpha),
-				true
-			)
-
-
-## Two soft additive shafts under the ceiling lamps: cheap volumetric light that gives the
-## room a lit-from-above read without a shader or a new light.
-class LightShafts:
-	extends Node2D
-
-	var pulse_bpm := 0.0
-
-	var _quads: Array[PackedVector2Array] = []
-	var _clock := 0.0
-	var _last := -1.0
-
-	func setup() -> void:
-		var additive := CanvasItemMaterial.new()
-		additive.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-		material = additive
-		for x in [320.0, 980.0]:
-			(
-				_quads
-				. append(
-					PackedVector2Array(
-						[
-							Vector2(x - 16.0, 96.0),
-							Vector2(x + 16.0, 96.0),
-							Vector2(x + 84.0, 320.0),
-							Vector2(x - 84.0, 320.0),
-						]
-					)
-				)
-			)
-		queue_redraw()
-
-	func _process(delta: float) -> void:
-		if pulse_bpm > 0.0:
-			_clock += maxf(delta, 0.0)
-		var envelope := beat_envelope()
-		if absf(envelope - _last) < 0.05:
-			return
-		_last = envelope
-		queue_redraw()
-
-	func _draw() -> void:
-		var alpha := 0.045 + 0.02 * beat_envelope()
-		var color := Color(Palette.YEL_3.r, Palette.YEL_3.g, Palette.YEL_3.b, alpha)
-		for quad: PackedVector2Array in _quads:
-			draw_colored_polygon(quad, color)
-
-	func beat_envelope() -> float:
-		if Settings.reduce_motion:
-			return 0.0
-		var elapsed := 0.0
-		if pulse_bpm > 0.0:
-			elapsed = fposmod(_clock, 60.0 / pulse_bpm)
-		elif BeatConductor.is_playing:
-			elapsed = BeatConductor.get_beat_phase() * BeatConductor.beat_seconds()
-		return maxf(0.0, 1.0 - elapsed / 0.28)
 
 
 ## Palette colour for a washer requirement name.

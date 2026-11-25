@@ -27,16 +27,21 @@ const PAN_Y := 6.0
 const PAN_PERIOD_S := 24.0
 ## Intro settle duration in seconds.
 const INTRO_S := 1.2
-## Camera home position: the room centre.
-const CAMERA_HOME := Vector2(640.0, 344.0)
+## Camera home position. Centred horizontally (a +90 px offset clipped the left cabinets in
+## half) and pushed up so the top belt is fully inside the frame; the quiet left third comes
+## from the scrim instead. The ±18 px pan stays inside the room: the worst case crops 2 world
+## px (half an art px) of the outer cabinets.
+const CAMERA_HOME := Vector2(640.0, 316.0)
+## Quiet scrim over the left third: band edges in screen pixels (1280 wide). It stops at 470
+## so it can never touch the chute beacon ring, whose on-screen left edge is ~485.
+const SCRIM_STEPS := [160.0, 320.0, 470.0]
+const SCRIM_ALPHAS := [0.34, 0.20, 0.09]
+## Radius of the chute beacon ring; the scrim and the tests both read it.
+const CHUTE_RING_RADIUS := 96.0
 ## Seconds between the washing machine's turbulent spins.
 const TURBULENT_EVERY_S := 12.0
 ## Pip's breathing period in seconds (1 art px of travel).
 const BREATH_PERIOD_S := 2.6
-
-## Shifts the drifting framing without touching the authored home; the title screen uses it
-## to move the chute out from under the menu column.
-@export var focus_offset := Vector2.ZERO
 
 var camera: Camera2D
 var nodes: Dictionary = {}
@@ -78,6 +83,7 @@ func _ready() -> void:
 	_build_belts()
 	_build_items()
 	_build_beacon()
+	_build_scrim()
 	_build_pip()
 	_paint_machines()
 
@@ -201,10 +207,13 @@ func _build_items() -> void:
 	layer.name = "DioramaItems"
 	layer.z_index = 5
 	add_child(layer)
+	# Items ride the belt deck: north belt top is y = 40, so the baseline is 40 + 40.
+	var belt := RoomBuilder.layout_rect("belt_north")
+	var baseline := belt.position.y + 40.0
 	var entries := [
-		{"id": "item_rocky", "variant": &"blue_solid", "y": 86.0, "from": 420.0, "to": 900.0},
-		{"id": "item_sock", "variant": &"yellow_ringed", "y": 86.0, "from": 260.0, "to": 640.0},
-		{"id": "item_moon", "variant": &"red_solid", "y": 86.0, "from": 960.0, "to": 480.0},
+		{"id": "item_rocky", "variant": &"blue_solid", "y": baseline, "from": 420.0, "to": 900.0},
+		{"id": "item_sock", "variant": &"yellow_ringed", "y": baseline, "from": 260.0, "to": 640.0},
+		{"id": "item_moon", "variant": &"red_solid", "y": baseline, "from": 960.0, "to": 480.0},
 	]
 	for entry: Dictionary in entries:
 		var sprite := AnimatedSprite2D.new()
@@ -237,6 +246,19 @@ func _build_beacon() -> void:
 	_beacon.z_index = 2
 	_beacon.position = chute.get_center()
 	add_child(_beacon)
+
+
+## Three-step darkening under the title menu. It is a child of the camera, so it is anchored
+## to the screen (the pan would otherwise slide it) and it lives in the diorama, not in the
+## title screen: the in-game view keeps its full brightness.
+func _build_scrim() -> void:
+	if camera == null:
+		return
+	var scrim := Scrim.new()
+	scrim.name = "MenuScrim"
+	scrim.z_index = 19
+	camera.add_child(scrim)
+	scrim.setup(SCRIM_STEPS, SCRIM_ALPHAS)
 
 
 func _build_pip() -> void:
@@ -297,7 +319,7 @@ func _drift_camera() -> void:
 		return
 	var phase := TAU * _elapsed / PAN_PERIOD_S
 	var offset := Vector2(roundf(sin(phase) * PAN_X), roundf(sin(phase * 0.7) * PAN_Y))
-	camera.position = (CAMERA_HOME + focus_offset + offset + _intro_offset).round()
+	camera.position = (CAMERA_HOME + offset + _intro_offset).round()
 	if _intro_tween == null or not _intro_tween.is_running():
 		camera.zoom = Vector2(CAMERA_ZOOM, CAMERA_ZOOM)
 
@@ -336,7 +358,9 @@ func _advance_turbulence(delta: float) -> void:
 func _all_animated_sprites() -> Array[AnimatedSprite2D]:
 	var out: Array[AnimatedSprite2D] = []
 	for child in find_children("*", "AnimatedSprite2D", true, false):
-		out.append(child as AnimatedSprite2D)
+		var sprite := child as AnimatedSprite2D
+		if sprite != null:
+			out.append(sprite)
 	return out
 
 
@@ -361,7 +385,7 @@ static func _is_screenshot_run() -> bool:
 class BeaconRing:
 	extends Node2D
 
-	const RADIUS := 96.0
+	const RADIUS := Diorama.CHUTE_RING_RADIUS
 	const SEGMENTS := 8
 	const SEGMENT_ARC := 0.20
 
@@ -372,8 +396,18 @@ class BeaconRing:
 		queue_redraw()
 
 	func _draw() -> void:
+		draw_arc(
+			Vector2.ZERO,
+			RADIUS + 14.0,
+			0.0,
+			TAU,
+			48,
+			Color(Palette.CLEAN_GREEN.r, Palette.CLEAN_GREEN.g, Palette.CLEAN_GREEN.b, 0.28),
+			4.0,
+			false
+		)
 		var color := Color(
-			Palette.CLEAN_GREEN.r, Palette.CLEAN_GREEN.g, Palette.CLEAN_GREEN.b, 0.55
+			Palette.CLEAN_GREEN.r, Palette.CLEAN_GREEN.g, Palette.CLEAN_GREEN.b, 0.85
 		)
 		for index in range(SEGMENTS):
 			var start := TAU * float(index) / float(SEGMENTS)
@@ -388,6 +422,42 @@ class BeaconRing:
 				4.0,
 				false
 			)
+
+
+## Three flat bands that darken the left third of the screen behind the title menu. Edges are
+## given in screen pixels and converted with the camera zoom, so a pan or the intro settle
+## cannot move them off the menu column.
+class Scrim:
+	extends Node2D
+
+	var _edges: Array[float] = []
+	var _alphas: Array[float] = []
+
+	func setup(edges: Array, alphas: Array) -> void:
+		for edge: float in edges:
+			_edges.append(edge)
+		for alpha: float in alphas:
+			_alphas.append(alpha)
+		queue_redraw()
+
+	func _draw() -> void:
+		var camera := get_parent() as Camera2D
+		var zoom := camera.zoom.x if camera != null else 1.0
+		if zoom <= 0.0:
+			zoom = 1.0
+		var half_width := 640.0 / zoom
+		var half_height := 360.0 / zoom
+		var colour := Palette.SPACE_VOID
+		var left := -half_width
+		for index in range(_edges.size()):
+			var right := (_edges[index] - 640.0) / zoom
+			var alpha: float = _alphas[index] if index < _alphas.size() else 0.0
+			draw_rect(
+				Rect2(left, -half_height, right - left, half_height * 2.0),
+				Color(colour.r, colour.g, colour.b, alpha),
+				true
+			)
+			left = right
 
 
 ## A 3×5 pixel "Z" that floats up and fades: Pip is asleep, and the menu keeps it subtle.

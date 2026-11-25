@@ -46,6 +46,39 @@ func _ready() -> void:
 	_paint_washers()
 	if _has_arg("--bare"):
 		_apply_bare()
+	if _has_arg("--no-lights") and rig != null:
+		rig.visible = false
+	if _has_arg("--no-pointlights") and rig != null:
+		for child in rig.get_children():
+			if child is PointLight2D:
+				(child as PointLight2D).visible = false
+	if _has_arg("--no-atmosphere"):
+		var atmo := nodes.get("atmosphere") as CanvasItem
+		if atmo != null:
+			atmo.visible = false
+	if _has_arg("--no-backdrop"):
+		var backdrop := nodes.get("backdrop") as CanvasItem
+		if backdrop != null:
+			backdrop.visible = false
+	if _has_arg("--no-floordecals"):
+		var floor_node := get_node_or_null(^"Floor") as Node2D
+		if floor_node != null:
+			var decals := floor_node.get_node_or_null(^"FloorDecals") as CanvasItem
+			if decals != null:
+				decals.visible = false
+	if _has_arg("--no-beltshade"):
+		var shade := nodes.get("belt_shadow") as CanvasItem
+		if shade != null:
+			shade.visible = false
+	if _has_arg("--no-glow"):
+		var glow_node := nodes.get("belt_glow") as CanvasItem
+		if glow_node != null:
+			glow_node.visible = false
+	if _has_arg("--no-dressing"):
+		for key in ["dressing", "foreground"]:
+			var node := nodes.get(key) as CanvasItem
+			if node != null:
+				node.visible = false
 
 
 func _process(delta: float) -> void:
@@ -102,6 +135,16 @@ func _apply_bare() -> void:
 		var tint := rig.room_tint()
 		if tint != null:
 			tint.color = Color.WHITE
+	# The display machinery also carries the pass's albedo trim and panel readouts; strip
+	# both so `--bare` is the untouched greybox.
+	var readouts := get_node_or_null(^"PanelReadouts") as CanvasItem
+	if readouts != null:
+		readouts.visible = false
+	var washers: Dictionary = machines.get("washers", {})
+	for key: StringName in washers.keys():
+		var sprite := washers[key] as CanvasItem
+		if sprite != null:
+			sprite.self_modulate = Color.WHITE
 
 
 func _build_belts() -> void:

@@ -96,7 +96,7 @@ func test_ledger_formats_score_accuracy_combo_and_seed() -> void:
 	var plaque := _screen.get_node("Plaque")
 	assert_eq((plaque.get_node("Stat0Value") as Label).text, "58")
 	assert_eq((plaque.get_node("Stat1Value") as Label).text, "41")
-	assert_eq((plaque.get_node("Stat2Value") as Label).text, "93 %")
+	assert_eq((plaque.get_node("Stat2Value") as Label).text, "93/100")
 	assert_eq((plaque.get_node("Stat3Value") as Label).text, "×7")
 	assert_eq((plaque.get_node("Stat4Value") as Label).text, "18 450")
 	assert_eq((plaque.get_node("Stat5Value") as Label).text, "#07001")
