@@ -86,9 +86,10 @@ func _pose_demo() -> void:
 
 
 func _apply_phase() -> void:
-	for row in WasherAssignments.table(phase):
-		var washer_id := StringName(str(row["washer_id"]))
-		var washer := washers.get(washer_id) as CosmicWasher
+	var assignments := WasherAssignments.for_phase(phase)
+	for washer_id: String in assignments:
+		var row: Dictionary = assignments[washer_id]
+		var washer := washers.get(StringName(washer_id)) as CosmicWasher
 		if washer == null:
 			continue
 		washer.set_phase(phase)
