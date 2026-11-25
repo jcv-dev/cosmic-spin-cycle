@@ -1,0 +1,21 @@
+# gdtoolkit 4.5 lint policy for Cosmic Spin Cycle. Values not listed use gdtoolkit defaults.
+max-line-length: 100
+class-definitions-order:
+  - tools
+  - classnames
+  - extends
+  - docstrings
+  - signals
+  - enums
+  - consts
+  - staticvars
+  - exports
+  - pubvars
+  - prvvars
+  - onreadypubvars
+  - onreadyprvvars
+  - others
+excluded_directories:
+  - addons
+  - .godot
+  - .work
