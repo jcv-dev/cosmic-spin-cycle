@@ -148,3 +148,83 @@ than faking M4 systems.
 2026-11-24 · `assets/sprites/*.import` are committed with Lossless compression, mipmaps
 off, no alpha-border fix, no 3D detection; Bronze/source scans under `art/sources/` are
 excluded with `.gdignore`. Re-importing must not change pixels or filtering.
+
+## D026 — Washer assignment ramp and the pattern machine
+2026-11-24 · M4 needs a per-phase requirement for four washers. The GDD (§A6 #10) is
+underspecified. Adopted: **P1** NW=`red`, NE=`blue`, SW/SE **locked** (`FUERA DE
+SERVICIO`); **P2** SW unlocks as `solid`; **P3** SE unlocks as `spotted` (yellow world
+introduced); **P4** NW=`yellow`, NE=`red`, SW=`solid`, SE=`ringed`. Rationale: two
+choices in the first 20 s (the onboarding target), one new machine per phase, and the
+pattern machine always rotates so patterns stay meaningful without breaking coverage —
+every `(colour, pattern)` the spawner can produce in a phase has at least one home
+(`WasherAssignments.coverage_ok` is unit-tested). Locked washers bounce items with no
+stability penalty. Change: edit `WasherAssignments` + the coverage test.
+
+## D027 — Victory condition: survive the shift, rank by delivery
+2026-11-24 · §A6 #11 proposed "Final Load delivered clean to the chute" as the win
+condition. Delivering 13 heavy items in the last 60 s with one pair of hands is not
+winnable (the research measured a 2.53 s loop vs a 1.7 s spawn interval in phase 3), so
+gating victory on it would make the game feel broken. **Adopted: victory = stability > 0
+at 06:00; defeat = stability 0 at any time.** The Final Load is a climactic wave that
+threatens stability, and deliveries/rank (S/A/B/C) carry the skill expression.
+`FINAL_LOAD_COUNTS_DONE_IN_WASHER` stays as a stat, not a gate. Change: reintroduce the
+gate in `ShiftRules.evaluate` and retune the convoy.
+
+## D028 — Screen flow lives in `App.gd`; screens are signal-only
+2026-11-24 · `Main.tscn` root is now `App` (`scripts/main/App.gd`), which owns level
+lifetime, pause (`get_tree().paused`), fades and persistence. Every screen is a `Control`
+that emits intent signals (`start_requested`, `resume_requested`, …) and is optional at
+runtime (`ResourceLoader.exists`): a missing screen falls back to a styled
+`FallbackScreens` version, so `main` always boots. Screens never load scenes or touch
+autoloads beyond `Settings` values. Change: keep the signal names in
+`docs/CONTRACTS.md` §9 consistent or update App's `_connect_screen` map.
+
+## D029 — HUD: corner plaques replace the top bar and the bottom strip
+2026-11-24 · Supersedes D020. The 48 px full-width bar still clipped the north belt
+(y=40) by 8 px and gave four numbers the same visual weight. The HUD is now two corner
+plaques (0–312 × 0–104 and 968–1280 × 0–104) plus a 480 px mission ribbon in the wall
+band; the middle 608 px of the play field stays clear. The 73-character bottom
+instruction strip is deleted (measured 11 px at 3.90:1 — below the 4.5:1 floor). All
+world-relevant information moves to the objects it describes (washer holograms, chute
+beacon, reticle states, beat ring). Change: `scripts/ui/HUD.gd` + `docs/HUD.md`.
+
+## D030 — Tutorial contract
+2026-11-24 · A 7-gate, ~150 s tutorial runs the **real** MainLevel in `mode =
+"tutorial"` (`Tutorial.tscn` instances it): scripted items, no spawner, phase locked to
+1, fixed seed `Config.TUTORIAL_SEED`, negative stability disabled until gate 7. Gates:
+move → grab → throw → beat → match → strike → deliver, ending with a real wash→deliver
+cycle. Skippable at any time (ESC → confirm) and soft-skippable per gate after 12 s.
+`Settings.tutorial_completed` / `tutorial_skipped` / `first_run_done` persist and drive
+the first-run prompt, which appears **after** pressing Play and never again. Replayable
+from the title forever; nothing is gated behind completion.
+
+## D031 — Research-derived feel constraints
+2026-11-24 · From `docs/UX_RESEARCH.md` (21 sources): beat ring contracts over **2
+beats**; action transients ≤ 0.45 × T_beat (257/229/208/190 ms); screen shake quantised
+to whole art pixels (4/8 px, never 6); **no hitstop on graded throws/grabs** (it desyncs
+the player's clock) — explosions only, 33 ms, reduce-motion gated; no shake on the beat;
+no full-screen flashes; every colour-coded state carries a glyph + text. These are
+tested where practical (`tests/unit/test_diegetic_layer.gd`, `test_juice.gd`).
+
+## D032 — `Juice` autoload and `CameraRig`
+2026-11-24 · Impact effects are centralised in a `Juice` autoload (`shake`, `hitstop`,
+`flash`, `punch_zoom`, `rumble`, `set_reduce_motion`) so no entity hard-codes shake
+logic, and `Juice.hitstop` measures wall-clock time (Engine.time_scale scales `_process`
+delta, which made a naive timer 20× too long). `CameraRig` replaces the plain
+`Camera2D` (same node name `Camera2D`, so existing tests keep passing) and owns
+lead/deadzone/shake offsets. `Settings.reduce_motion` disables shake, hitstop, flash and
+zoom; the beat ring remains (it is information).
+
+## D033 — First-run prompt policy
+2026-11-24 · Pressing `INICIAR TURNO` for the first time opens a modal that recommends
+the tutorial with two choices: `HACER EL TUTORIAL` (default focus) and `EMPEZAR EL
+TURNO` (persists `first_run_done`). Skipping is a legitimate choice and is never
+punished or repeated. The prompt is not shown before the first press, so the first
+interaction is always the big one.
+
+## D034 — First 20 seconds
+2026-11-24 · A dirty starter item (`rocky`, red, solid) is placed 96 px from Pip at
+1.2 s so the first useful action is a grab, not a walk. The objective ribbon starts as
+`OBJETIVO · LAVA Y ENTREGA HASTA LAS 06:00`. Phase banners are suppressed before 20 s
+and only `rocky`+`solid` spawn in phase 1. Measured against the 20-second test in
+`docs/UX_BIBLE.md` §2; guarded by `tests/integration/test_first_20s.gd`.
