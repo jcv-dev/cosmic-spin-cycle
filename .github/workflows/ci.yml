@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  godot:
+    name: Godot · tests · lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Godot 4.7.2
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.7.2
+          use-dotnet: false
+          include-templates: false
+
+      - name: Import project
+        run: godot --headless --path . --import
+
+      - name: Unit + integration tests (GUT)
+        run: >
+          godot --headless --path .
+          -s addons/gut/gut_cmdln.gd
+          -gdir=res://tests -ginclude_subdirs -gexit
+
+      - name: Headless smoke
+        run: godot --headless --path . --quit
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install lint and art tooling
+        run: pip install "gdtoolkit==4.5.0" pillow numpy
+
+      - name: GDScript lint
+        run: gdlint scripts tests tools
+
+      - name: GDScript format check
+        run: gdformat --check scripts tests tools
+
+      - name: Sprite contract lint
+        run: |
+          if [ -f tools/lint_sprites.py ]; then
+            python tools/lint_sprites.py
+          else
+            echo "tools/lint_sprites.py not present yet — skipped"
+          fi
