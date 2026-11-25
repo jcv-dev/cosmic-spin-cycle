@@ -127,7 +127,7 @@ Updated after every milestone/workstream. Times are local (America/Bogota).
 - Victory = stability > 0 at 06:00 (D027), defeat = stability 0; rank S/A/B/C from
   `ScoreRules`; best score/rank persisted and shown on the title only when a real run exists.
 - F1 (+60 s), F2 (+25 stability), F3 (+500 score), F4 (spawn item) exist only in debug builds.
-- Full loop test: `tests/integration/test_full_loop.gd` drives grab → wash → deliver.
+- Full loop test: `tests/integration/test_m4_loop.gd` drives grab → wash → deliver with the real scenes.
 
 ## M6 — done (the owner's three asks)
 
