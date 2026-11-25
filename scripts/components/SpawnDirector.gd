@@ -103,6 +103,23 @@ func advance_to(t: float) -> void:
 		schedule_finished.emit()
 
 
+## Moves the cursor to the first event after `t` without spawning anything.
+##
+## Used by the sandbox when a forced phase jump must not replay the phases it skips.
+func seek(t: float) -> void:
+	if not is_running:
+		return
+	var target := maxf(t, 0.0)
+	var index := 0
+	while index < schedule.size() and float(schedule[index].time) <= target:
+		index += 1
+	_cursor = index
+	time = target
+	_finished_emitted = false
+	if phase_table != null:
+		_set_phase(phase_table.phase_index_at(target))
+
+
 ## Jumps the active phase without moving the clock (sandbox keys 1-4).
 func force_phase(index: int) -> void:
 	if phase_table == null:
