@@ -148,6 +148,18 @@ func test_hazards_never_spawn_under_the_player() -> void:
 		)
 
 
+func test_planned_points_stay_inside_the_washer_arena() -> void:
+	var arena := HazardPlanner.arena_rect()
+	assert_gt(arena.size.x, 500.0, "the arena spans the space between the machines")
+	assert_gt(arena.size.y, 150.0)
+	for entry: Dictionary in _plan_sequence(1717, 3, Config.Difficulty.CHAOS, 200):
+		if entry.is_empty():
+			continue
+		assert_true(
+			arena.has_point(entry["pos"]), "hazard %s stays between the machines" % entry["pos"]
+		)
+
+
 func test_playable_rect_is_inside_the_room() -> void:
 	var area := HazardPlanner.playable_rect()
 	assert_gt(area.size.x, 600.0, "the band keeps most of the floor")

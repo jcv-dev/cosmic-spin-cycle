@@ -488,3 +488,17 @@ nada". El daño existía (−6 en ESTÁNDAR), pero la única señal era el núme
    jugador** (`HAZARD_PLAYER_CLEARANCE_PX`). La geometría sale de `data/layout.json`, así que
    un cambio de layout mueve las amenazas con él. Sigue siendo determinista por semilla y
    posición del jugador, y no toca el conteo de spawns de la simulación.
+
+## D054 — La fuga de vacío enseña su área, y las amenazas viven entre las lavadoras
+2026-11-25 · Ajustes de lectura y espacio, tras el segundo playtest del dueño.
+
+1. **Área de golpe visible en morado.** La fuga dibujaba solo un núcleo pequeño, así que el
+   golpe parecía arbitrario. Ahora pinta el disco completo del radio de daño en `space_void` al
+   45 % (el mismo recurso que el meteorito) y el anillo se cierra sobre él. El bolsillo de
+   gravedad recibe un tinte cian del 12 % (no hace daño, pero su área también se lee).
+2. **Margen del jugador a la mitad**: `HAZARD_PLAYER_CLEARANCE_PX` 96 → 48. Con 96 era
+   imposible que una amenaza te alcanzara, porque aparecían demasiado lejos.
+3. **Arena de las amenazas**: ya no se muestrea la sala entera, sino el rectángulo cuyos
+   vértices son los centros de las cuatro lavadoras (`HazardPlanner.arena_rect()`). Las
+   columnas laterales y las franjas detrás de las cintas quedan fuera: son espacio que el
+   jugador casi nunca pisa, y el dueño las reportó como "spawneando donde no tiene sentido".

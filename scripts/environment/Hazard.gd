@@ -114,6 +114,9 @@ func _draw_vent(color: Color, alpha: float) -> void:
 	# Contract only during the warning. On the strike the radius stays put and a shockwave
 	# expands instead; the old code reset the progress to 0 and snapped back to 1.35x.
 	var draw_radius := lerpf(radius * WARNING_START_SCALE, radius, _warning_progress())
+	# Same dark area read as the meteor: the fill marks exactly where the hit happens, so the
+	# strike never feels arbitrary (owner report).
+	draw_circle(Vector2.ZERO, radius, Color(Palette.SPACE_VOID, alpha * 0.45))
 	_dashed_circle(draw_radius, DASHES, color, alpha)
 	draw_circle(Vector2.ZERO, radius * 0.35, Color(color, alpha * 0.35))
 	if _active:

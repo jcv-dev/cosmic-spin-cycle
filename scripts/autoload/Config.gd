@@ -181,8 +181,9 @@ const HAZARD_GRID_PX := 32.0
 const HAZARD_ROOM_MARGIN_PX := 40.0
 const HAZARD_BELT_PAD_PX := 24.0
 const HAZARD_BLOCK_PAD_PX := 12.0
-## A hazard never appears under the player's feet: at 2 beats of warning that would feel cheap.
-const HAZARD_PLAYER_CLEARANCE_PX := 96.0
+## A hazard never appears under the player's feet. Halved from 96: the owner reported that
+## at 96 hazards were too far away to ever catch him.
+const HAZARD_PLAYER_CLEARANCE_PX := 48.0
 ## The last phase is where the void shows its teeth (hazard density bonus).
 const HAZARD_LATE_PHASE := 3
 

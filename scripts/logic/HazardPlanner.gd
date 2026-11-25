@@ -101,6 +101,31 @@ static func contains(
 	return point.distance_to(center) <= radius_px(kind) * radius_scale
 
 
+## Arena in world pixels: the rectangle whose corners are the four washer centres. Hazards
+## outside it (the far left/right columns and the strips behind the belts) are space the
+## player almost never crosses, and the owner reported them as "spawning where it makes no
+## sense". Falls back to the room band when the layout is unavailable.
+static func arena_rect() -> Rect2:
+	var layout := _layout()
+	var washers: Array = layout.get("washers", [])
+	if washers.is_empty():
+		return playable_rect()
+	var scale := float(layout.get("art_scale", Config.ART_SCALE))
+	var minimum := Vector2.INF
+	var maximum := -Vector2.INF
+	for entry: Dictionary in washers:
+		var centre := (
+			(
+				Vector2(float(entry.get("x", 0)), float(entry.get("y", 0)))
+				+ Vector2(float(entry.get("w", 0)), float(entry.get("h", 0))) * 0.5
+			)
+			* scale
+		)
+		minimum = minimum.min(centre)
+		maximum = maximum.max(centre)
+	return Rect2(minimum, maximum - minimum)
+
+
 ## Playable area in world pixels: the room minus the wall band.
 static func playable_rect() -> Rect2:
 	var layout := _layout()
@@ -116,7 +141,7 @@ static func playable_rect() -> Rect2:
 ## True when a hazard centre is allowed there: inside the room, off the furniture and clear
 ## of the delivery chute.
 static func is_valid_point(point: Vector2) -> bool:
-	if not playable_rect().has_point(point):
+	if not arena_rect().has_point(point):
 		return false
 	for rect: Rect2 in blocked_rects():
 		if rect.has_point(point):
@@ -172,7 +197,7 @@ static func _append_rects(into: Array[Rect2], entries: Array, scale: float, pad:
 ## crowded (cannot happen with the shipped layout, but the director handles it).
 static func _pick_point(rng: RandomNumberGenerator, previous: Vector2, avoid: Vector2) -> Vector2:
 	var candidates: Array[Vector2] = []
-	var area := playable_rect()
+	var area := arena_rect()
 	var step := Config.HAZARD_GRID_PX
 	var y := area.position.y
 	while y <= area.end.y:
