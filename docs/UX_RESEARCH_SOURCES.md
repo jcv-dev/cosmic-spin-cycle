@@ -1,6 +1,7 @@
 # UX Research — Sources Appendix
 
-Companion to [UX_RESEARCH.md](UX_RESEARCH.md). **All URLs accessed 2026-11-24.**
+Companion to [UX_RESEARCH.md](UX_RESEARCH.md) and [GAME_FEEL_RESEARCH.md](GAME_FEEL_RESEARCH.md). **All URLs accessed 2026-11-24.**
+**27 sources:** S01–S21 support the UX document; S22–S27 support the game-feel document.
 Confidence: **verified-read** (fetched, read, quotes checked against page text) · **transcript-read** (read via subtitle track) · **skimmed** · **search-only** (no full text available). Quotes ≤ 30 words, verbatim except where marked as a translation.
 
 > Publishers that truncate or block plain fetches were read through a text-extraction proxy; quotes were checked against the extracted article text and the original publisher is cited. Nothing is quoted from a search snippet.
@@ -281,6 +282,93 @@ Steam community · 2025-06-14 · <https://steamcommunity.com/app/3404260/discuss
 
 ---
 
+### S22
+**Designing Game Feel. A Survey**
+Martin Pichlmair & Mads Johansen (IT University Copenhagen) · arXiv 2011.09201 / IEEE Transactions on Games · 2020 · <https://ar5iv.labs.arxiv.org/html/2011.09201> · **verified-read**
+- Adopts Swink's definition: "real-time control of virtual objects in a simulated space, with interactions emphasised by polish", plus his five experiences of feel.
+- Organises the field into physicality (tuning), amplification (juicing) and support (streamlining).
+- Button caching: Mario caches 1–2 frames, Braid **0.23 s**; coyote time credited to Canabalt; Disc Room delays lethal hitboxes by up to **50 ms** as accessibility.
+- Cites Kao's study: medium and high juiciness beat extreme and none on experience, motivation, play time and performance.
+- Warns that heavy juice makes it "hard to learn what aspects of interactivity have mechanical importance".
+- Practitioners cited on screen shake: an easing function in a semantically meaningful direction beats random offsets.
+
+> "Game feel design is the intentional design of the affective impact of moment-to-moment interaction with games."
+
+**Applicability:** supplies the buffering/coyote windows, the capped juice budget, the "oil"/illusion-of-control framing for aim assist, and the argument that assistance is accessibility.
+
+---
+
+### S23
+**2D screen shake (Bevy example implementing Squirrel Eiserloh's "Juicing Your Cameras With Math")**
+Bevy engine contributors · Bevy 0.20 source/docs · 2026 (example) · <https://docs.rs/bevy/latest/src/2d_screen_shake/2d_screen_shake.rs.html> · **verified-read** (source code + comments)
+- Trauma model: `trauma ∈ [0,1]`, decays **0.5/s** (full → zero in 2 s), shake = `trauma^2` because linear feels un-punchy.
+- Max translation **20 px**, max roll **10°**, noise speed 20/s, +0.4 trauma per press.
+- Offsets driven by 1D Perlin noise so the camera moves rather than teleports; separate noise seeds per axis.
+- Shake is applied to the render transform only and restored at frame start, so "the Transform stays 'normal' for the rest of the game logic".
+
+> "Camera shakes don't feel punchy when they go up linearly, so we use an exponent of 2.0."
+
+**Applicability:** the exact trauma algorithm for our camera — with the roll removed (it would rotate our pixel grid) and the amplitude cut to 8 px, decay raised to 1.5/s.
+
+---
+
+### S24
+**Input (class reference)**
+Godot Engine 4.7 documentation · n.d. · <https://docs.godotengine.org/en/stable/classes/class_input.html> · **verified-read**
+- `start_joy_vibration(device, weak_magnitude, strong_magnitude, duration)`: two motors, weak = high-frequency, strong = low-frequency; duration 0 ≈ 65 s; `is_joy_vibrating()` reports real state.
+- `use_accumulated_input` defaults **true**: events "will be merged and emitted when the frame is done rendering"; disabling it gives "slightly more precise/reactive input".
+- `flush_buffered_events()` and the `agile_event_flushing` project setting exist to force earlier delivery.
+- `get_vector()` returns a length-1 vector with a circular deadzone; deadzone can be overridden.
+- `is_action_just_pressed()` is true on "the current frame or physics tick"; during `_input()` use `InputEvent.is_action_pressed()`.
+
+> "Input accumulation can be disabled to get slightly more precise/reactive input at the cost of increased CPU usage."
+
+**Applicability:** potential +16.7 ms hidden latency in a game whose PERFECT window is ±65 ms — must be measured and probably flipped; also the exact haptics API surface.
+
+---
+
+### S25
+**Design Considerations for Rumble and Advanced Haptics**
+Audiokinetic (Wwise documentation) · 2024.1 · <https://www.audiokinetic.com/en/public-library/2024.1.11_9010/?source=Help&id=design_considerations_for_rumble_and_advanced_haptics> · **verified-read**
+- Rumble motors respond to waveform *amplitude*; linear actuators (advanced haptics) respond to waveform *variation*.
+- "Constant, high-amplitude waveforms … produce strong vibrations in rumble-based gamepads but no vibration in haptic-based gamepads."
+- Rumble converts each quantum (e.g. 512 samples, ~93.75 Hz tick) into a single amplitude value; haptics sends the whole waveform.
+- The dual-motor convention is a low-frequency square wave on one channel and a high-frequency sine on the other.
+
+> "If there are no variations in the amplitude of the waveform, there is no perceived vibration in the gamepad."
+
+**Applicability:** haptics must be short, shaped envelopes (two pulses for the explosion), never a flat 500 ms buzz; dual-motor split maps onto Godot's weak/strong parameters.
+
+---
+
+### S26
+**像素宝典 #13 — 滑动/冲刺/滚动 (slide / dash / roll)**
+Pedro "saint11" Medeiros (pixel artist on *Celeste*), translated by 风农 · indienova · 2020-02-27 · <https://indienova.com/indie-game-development/saint11-pixel-art-tutorial-13/> · **verified-read** (authorised translation; original on saint11's Patreon)
+- Slide, dash and roll share one structure: a very short or absent anticipation, a loop during the action, and a recovery with slight overshoot.
+- Anticipation is compressed specifically for **player** characters (long anticipation reads as input lag); monsters can afford long tells.
+- Links the family to squash-and-stretch, smoke (for dust) and run cycles.
+
+> "他们都遵循同样的模式，一个非常短或者没有的准备阶段（尤其是玩家角色），一个动作执行期间的动画循环，和一个恢复动画，通常带有一点过量。" ("very short or absent anticipation — especially for the player character — a loop, and a recovery, usually with some overshoot") — my translation.
+
+**Applicability:** defines our throw wind-up/follow-through timings and why the wind-up must be 60 ms, not 200 ms; also the dust and squash vocabulary.
+
+---
+
+### S27
+**Some things I've learned about moderating playtesting sessions**
+Steve Bromley (games user researcher, ex-PlayStation) · 2015-01-06 · <https://www.stevebromley.com/blog/2015/01/06/some-things-ive-learned-about-moderating-playtesting-sessions/> · **verified-read**
+- "Always confirm what you've seen": an observer cannot distinguish "the player hasn't seen the objective" from "the player saw it and is doing something else" — the fixes differ.
+- Ask high-level, non-leading questions ("What is your goal currently", not "Where do you need to go next?") and never interrupt gameplay.
+- Repeat players' words back paraphrased: it checks understanding and reliably elicits more detail.
+- Probe until the note is actionable — "the controls are weird" is not a report a team can act on.
+- Discard opinions projected onto others ("my brother would love this").
+
+> "It's important to ask players what's going on, to ensure that you are identifying the issue correctly."
+
+**Applicability:** the moderation rules for our six-task feel protocol, and the reason we log screen recordings instead of trusting impressions.
+
+---
+
 ## Claims I could not verify
 
 1. **NecroDancer's "100 percent" in milliseconds** — Clark gives the percentage only; "half a beat each way" is my interpretation (the 20 % → ±100 ms figure *is* stated).
@@ -293,3 +381,9 @@ Steam community · 2025-06-14 · <https://steamcommunity.com/app/3404260/discuss
 8. **Metroid Prime, Return of the Obra Dinn, Celeste assist mode, TLOU2, Hades, Forza, PlateUp!, Moving Out, BPM, Rhythm Heaven** — requested in the brief but *not* fetched as primary sources in this pass. Nothing in the main document depends on them; the gap is listed rather than hidden.
 9. **Game UI Database entries** — not browsed individually; no screenshot described.
 10. **Xbox accessibility feature tags** — only localised renderings surfaced; reduce-motion is cited via S07 instead.
+11. **Eiserloh's GDC talk itself** — not watched; every trauma-shake number comes from Bevy's implementation of it (S23), which cites the talk.
+12. **Kao's juiciness study** — cited second-hand through S22; the original's sample size and effect sizes were not read.
+13. **Our real input latency** — Godot's accumulation behaviour is documented (S24) but the actual ms on this box is unmeasured; §1 of the game-feel doc is a budget to verify, not a measurement.
+14. **Gutwin et al. on aim assistance** — seen only as a snippet of a conference proceedings; not used as support for any number.
+15. **saint11's original English wording** — read through the authorised Chinese translation (S26); the quoted line is my translation back.
+16. **Display scan-out (8–16 ms) and the "< 4 frames input→photon" target** — engineering inference, no source; measure with a 240 fps camera.
