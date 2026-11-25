@@ -13,6 +13,7 @@ var _root: Node2D
 class FakePlayer:
 	extends CharacterBody2D
 	var input_inverted := false
+	var field_velocity := Vector2.ZERO
 	var field_speed_scale := 1.0
 
 	func set_input_inverted(on: bool) -> void:
@@ -24,6 +25,9 @@ func before_each() -> void:
 	GameState.stability_protected = false
 	BeatConductor.stop()
 	_player = FakePlayer.new()
+	var shape := CollisionShape2D.new()
+	shape.shape = CircleShape2D.new()
+	_player.add_child(shape)
 	add_child_autofree(_player)
 	_root = Node2D.new()
 	add_child_autofree(_root)
@@ -143,7 +147,9 @@ func test_vent_pulls_the_player_and_slows_it() -> void:
 	assert_eq((_director.get("_fields") as Array).size(), 1, "a gravity well is live")
 	_player.velocity = Vector2.ZERO
 	_director.call("_physics_process", 0.1)
-	assert_lt(_player.velocity.x, 0.0, "the well drags Pip toward the centre")
+	assert_lt(
+		(_player.get("field_velocity") as Vector2).x, 0.0, "the well drags Pip toward the centre"
+	)
 	assert_almost_eq(
 		float(_player.get("field_speed_scale")),
 		Config.HAZARD_VENT_SLOW_SCALE,

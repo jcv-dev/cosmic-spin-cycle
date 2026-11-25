@@ -509,8 +509,10 @@ desvíen al pasar cerca. La fuga de vacío deja de ser un disco que golpea una v
 
 1. **Duración**: la fuga queda activa **3 beats** (el resto de amenazas, 1 beat). Durante ese
    tiempo es un campo, no un instante.
-2. **Jugador**: `well_force()` da una aceleración de 380 px/s² en el centro con caída lineal
-   hasta 0 en 170 px, aplicada a `velocity` en `_physics_process`. Dentro del radio de daño
+2. **Jugador**: `well_force()` da una **velocidad de arrastre** de 220 px/s en el centro con
+   caída lineal hasta 0 en 170 px. Se aplica como desplazamiento (`move_and_collide`) y no
+   como suma a `velocity`: el rozamiento de marcha borraba el tirón en pocos frames (primera
+   pasada de D055, reportada como "la gravedad no hace nada"). Dentro del radio de daño
    (72 px) la velocidad máxima baja al **55 %**: te arrastra y te frena, así que quedarse
    quieto es peor que salir.
 3. **Daño sostenido**: además del golpe del beat, cada **0.5 s** dentro del radio vuelve a

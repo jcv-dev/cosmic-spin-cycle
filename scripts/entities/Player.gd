@@ -76,8 +76,10 @@ var last_dash_distance := 0.0
 var last_grade := -1
 ## Gravity-pocket effect (D045): movement axes are flipped while true.
 var input_inverted := false
-## Gravity-well effect (D055): the void sets this every physics frame while Pip is caught.
-## The player consumes it (clamps speed once) and resets it to 1.0, so it never latches.
+## Gravity-well effect (D055): the void sets these every physics frame while Pip is caught.
+## `field_velocity` is applied as displacement (so friction cannot erase it) and
+## `field_speed_scale` clamps the walk speed; both are consumed immediately, never latched.
+var field_velocity := Vector2.ZERO
 var field_speed_scale := 1.0
 ## Active A/B profile; `set_feel_preset()` lets a debug menu swap it live.
 var feel_preset := FEEL_PRESET
@@ -139,6 +141,11 @@ func _input(event: InputEvent) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	# The void drags Pip by displacement before anything else: applying it to `velocity`
+	# would be erased by the walk friction within a few frames (first D055 pass).
+	if field_velocity != Vector2.ZERO:
+		move_and_collide(field_velocity * delta)
+		field_velocity = Vector2.ZERO
 	dash_cooldown_left = maxf(dash_cooldown_left - delta, 0.0)
 	_turn_boost_left = maxf(_turn_boost_left - delta, 0.0)
 	_prune_held_item()

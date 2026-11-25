@@ -98,7 +98,7 @@ func _physics_process(delta: float) -> void:
 		return
 	for field: Dictionary in _fields.duplicate():
 		field["left"] = float(field["left"]) - delta
-		_pull_player(field, delta)
+		_pull_player(field)
 		_pull_items(field)
 		_tick_well_damage(field, delta)
 		if float(field["left"]) <= 0.0:
@@ -115,7 +115,7 @@ static func well_force(center: Vector2, point: Vector2, strength: float, radius:
 	return offset.normalized() * strength * (1.0 - distance / radius)
 
 
-func _pull_player(field: Dictionary, delta: float) -> void:
+func _pull_player(field: Dictionary) -> void:
 	if _player == null or not is_instance_valid(_player):
 		return
 	var center: Vector2 = field["center"]
@@ -125,10 +125,11 @@ func _pull_player(field: Dictionary, delta: float) -> void:
 	var pull := well_force(
 		center,
 		body.global_position,
-		Config.HAZARD_VENT_PLAYER_PULL,
+		Config.HAZARD_VENT_PULL_SPEED,
 		Config.HAZARD_VENT_GRAVITY_RADIUS_PX
 	)
-	body.velocity += pull * delta
+	# px/s handed to the player, which applies it as displacement so friction cannot eat it.
+	body.set("field_velocity", pull)
 	if body.global_position.distance_to(center) <= Config.HAZARD_VENT_RADIUS_PX:
 		body.set("field_speed_scale", Config.HAZARD_VENT_SLOW_SCALE)
 

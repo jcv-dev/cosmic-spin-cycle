@@ -188,7 +188,9 @@ const HAZARD_LATE_PHASE := 3
 ## player stays in it.
 const HAZARD_VENT_ACTIVE_BEATS := 3
 const HAZARD_VENT_GRAVITY_RADIUS_PX := 170.0
-const HAZARD_VENT_PLAYER_PULL := 380.0
+## Suction speed at the centre, in px/s. The player is dragged by displacement, not by adding
+## to `velocity`, because the walk friction would erase the pull in a few frames.
+const HAZARD_VENT_PULL_SPEED := 220.0
 const HAZARD_VENT_ITEM_PULL := 520.0
 const HAZARD_VENT_SLOW_SCALE := 0.55
 const HAZARD_VENT_TICK_S := 0.5
