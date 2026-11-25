@@ -145,6 +145,11 @@ func test_wrong_washer_penalty_is_applied_once_per_throw() -> void:
 	assert_eq(GameState.wrong_washer_count, 1)
 	assert_signal_emitted_with_parameters(washer, "item_rejected", [item, "incompatible"])
 	assert_eq(washer.get_loaded_items().size(), 0)
+	var chip := washer.get_node_or_null(^"FeedbackChip")
+	assert_not_null(chip, "the wrong-washer chip is local to the machine")
+	assert_eq(str(chip.get(&"text")), "-12")
+	assert_false(bool(chip.get(&"gain")), "a loss uses the down glyph")
+	chip.set_process(false)
 
 
 func test_locked_washer_never_penalises() -> void:
@@ -188,6 +193,7 @@ func test_cycle_marks_items_clean_and_counts_them_once() -> void:
 	washer.tick(2.1)
 	assert_eq(washer.get_state(), WasherFSM.State.DONE)
 	assert_signal_emitted(washer, "cycle_done")
+	assert_true(washer.get_node(^"Bubbles").visible, "the clean loop is on while DONE")
 	assert_eq(GameState.washed_count, 3, "one count per item")
 	for item in items:
 		assert_true(item.is_clean, "cycle_done marks the load clean")
@@ -229,6 +235,8 @@ func test_explosion_applies_the_penalty_once_and_ejects() -> void:
 	var limit := minf(Config.TURBULENCE_TIMEOUT_S, 8.0 * Config.beat_seconds(Config.PHASE_BPM[0]))
 	washer.tick(limit + 0.1)
 	assert_signal_emitted(washer, "exploded")
+	assert_not_null(washer.get_node_or_null(^"ExplosionFX"), "the 6-frame burst plays")
+	assert_not_null(washer.get_node_or_null(^"ExplosionText"), "¡EXPLOSIÓN! at the machine")
 	assert_eq(washer.get_state(), WasherFSM.State.BROKEN)
 	assert_almost_eq(GameState.stability, 75.0, 0.001, "-25 from 100")
 	assert_eq(GameState.exploded_count, 1)
@@ -242,6 +250,7 @@ func test_strike_resolves_turbulence() -> void:
 	washer.try_accept(item)
 	assert_true(washer.strike(RhythmEvaluator.Grade.GOOD))
 	assert_true(washer.force_turbulent())
+	assert_eq(washer.holo_label, "TURBULENTO", "persistent 14 px label, not a popup")
 	watch_signals(washer)
 	assert_true(washer.strike(RhythmEvaluator.Grade.GOOD))
 	assert_signal_emitted_with_parameters(

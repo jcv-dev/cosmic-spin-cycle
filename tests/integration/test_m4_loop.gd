@@ -61,4 +61,6 @@ func test_wash_then_deliver_pays_once() -> void:
 	assert_eq(GameState.score, 100, "rocky is worth 100 at x1")
 	assert_almost_eq(GameState.stability, 53.0, 0.001, "+3 for the delivery")
 	assert_eq(GameState.washed_count, 1, "delivery never double-counts the wash")
-	assert_true(item.is_queued_for_deletion(), "the item leaves the room")
+	assert_false(item.is_queued_for_deletion(), "the item shrinks into the iris first")
+	chute.tick(0.3)
+	assert_true(item.is_queued_for_deletion(), "then it leaves the room")
