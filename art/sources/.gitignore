@@ -1,0 +1,3 @@
+# Archives are downloaded, never committed (see tools/fetch_sources.py).
+_downloads/
+*.zip
