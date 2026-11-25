@@ -56,11 +56,23 @@ static func room_rect() -> Rect2:
 	return Rect2(0.0, 0.0, art_to_world(320.0), art_to_world(180.0))
 
 
-## Builds the room under `root`. Returns the created Nodes keyed by name.
+## Builds the full layered room under `root` and returns the created Nodes keyed by name.
+##
+## Layer order is `docs/UX_BIBLE.md` §3.4: RoomBackground −100, Backdrop −95, Floor −90
+## (with its decals), RoomDressing −80, the additive neon, the particle layer, the light rig
+## and RoomForeground 20. Every optional painter degrades to a flat palette fallback when a
+## sheet is missing, so the room never fails to build.
 static func build(root: Node2D) -> Dictionary:
 	var nodes := {}
 	_build_background(root)
-	_build_floor(root)
+	nodes["backdrop"] = Backdrop.build(root)
+	nodes["floor"] = _build_floor(root)
+	nodes["dressing"] = RoomDressing.build_dressing(root)
+	nodes["belt_shadow"] = _build_belt_shadow(root)
+	nodes["belt_glow"] = Atmosphere.build_belt_glow(root)
+	nodes["atmosphere"] = Atmosphere.build(root)
+	nodes["lighting"] = LightingRig.build(root)
+	nodes["foreground"] = RoomDressing.build_foreground(root)
 	nodes["walls"] = _build_walls(root)
 	return nodes
 
@@ -88,7 +100,7 @@ static func _build_background(root: Node2D) -> void:
 	root.add_child(bg)
 
 
-static func _build_floor(root: Node2D) -> void:
+static func _build_floor(root: Node2D) -> Node2D:
 	var floor_layer := Node2D.new()
 	floor_layer.name = "Floor"
 	floor_layer.z_index = -90
@@ -110,7 +122,9 @@ static func _build_floor(root: Node2D) -> void:
 		_build_tiled_floor(floor_layer)
 
 	if has_room_art:
-		return
+		# The floor story rides on top of the shipped floor plate.
+		RoomDressing.build_floor_decals(floor_layer)
+		return floor_layer
 
 	var x := 0.0
 	while x <= size.x:
@@ -130,6 +144,27 @@ static func _build_floor(root: Node2D) -> void:
 		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		floor_layer.add_child(line)
 		y += float(TILE_WORLD)
+	RoomDressing.build_floor_decals(floor_layer)
+	return floor_layer
+
+
+## Dims the belt decks so the washers and the chute stay the brightest things in the room.
+## Drawn above the belts (-5) but below items (5), so items never lose contrast.
+static func _build_belt_shadow(root: Node2D) -> Node2D:
+	var layer := Node2D.new()
+	layer.name = "BeltShade"
+	layer.z_index = -3
+	root.add_child(layer)
+	for belt: Dictionary in layout().get("belts", []):
+		var rect := rect_world(belt)
+		var shade := ColorRect.new()
+		shade.name = "%sShade" % String(belt.get("id", "belt"))
+		shade.position = rect.position
+		shade.size = rect.size
+		shade.color = Color(Palette.SPACE_VOID.r, Palette.SPACE_VOID.g, Palette.SPACE_VOID.b, 0.30)
+		shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		layer.add_child(shade)
+	return layer
 
 
 ## Tiles the shipped env_floor sheet across the room (nearest, integer positions).
