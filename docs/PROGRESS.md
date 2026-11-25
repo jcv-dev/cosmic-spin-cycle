@@ -51,13 +51,14 @@ Updated after every milestone/workstream. Times are local (America/Bogota).
 ## M3 — done
 
 - Phase table 105/118/130/142, 3.5/2.4/1.7 s, belt activation per phase, convoy 4+4+4+1.
-- Pure `SpawnSchedule` (seeded, deterministic) → **34/62/88/13 = 197** spawns / 480 s.
+- Pure `SpawnSchedule` (seeded, deterministic) → **11/18/24/13 = 66** spawns / 480 s
+  (retuned from 197 in D036: the old cadence was 1.5× faster than one player).
 - `SpawnDirector.start/advance_to/seek/simulate`, alive cap 40, per-phase counts.
 - Belts steer velocity at 900 px/s², sock multiplier; phase-3 reversal is pure and warns
   4 beats before flipping every 16 measures: **warnings on beats 60/124/188, flips on
   64/128/192** at 130 BPM.
 - Shredders: −8 % stability, `fell_off_belt`, free, double-entry guard.
-- 480 s virtual integration run, `tools/sim_run.gd` (197 total, exits 0).
+- 480 s virtual integration run, `tools/sim_run.gd` (66 total, exits 0).
 - MainLevel now drives the clock, spawner, belt activation, beat forwarding and warning SFX.
 
 ## Integration (M0–M3)
@@ -82,7 +83,8 @@ Updated after every milestone/workstream. Times are local (America/Bogota).
 | Test suite | **315 tests, 7,179 asserts, ~38 s** | GUT summary |
 | Sprite contract | 29/29 sheets, 176 frames, 22 colour-budget warnings | `tools/lint_sprites.py` |
 | Audio contract | 16/16 checks (BPM drift ≤0.01 ms, peaks −1.3…−2.2 dBFS, Spanish glyphs) | `tools/verify_audio.py` |
-| Spawns / 480 s | 197 (34/62/88/13), seed 1234 | `tools/sim_run.gd` |
+| Spawns / 480 s | 66 (11/18/24/13), seed 1234 | `tools/sim_run.gd` |
+| E2E playtest bot | 6 washes, 4 deliveries, 0 losses, 100 % throws, stability 94 (93 s) | `tools/playtest_bot.gd` |
 | Belt reversal | warnings 60/124/188, flips 64/128/192 (130 BPM) | `test_belt_reversal*` |
 | Physics | 0.544 ms/tick for 40 bodies | `docs/M2_PHYSICS.md` |
 | Reported PulseAudio latency | 52.84 ms (headless Dummy = 0) | `docs/CALIBRATION.md` |
