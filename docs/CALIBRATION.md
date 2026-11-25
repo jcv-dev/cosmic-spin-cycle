@@ -155,13 +155,17 @@ done
 
 | Date | OS | Output | Reported latency | Measured offset | Tester |
 |---|---|---|---|---|---|
-| 2026-11-24 | Linux (headless CI) | dummy driver | 0.0 ms | n/a — no tap device | automated suite |
+| 2026-11-24 | Linux host probe (headless display) | PulseAudio | 52.84 ms | n/a — no human tap | automated probe |
+| 2026-11-24 | Linux (headless GUT run) | dummy driver | 0.0 ms | n/a — no tap device | automated suite |
 | — | Linux (owner desktop) | wired | TODO | TODO | owner |
 | — | Windows (owner desktop) | wired | TODO | TODO | owner |
 | — | Windows (owner laptop) | Bluetooth | TODO | TODO | owner |
 
-Windows is the owner's TODO: the wizard, click tracks and tests are platform-neutral, but the
-reported latency and residual tap offset must be recorded on the two target machines.
+The Linux probe (`godot --display-driver headless --audio-driver PulseAudio -s probe.gd`)
+reported a 52.84 ms output latency at a 44.1 kHz mix rate, which is already inside the GOOD
+window and shows why the residual tap wizard is still needed. Windows is the owner's TODO:
+the wizard, click tracks and tests are platform-neutral, but the reported latency and residual
+tap offset must be recorded on the two target machines.
 
 ## Known limitations
 
