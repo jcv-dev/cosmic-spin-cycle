@@ -134,11 +134,14 @@ func _on_measure(measure: int) -> void:
 
 
 func _plan(measure: int, beat_offset: int) -> void:
-	var entry := HazardPlanner.plan(phase, difficulty, _rng, _last_anchor)
+	var avoid := Vector2.ZERO
+	if _player != null and is_instance_valid(_player):
+		avoid = _player.global_position
+	var entry := HazardPlanner.plan(phase, difficulty, _rng, _last_anchor, avoid)
 	if entry.is_empty():
 		return
 	var warning := Config.DIFFICULTY_WARNING_BEATS[Config.difficulty_index(difficulty)]
-	var center := HazardPlanner.world_position(entry)
+	var center: Vector2 = entry["pos"]
 	var packed: PackedScene = load(HAZARD_SCENE)
 	var node := packed.instantiate() as Hazard
 	if node == null:
@@ -150,7 +153,7 @@ func _plan(measure: int, beat_offset: int) -> void:
 		float(entry.get("angle", 0.0)),
 		float(warning) * Config.beat_seconds(float(Config.PHASE_BPM[phase]))
 	)
-	_last_anchor = entry["art_pos"]
+	_last_anchor = center
 	var strike_beat := measure * Config.BEATS_PER_MEASURE + warning + beat_offset
 	(
 		_pending

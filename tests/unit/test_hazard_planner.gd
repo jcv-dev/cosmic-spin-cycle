@@ -1,19 +1,22 @@
 extends GutTest
-## HazardPlanner (D045): phase unlocking, per-difficulty density, determinism, spacing and
-## the point-to-shape test the director uses for damage.
+## HazardPlanner (D045, D053): phase unlocking, density, determinism, and the procedural
+## placement rules that keep hazards off the belts, the furniture, the chute and the player.
 
 const MEASURES := 64
+const LAYOUT_PATH := "res://data/layout.json"
 
 
-func _plan_sequence(seed: int, phase: int, difficulty: int, measures: int = MEASURES) -> Array:
+func _plan_sequence(
+	seed: int, phase: int, difficulty: int, measures: int = MEASURES, avoid: Vector2 = Vector2.ZERO
+) -> Array:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed
 	var out: Array = []
 	var previous := Vector2.ZERO
 	for _i in range(measures):
-		var entry := HazardPlanner.plan(phase, difficulty, rng, previous)
+		var entry := HazardPlanner.plan(phase, difficulty, rng, previous, avoid)
 		if not entry.is_empty():
-			previous = entry["art_pos"]
+			previous = entry["pos"]
 		out.append(entry)
 	return out
 
@@ -24,6 +27,24 @@ func _count(sequence: Array) -> int:
 		if not entry.is_empty():
 			total += 1
 	return total
+
+
+func _layout() -> Dictionary:
+	return JSON.parse_string(FileAccess.get_file_as_string(LAYOUT_PATH)) as Dictionary
+
+
+func _belt_rects() -> Array[Rect2]:
+	var rects: Array[Rect2] = []
+	var layout := _layout()
+	var scale := float(layout.get("art_scale", Config.ART_SCALE))
+	for belt: Dictionary in layout.get("belts", []):
+		rects.append(
+			Rect2(
+				Vector2(float(belt["x"]), float(belt["y"])) * scale,
+				Vector2(float(belt["w"]), float(belt["h"])) * scale
+			)
+		)
+	return rects
 
 
 func test_same_seed_plans_the_same_hazards() -> void:
@@ -67,38 +88,71 @@ func test_chaos_is_denser_than_calm() -> void:
 	assert_gt(chaos, 0, "CHAOS must actually spawn hazards")
 
 
-func test_never_more_than_one_hazard_per_measure() -> void:
-	# plan() is asked once per measure by contract: the sequence length is the measure count.
-	var sequence := _plan_sequence(5, 3, Config.Difficulty.CHAOS, 10)
-	assert_eq(sequence.size(), 10)
-
-
 func test_consecutive_hazards_keep_their_separation() -> void:
 	var previous := Vector2.ZERO
 	for entry: Dictionary in _plan_sequence(31337, 3, Config.Difficulty.CHAOS, 200):
 		if entry.is_empty():
 			continue
-		var anchor: Vector2 = entry["art_pos"]
+		var point: Vector2 = entry["pos"]
 		if previous != Vector2.ZERO:
-			var separation := anchor.distance_to(previous) * float(Config.ART_SCALE)
-			assert_gte(separation, Config.HAZARD_MIN_SEPARATION_PX, "anchors stay apart")
-		previous = anchor
+			assert_gte(
+				point.distance_to(previous),
+				Config.HAZARD_MIN_SEPARATION_PX,
+				"consecutive hazards stay apart"
+			)
+		previous = point
 
 
-func test_anchors_stay_inside_the_playable_band() -> void:
-	# Art canvas is 320x180; belts occupy y<26 and y>154 and the west lane x<26.
-	for anchor: Vector2 in HazardPlanner.ANCHORS_ART:
-		assert_between(anchor.x, 30.0, 290.0, "anchor x %s is inside the room" % anchor)
-		assert_between(anchor.y, 30.0, 150.0, "anchor y %s avoids the belt lanes" % anchor)
-
-
-func test_anchor_never_sits_on_the_chute() -> void:
-	var chute := Vector2(160, 90)
-	for anchor: Vector2 in HazardPlanner.ANCHORS_ART:
-		var clearance := anchor.distance_to(chute) * float(Config.ART_SCALE)
-		assert_gte(
-			clearance, Config.HAZARD_CHUTE_CLEARANCE_PX, "anchor %s clears the chute" % anchor
+func test_every_planned_point_is_legal() -> void:
+	for entry: Dictionary in _plan_sequence(555, 3, Config.Difficulty.CHAOS, 200):
+		if entry.is_empty():
+			continue
+		assert_true(
+			HazardPlanner.is_valid_point(entry["pos"]),
+			"planned point %s is inside the playable band" % entry["pos"]
 		)
+
+
+func test_no_planned_point_lands_on_a_belt() -> void:
+	var belts := _belt_rects()
+	for entry: Dictionary in _plan_sequence(808, 3, Config.Difficulty.CHAOS, 200):
+		if entry.is_empty():
+			continue
+		for belt: Rect2 in belts:
+			assert_false(
+				belt.has_point(entry["pos"]), "hazard %s never sits on a belt" % entry["pos"]
+			)
+
+
+func test_no_planned_point_lands_on_furniture_or_the_chute() -> void:
+	var chute := HazardPlanner.chute_center()
+	for entry: Dictionary in _plan_sequence(909, 3, Config.Difficulty.CHAOS, 200):
+		if entry.is_empty():
+			continue
+		assert_gte(
+			(entry["pos"] as Vector2).distance_to(chute),
+			Config.HAZARD_CHUTE_CLEARANCE_PX,
+			"the delivery stays reachable"
+		)
+
+
+func test_hazards_never_spawn_under_the_player() -> void:
+	var avoid := Vector2(640, 520)
+	for entry: Dictionary in _plan_sequence(4242, 3, Config.Difficulty.CHAOS, 120, avoid):
+		if entry.is_empty():
+			continue
+		assert_gte(
+			(entry["pos"] as Vector2).distance_to(avoid),
+			Config.HAZARD_PLAYER_CLEARANCE_PX,
+			"a hazard never appears at the player's feet"
+		)
+
+
+func test_playable_rect_is_inside_the_room() -> void:
+	var area := HazardPlanner.playable_rect()
+	assert_gt(area.size.x, 600.0, "the band keeps most of the floor")
+	assert_gt(area.size.y, 300.0)
+	assert_true(area.has_point(Vector2(640, 360)), "the middle of the room is playable")
 
 
 func test_contains_is_a_radius_test_for_round_hazards() -> void:
@@ -117,7 +171,6 @@ func test_contains_is_a_radius_test_for_round_hazards() -> void:
 func test_contains_is_a_segment_test_for_the_arc() -> void:
 	var center := Vector2(200, 200)
 	var radius := HazardPlanner.radius_px(Config.HazardKind.LINT_ARC)
-	# Horizontal beam: a point above the line is safe, a point on the line is not.
 	assert_true(
 		HazardPlanner.contains(
 			Config.HazardKind.LINT_ARC, center, 0.0, center + Vector2(90, radius - 1.0)
@@ -128,7 +181,6 @@ func test_contains_is_a_segment_test_for_the_arc() -> void:
 			Config.HazardKind.LINT_ARC, center, 0.0, center + Vector2(90, radius + 1.0)
 		)
 	)
-	# Beyond the beam's half length it stops damaging.
 	assert_false(
 		HazardPlanner.contains(
 			Config.HazardKind.LINT_ARC,

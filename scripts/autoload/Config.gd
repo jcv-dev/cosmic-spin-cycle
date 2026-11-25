@@ -176,6 +176,13 @@ const HAZARD_METEOR_HITSTOP_S := 0.09
 const HAZARD_ARC_HALF_WIDTH_PX := 24.0
 const HAZARD_POCKET_RADIUS_PX := 44.0
 const HAZARD_MAX_EVENTS := 4096
+## Procedural placement: sample this grid, inside the room, away from the furniture.
+const HAZARD_GRID_PX := 32.0
+const HAZARD_ROOM_MARGIN_PX := 40.0
+const HAZARD_BELT_PAD_PX := 24.0
+const HAZARD_BLOCK_PAD_PX := 12.0
+## A hazard never appears under the player's feet: at 2 beats of warning that would feel cheap.
+const HAZARD_PLAYER_CLEARANCE_PX := 96.0
 ## The last phase is where the void shows its teeth (hazard density bonus).
 const HAZARD_LATE_PHASE := 3
 

@@ -14,6 +14,10 @@ const ACTIVE_ALPHA := 1.0
 const LINE_W := 2.5
 const UNDERLAY_W := 5.0
 const UNDERLAY_ALPHA := 0.8
+## Telegraph rings start this much wider than the danger radius and close on the beat.
+const WARNING_START_SCALE := 1.4
+## Impact ring grows to this scale while it fades.
+const SHOCKWAVE_SCALE := 1.6
 const FADE_S := 0.18
 ## Beat signals can land a frame or two after the wall-clock telegraph ends.
 const RESOLVE_GRACE_S := 0.75
@@ -107,19 +111,20 @@ func _draw() -> void:
 ## Void vent: dashed ring that contracts as the beat approaches.
 func _draw_vent(color: Color, alpha: float) -> void:
 	var radius := Config.HAZARD_VENT_RADIUS_PX
-	var progress := _progress()
-	var draw_radius := lerpf(radius * 1.35, radius, progress)
+	# Contract only during the warning. On the strike the radius stays put and a shockwave
+	# expands instead; the old code reset the progress to 0 and snapped back to 1.35x.
+	var draw_radius := lerpf(radius * WARNING_START_SCALE, radius, _warning_progress())
 	_dashed_circle(draw_radius, DASHES, color, alpha)
 	draw_circle(Vector2.ZERO, radius * 0.35, Color(color, alpha * 0.35))
 	if _active:
-		_dashed_circle(radius * 1.1, DASHES, Palette.SPACE_VOID, alpha * 0.8)
+		_draw_shockwave(radius, color)
 
 
 ## Meteor: floor shadow plus a closing reticle.
 func _draw_meteor(color: Color, alpha: float) -> void:
 	var radius := Config.HAZARD_METEOR_RADIUS_PX
 	draw_circle(Vector2.ZERO, radius, Color(Palette.SPACE_VOID, alpha * 0.45))
-	var shrink := lerpf(1.6, 1.0, _progress())
+	var shrink := lerpf(WARNING_START_SCALE, 1.0, _warning_progress())
 	_dashed_circle(radius * shrink, 8, color, alpha)
 	var cross := radius * 0.55
 	draw_line(
@@ -132,6 +137,7 @@ func _draw_meteor(color: Color, alpha: float) -> void:
 	draw_line(Vector2(0, -cross), Vector2(0, cross), Color(color, alpha), LINE_W)
 	if _active:
 		draw_circle(Vector2.ZERO, radius * 0.6, Color(color, alpha * 0.5))
+		_draw_shockwave(radius, color)
 
 
 ## Lint arc: a beam with a pulsing core and sparks at both ends.
@@ -171,6 +177,18 @@ func _draw_pocket(color: Color, alpha: float) -> void:
 		draw_line(dir * radius * 0.8, dir * radius * 1.05, Color(color, alpha), LINE_W)
 
 
+## Impact ring: expands from the danger radius outward and fades. This is the "it landed"
+## read, distinct from the warning contraction.
+func _draw_shockwave(radius: float, color: Color) -> void:
+	var t := _active_progress()
+	var ring := lerpf(radius, radius * SHOCKWAVE_SCALE, t)
+	var fade := 1.0 - t
+	draw_arc(Vector2.ZERO, ring, 0.0, TAU, 28, Color(color, fade * 0.9), LINE_W)
+	draw_arc(
+		Vector2.ZERO, ring * 0.96, 0.0, TAU, 28, Color(Palette.SPACE_VOID, fade * 0.6), UNDERLAY_W
+	)
+
+
 func _dashed_circle(radius: float, count: int, color: Color, alpha: float) -> void:
 	var step := TAU / float(count)
 	for i in range(count):
@@ -182,7 +200,15 @@ func _dashed_circle(radius: float, count: int, color: Color, alpha: float) -> vo
 		draw_arc(Vector2.ZERO, radius, from, to, 8, Color(color, alpha), LINE_W)
 
 
-func _progress() -> float:
-	if warning_s <= 0.0:
+## 0 at the start of the telegraph, 1 the instant it strikes. Frozen at 1 while active so a
+## finished warning never restarts its animation.
+func _warning_progress() -> float:
+	if _active or warning_s <= 0.0:
 		return 1.0
 	return clampf(_elapsed / warning_s, 0.0, 1.0)
+
+
+func _active_progress() -> float:
+	if not _active or active_s <= 0.0:
+		return 0.0
+	return clampf(_elapsed / active_s, 0.0, 1.0)

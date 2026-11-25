@@ -472,3 +472,19 @@ nada". El daño existía (−6 en ESTÁNDAR), pero la única señal era el núme
   golpe nunca llegue cuando el dibujo ya se borró.
 - La barra de vacío pasa a y=28 (bajo el texto del objetivo) y dibuja siempre su carril, para
   que el medidor se descubra antes de llenarse.
+
+## D053 — Anclajes procedurales y telegrafía que no se reinicia
+2026-11-25 · Dos observaciones del dueño.
+
+1. **Los círculos se encogían y volvían a crecer.** Al golpear, `strike()` ponía `_elapsed=0`
+   y `_draw` recalculaba el radio con ese progreso, así que el anillo saltaba de nuevo al
+   tamaño inicial. Ahora el progreso del aviso se congela en 1 al golpear
+   (`_warning_progress()`), y la fase activa dibuja un **anillo de impacto que se expande y se
+   apaga** (`_draw_shockwave`). Encoge → golpea → onda expansiva.
+2. **Anclajes procedurales.** Se eliminan los diez puntos fijos (memorizables). `plan()`
+   muestrea una rejilla de 32 px dentro del área jugable y descarta todo punto que caiga
+   sobre una cinta (+24 px), una lavadora o trituradora (+12 px), el ducto (90 px), el borde
+   de la sala (40 px), a menos de 120 px de la amenaza anterior o a menos de **96 px del
+   jugador** (`HAZARD_PLAYER_CLEARANCE_PX`). La geometría sale de `data/layout.json`, así que
+   un cambio de layout mueve las amenazas con él. Sigue siendo determinista por semilla y
+   posición del jugador, y no toca el conteo de spawns de la simulación.
