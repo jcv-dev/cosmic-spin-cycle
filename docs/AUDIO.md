@@ -19,12 +19,31 @@ Four 16-bar loops, one per phase, from four tracks of the same album so the OST
 keeps one production voice (same bass, drums and mix), while each phase gets its
 own groove.
 
-| stem | file | BPM | bars | beats | duration | source track | source BPM | atempo |
+| stem | file | BPM | bars | beats | duration | source track | source BPM (track / window) | atempo |
 |---|---|---|---|---|---|---|---|---|
-| phase1 | `assets/audio/music/phase1_105.ogg` | 105 | 16 | 4/4 | 36.571069 s | Breath | 106.00 | 0.98954 |
-| phase2 | `assets/audio/music/phase2_118.ogg` | 118 | 16 | 4/4 | 32.542373 s | Sleep | 120.00 | 0.98333 |
-| phase3 | `assets/audio/music/phase3_130.ogg` | 130 | 16 | 4/4 | 29.538462 s | Eat | 120.00 | 1.08333 |
-| phase4 | `assets/audio/music/phase4_142.ogg` | 142 | 16 | 4/4 | 27.042254 s | Make Money | 129.34 | 1.09797 |
+| phase1 | `assets/audio/music/phase1_105.ogg` | 105 | 16 | 4/4 | 36.571069 s | Breath | 106.00 / 106.11 | 0.98954 |
+| phase2 | `assets/audio/music/phase2_118.ogg` | 118 | 16 | 4/4 | 32.542373 s | Sleep | 120.00 / 120.00 | 0.98333 |
+| phase3 | `assets/audio/music/phase3_130.ogg` | 130 | 16 | 4/4 | 29.538462 s | Eat | 120.00 / 120.00 | 1.08333 |
+| phase4 | `assets/audio/music/phase4_142.ogg` | 142 | 16 | 4/4 | 27.042254 s | Make Money | 129.34 / 129.33 | 1.09797 |
+
+`atempo = target / window BPM`, so the stretch ratio follows the tempo measured
+*inside the chosen 16 bars*, not the whole-track average.
+
+### Source measurements (`tools/bpm_analyze.py FILE`)
+
+| track | BPM | coarse confidence | grid coherence | fit residual (median / p95) | 16 bars chosen | window BPM |
+|---|---|---|---|---|---|---|
+| Breath | 106.00 | 0.348 | 0.67 | 2.6 / 8.6 ms | 1–16 | 106.11 |
+| Sleep | 120.00 | 0.580 | 0.73 | 3.7 / 16.2 ms | 3–18 | 120.00 |
+| Eat | 120.00 | 0.102 | 0.69 | 3.6 / 11.0 ms | 16–31 | 120.00 |
+| Make Money | 129.34 | 0.182 | 0.65 | 38.1 / 92.4 ms (whole track) | 70–85 | 129.33 (2.9 / 12.9 ms in window) |
+
+The coarse `confidence` is deliberately conservative (winner versus the best
+tempo ≥6 % away); `coherence` is the peak-versus-neighbour contrast of the
+phase-coherent grid and is the stronger signal. *Make Money* is played looser
+than the others over the whole track, which is why the section was re-measured
+before stretching: inside bars 70–85 it is tight to 2.9 ms, so the loop lives on
+the grid even though the track as a whole is not a click track.
 
 Album: **HoliznaCC0 — BASSIC** (Free Music Archive, released 2020-01-10),
 [album page](https://freemusicarchive.org/music/holiznacc0/bassic),
