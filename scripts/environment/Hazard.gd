@@ -108,76 +108,139 @@ func _draw() -> void:
 			_draw_pocket(color, alpha)
 
 
-## Void vent: dashed ring that contracts as the beat approaches.
+## Void vent: an accretion disc. The dashed ring contracts as the beat approaches, three
+## arms spiral inward and matter dots fall toward the core, so the pull reads before it hits.
 func _draw_vent(color: Color, alpha: float) -> void:
 	var radius := Config.HAZARD_VENT_RADIUS_PX
-	# Contract only during the warning. On the strike the radius stays put and a shockwave
-	# expands instead; the old code reset the progress to 0 and snapped back to 1.35x.
 	var draw_radius := lerpf(radius * WARNING_START_SCALE, radius, _warning_progress())
-	# Same dark area read as the meteor: the fill marks exactly where the hit happens, so the
-	# strike never feels arbitrary (owner report).
 	draw_circle(Vector2.ZERO, radius, Color(Palette.SPACE_VOID, alpha * 0.45))
+	var spin := _elapsed * 2.4
+	for arm in range(3):
+		var base := spin + TAU * float(arm) / 3.0
+		for segment in range(4):
+			var t0 := 0.15 + 0.2 * float(segment)
+			var from_r := radius * (1.0 - t0 * 0.75)
+			var to_r := radius * (1.0 - (t0 + 0.18) * 0.75)
+			var from_a := base + t0 * 2.2
+			var to_a := base + (t0 + 0.18) * 2.2
+			draw_line(
+				Vector2.RIGHT.rotated(from_a) * from_r,
+				Vector2.RIGHT.rotated(to_a) * to_r,
+				Color(color, alpha * (0.85 - 0.15 * float(segment))),
+				LINE_W
+			)
+	for i in range(6):
+		var t := fposmod(_elapsed * 0.7 + float(i) / 6.0, 1.0)
+		var orbit := radius * (1.0 - t)
+		var dot_angle := spin * 0.6 + TAU * float(i) / 6.0 - t * 3.0
+		draw_circle(
+			Vector2.RIGHT.rotated(dot_angle) * orbit, 2.0, Color(color, alpha * (1.0 - t) * 0.9)
+		)
 	_dashed_circle(draw_radius, DASHES, color, alpha)
-	draw_circle(Vector2.ZERO, radius * 0.35, Color(color, alpha * 0.35))
+	draw_arc(Vector2.ZERO, radius * 0.30, 0.0, TAU, 20, Color(color, alpha), LINE_W)
+	draw_circle(Vector2.ZERO, radius * 0.22, Palette.SPACE_VOID)
 	if _active:
 		_draw_shockwave(radius, color)
 
 
-## Meteor: floor shadow plus a closing reticle.
+## Meteor: the rock falls in from above while the reticle closes, then the floor bursts.
 func _draw_meteor(color: Color, alpha: float) -> void:
 	var radius := Config.HAZARD_METEOR_RADIUS_PX
 	draw_circle(Vector2.ZERO, radius, Color(Palette.SPACE_VOID, alpha * 0.45))
 	var shrink := lerpf(WARNING_START_SCALE, 1.0, _warning_progress())
 	_dashed_circle(radius * shrink, 8, color, alpha)
+	var fall := lerpf(-200.0, 0.0, _warning_progress())
+	if _active:
+		draw_circle(Vector2.ZERO, radius * 0.55, Color(color, alpha * 0.5))
+		_draw_shockwave(radius, color)
+	else:
+		for i in range(3):
+			var trail_y := fall - 20.0 * float(i + 1)
+			draw_line(
+				Vector2(-4.0, trail_y),
+				Vector2(4.0, trail_y + 9.0),
+				Color(color, alpha * (0.5 - 0.12 * float(i))),
+				2.0
+			)
+		var rock := _rock_points(radius * 0.45)
+		var offset := Vector2(0.0, fall)
+		draw_colored_polygon(_offset_points(rock, offset), Palette.METAL_1)
+		draw_polyline(_closed(rock, offset), Color(Palette.SPACE_VOID, alpha), LINE_W)
+		draw_line(
+			offset + Vector2(-8.0, -4.0),
+			offset + Vector2(-2.0, -11.0),
+			Color(Palette.METAL_4, alpha),
+			1.5
+		)
 	var cross := radius * 0.55
-	draw_line(
-		Vector2(-cross, 0), Vector2(cross, 0), Color(Palette.SPACE_VOID, UNDERLAY_ALPHA), UNDERLAY_W
-	)
-	draw_line(
-		Vector2(0, -cross), Vector2(0, cross), Color(Palette.SPACE_VOID, UNDERLAY_ALPHA), UNDERLAY_W
-	)
 	draw_line(Vector2(-cross, 0), Vector2(cross, 0), Color(color, alpha), LINE_W)
 	draw_line(Vector2(0, -cross), Vector2(0, cross), Color(color, alpha), LINE_W)
-	if _active:
-		draw_circle(Vector2.ZERO, radius * 0.6, Color(color, alpha * 0.5))
-		_draw_shockwave(radius, color)
 
 
-## Lint arc: a beam with a pulsing core and sparks at both ends.
+## Lint arc: two rails plus a crackling current that jumps between them.
 func _draw_arc(color: Color, alpha: float) -> void:
 	var axis := Vector2.RIGHT.rotated(angle)
 	var half := HazardPlanner.ARC_LENGTH_PX * 0.5
-	var normal := axis.orthogonal() * Config.HAZARD_ARC_HALF_WIDTH_PX
-	var edge := normal.normalized() * Config.HAZARD_ARC_HALF_WIDTH_PX
+	var edge := axis.orthogonal().normalized() * Config.HAZARD_ARC_HALF_WIDTH_PX
 	for side: float in [-1.0, 1.0]:
 		var a := axis * -half + edge * side
 		var b := axis * half + edge * side
 		draw_line(a, b, Color(Palette.SPACE_VOID, UNDERLAY_ALPHA), UNDERLAY_W)
 		draw_line(a, b, Color(color, alpha * 0.8), LINE_W)
-	var step := (half * 2.0) / float(ARC_DASHES)
-	for i in range(ARC_DASHES):
-		var from := axis * (-half + step * i)
-		var to := from + axis * step * 0.55
-		draw_line(from, to, Color(Palette.SPACE_VOID, UNDERLAY_ALPHA), UNDERLAY_W)
-		draw_line(from, to, Color(color, alpha), LINE_W)
-	if _active:
-		draw_line(axis * -half, axis * half, Color(color, alpha * 0.45), 2.0)
-	draw_circle(axis * -half, 2.0, Color(color, alpha))
-	draw_circle(axis * half, 2.0, Color(color, alpha))
+	var bolts := 10
+	var points := PackedVector2Array()
+	for i in range(bolts + 1):
+		var t := float(i) / float(bolts)
+		var along := axis * lerpf(-half, half, t)
+		var jitter := sin(_elapsed * 14.0 + float(i) * 2.3) * Config.HAZARD_ARC_HALF_WIDTH_PX * 0.7
+		points.append(along + edge.normalized() * jitter)
+	draw_polyline(points, Color(Palette.SPACE_VOID, UNDERLAY_ALPHA), UNDERLAY_W)
+	draw_polyline(points, Color(color, alpha), LINE_W)
+	draw_circle(axis * -half, 2.5, Color(color, alpha))
+	draw_circle(axis * half, 2.5, Color(color, alpha))
 
 
-## Gravity pocket: two rings with rotating ticks, no fill (it is a feeling, not a hole).
+## Gravity pocket: counter-rotating rings and drifting dust. Non-damaging, so no dark fill.
 func _draw_pocket(color: Color, alpha: float) -> void:
 	var radius := Config.HAZARD_POCKET_RADIUS_PX
+	draw_circle(Vector2.ZERO, radius, Color(color, alpha * 0.12))
 	draw_arc(
 		Vector2.ZERO, radius, 0.0, TAU, 28, Color(Palette.SPACE_VOID, UNDERLAY_ALPHA), UNDERLAY_W
 	)
 	draw_arc(Vector2.ZERO, radius, 0.0, TAU, 28, Color(color, alpha), LINE_W)
 	draw_arc(Vector2.ZERO, radius * 0.72, 0.0, TAU, 24, Color(color, alpha * 0.75), LINE_W)
-	var spin := _elapsed * 2.0
-	for i in range(4):
-		var dir := Vector2.RIGHT.rotated(spin + TAU * float(i) / 4.0)
-		draw_line(dir * radius * 0.8, dir * radius * 1.05, Color(color, alpha), LINE_W)
+	for ring in range(2):
+		var spin := _elapsed * (2.0 if ring == 0 else -2.6)
+		var ring_radius := radius * (0.9 if ring == 0 else 0.62)
+		for i in range(6):
+			var a := spin + TAU * float(i) / 6.0
+			var from := Vector2.RIGHT.rotated(a) * ring_radius
+			draw_line(
+				from, from + Vector2.RIGHT.rotated(a) * 8.0, Color(color, alpha * 0.8), LINE_W
+			)
+
+
+func _rock_points(radius: float) -> PackedVector2Array:
+	var points := PackedVector2Array()
+	for i in range(8):
+		var angle := TAU * float(i) / 8.0
+		var r := radius * (0.78 + 0.22 * sin(float(i) * 2.7 + 1.3))
+		points.append(Vector2.RIGHT.rotated(angle) * r)
+	return points
+
+
+func _offset_points(points: PackedVector2Array, offset: Vector2) -> PackedVector2Array:
+	var moved := PackedVector2Array()
+	for point in points:
+		moved.append(point + offset)
+	return moved
+
+
+func _closed(points: PackedVector2Array, offset: Vector2) -> PackedVector2Array:
+	var out := _offset_points(points, offset)
+	if out.size() > 0:
+		out.append(out[0])
+	return out
 
 
 ## Impact ring: expands from the danger radius outward and fades. This is the "it landed"

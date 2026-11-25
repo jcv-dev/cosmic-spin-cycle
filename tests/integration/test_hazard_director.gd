@@ -11,8 +11,9 @@ var _root: Node2D
 ## Minimal stand-in for Pip: the director only reads `global_position` and, for the gravity
 ## pocket, calls `set_input_inverted`.
 class FakePlayer:
-	extends Node2D
+	extends CharacterBody2D
 	var input_inverted := false
+	var field_speed_scale := 1.0
 
 	func set_input_inverted(on: bool) -> void:
 		input_inverted = on
@@ -119,6 +120,63 @@ func test_iframes_swallow_the_second_hit() -> void:
 	_inject(Config.HazardKind.METEOR, center)
 	_director.call("_on_beat", 0)
 	assert_eq(GameState.stability, after_first, "one hit, one penalty")
+
+
+func test_well_force_points_inward_and_stops_at_the_edge() -> void:
+	var center := Vector2(500, 500)
+	var radius := 100.0
+	var inside := HazardDirector.well_force(center, center + Vector2(50, 0), 400.0, radius)
+	assert_lt(inside.x, 0.0, "the pull points back at the centre")
+	assert_almost_eq(inside.length(), 200.0, 0.5, "linear falloff: half the radius, half the force")
+	assert_eq(
+		HazardDirector.well_force(center, center + Vector2(radius + 1.0, 0), 400.0, radius),
+		Vector2.ZERO,
+		"nothing outside the gravity radius"
+	)
+
+
+func test_vent_pulls_the_player_and_slows_it() -> void:
+	var center := Vector2(400, 300)
+	_player.global_position = center + Vector2(50, 0)
+	_inject(Config.HazardKind.VOID_VENT, center)
+	_director.call("_on_beat", 0)
+	assert_eq((_director.get("_fields") as Array).size(), 1, "a gravity well is live")
+	_player.velocity = Vector2.ZERO
+	_director.call("_physics_process", 0.1)
+	assert_lt(_player.velocity.x, 0.0, "the well drags Pip toward the centre")
+	assert_almost_eq(
+		float(_player.get("field_speed_scale")),
+		Config.HAZARD_VENT_SLOW_SCALE,
+		0.001,
+		"inside the damage radius Pip moves slower"
+	)
+
+
+func test_vent_pulls_items_toward_its_centre() -> void:
+	var center := Vector2(400, 300)
+	_player.global_position = center + Vector2(400, 0)
+	var body := RigidBody2D.new()
+	body.mass = 1.0
+	body.gravity_scale = 0.0
+	body.add_to_group(Config.GROUP_ITEMS)
+	add_child_autofree(body)
+	body.global_position = center + Vector2(60, 0)
+	_inject(Config.HazardKind.VOID_VENT, center)
+	_director.call("_on_beat", 0)
+	await wait_physics_frames(4)
+	assert_lt(body.linear_velocity.x, 0.0, "the well bends the throw toward its centre")
+
+
+func test_staying_in_the_void_keeps_hurting() -> void:
+	var center := Vector2(400, 300)
+	_player.global_position = center
+	_inject(Config.HazardKind.VOID_VENT, center)
+	_director.call("_on_beat", 0)
+	var after_strike := GameState.stability
+	for _i in range(12):
+		_director.call("_process", 0.2)
+	_director.call("_physics_process", 0.6)
+	assert_lt(GameState.stability, after_strike, "standing in the well costs more than one hit")
 
 
 func test_void_rises_delivery_lowers_and_collapse_resets() -> void:

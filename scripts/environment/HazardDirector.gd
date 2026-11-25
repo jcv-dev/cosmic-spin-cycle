@@ -31,6 +31,8 @@ var _last_anchor := Vector2.ZERO
 var _invulnerable_left := 0.0
 var _collapsing_left := 0.0
 var _pocket_left := 0.0
+## Live gravity wells (one per active void vent): centre, seconds left and damage tick.
+var _fields: Array[Dictionary] = []
 var _impact: AudioStreamPlayer
 var _dodge: AudioStreamPlayer
 
@@ -73,6 +75,8 @@ func set_phase(index: int) -> void:
 
 func set_enabled(on: bool) -> void:
 	enabled = on
+	if not on:
+		_fields.clear()
 
 
 ## Shift clock (seconds since 00:00). The director gates on it, never on audio time.
@@ -86,6 +90,75 @@ func void_fraction() -> float:
 
 func is_collapsing() -> bool:
 	return _collapsing_left > 0.0
+
+
+## Gravity wells act on physics bodies, so they tick in `_physics_process`, never in `_input`.
+func _physics_process(delta: float) -> void:
+	if GameState.is_ended or _fields.is_empty():
+		return
+	for field: Dictionary in _fields.duplicate():
+		field["left"] = float(field["left"]) - delta
+		_pull_player(field, delta)
+		_pull_items(field)
+		_tick_well_damage(field, delta)
+		if float(field["left"]) <= 0.0:
+			_fields.erase(field)
+
+
+## Force (px/s²) that `strength` applies at `point` for a well centred on `center`.
+## Zero outside `radius`; falls off linearly to the edge so the pull reads as physical.
+static func well_force(center: Vector2, point: Vector2, strength: float, radius: float) -> Vector2:
+	var offset := center - point
+	var distance := offset.length()
+	if distance <= 0.001 or distance > radius:
+		return Vector2.ZERO
+	return offset.normalized() * strength * (1.0 - distance / radius)
+
+
+func _pull_player(field: Dictionary, delta: float) -> void:
+	if _player == null or not is_instance_valid(_player):
+		return
+	var center: Vector2 = field["center"]
+	var body := _player as CharacterBody2D
+	if body == null:
+		return
+	var pull := well_force(
+		center,
+		body.global_position,
+		Config.HAZARD_VENT_PLAYER_PULL,
+		Config.HAZARD_VENT_GRAVITY_RADIUS_PX
+	)
+	body.velocity += pull * delta
+	if body.global_position.distance_to(center) <= Config.HAZARD_VENT_RADIUS_PX:
+		body.set("field_speed_scale", Config.HAZARD_VENT_SLOW_SCALE)
+
+
+func _pull_items(field: Dictionary) -> void:
+	var center: Vector2 = field["center"]
+	for node: Node in get_tree().get_nodes_in_group(Config.GROUP_ITEMS):
+		var body := node as RigidBody2D
+		if body == null or body.freeze or body.get("is_held") == true:
+			continue
+		var force := well_force(
+			center,
+			body.global_position,
+			Config.HAZARD_VENT_ITEM_PULL,
+			Config.HAZARD_VENT_GRAVITY_RADIUS_PX
+		)
+		if force != Vector2.ZERO:
+			body.apply_central_force(force * body.mass)
+
+
+func _tick_well_damage(field: Dictionary, delta: float) -> void:
+	if _player == null or not is_instance_valid(_player):
+		return
+	field["tick"] = float(field["tick"]) - delta
+	if float(field["tick"]) > 0.0:
+		return
+	field["tick"] = Config.HAZARD_VENT_TICK_S
+	var center: Vector2 = field["center"]
+	if _player.global_position.distance_to(center) <= Config.HAZARD_VENT_RADIUS_PX:
+		_hit(Config.HazardKind.VOID_VENT)
 
 
 func _process(delta: float) -> void:
@@ -202,9 +275,14 @@ func _watch_pending() -> void:
 func _resolve(entry: Dictionary) -> void:
 	_pending.erase(entry)
 	var node: Hazard = entry["node"]
-	if node != null and is_instance_valid(node):
-		node.strike(Config.beat_seconds(float(Config.PHASE_BPM[phase])))
+	var beat_s := Config.beat_seconds(float(Config.PHASE_BPM[phase]))
 	var kind := int(entry["kind"])
+	var active_s := beat_s * float(Config.HAZARD_ACTIVE_BEATS)
+	if kind == Config.HazardKind.VOID_VENT:
+		active_s = beat_s * float(Config.HAZARD_VENT_ACTIVE_BEATS)
+		_fields.append({"center": entry["center"], "left": active_s, "tick": 0.0})
+	if node != null and is_instance_valid(node):
+		node.strike(active_s)
 	var center: Vector2 = entry["center"]
 	var angle := float(entry["angle"])
 	var inside := (

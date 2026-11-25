@@ -168,9 +168,6 @@ const HAZARD_MIN_SEPARATION_PX := 120.0
 const HAZARD_CHUTE_CLEARANCE_PX := 90.0
 const HAZARD_DODGE_POINTS := 25
 const HAZARD_VENT_RADIUS_PX := 72.0
-const HAZARD_VENT_PULL := 220.0
-const HAZARD_VENT_SLOW_S := 0.5
-const HAZARD_VENT_SLOW_SCALE := 0.55
 const HAZARD_METEOR_RADIUS_PX := 56.0
 const HAZARD_METEOR_HITSTOP_S := 0.09
 const HAZARD_ARC_HALF_WIDTH_PX := 24.0
@@ -186,6 +183,17 @@ const HAZARD_BLOCK_PAD_PX := 12.0
 const HAZARD_PLAYER_CLEARANCE_PX := 24.0
 ## The last phase is where the void shows its teeth (hazard density bonus).
 const HAZARD_LATE_PHASE := 3
+## The void vent is a gravity well, not just a disc: it pulls bodies for three beats after
+## the strike, slows the player inside the damage radius and hurts on a beat tick while the
+## player stays in it.
+const HAZARD_VENT_ACTIVE_BEATS := 3
+const HAZARD_VENT_GRAVITY_RADIUS_PX := 170.0
+const HAZARD_VENT_PLAYER_PULL := 380.0
+const HAZARD_VENT_ITEM_PULL := 520.0
+const HAZARD_VENT_SLOW_SCALE := 0.55
+const HAZARD_VENT_TICK_S := 0.5
+## Every other hazard stays dangerous for exactly one beat.
+const HAZARD_ACTIVE_BEATS := 1
 
 # --- Void index (D046) ------------------------------------------------------
 ## Second meter. It is pressure, never a second fail state: at 100 % it collapses and

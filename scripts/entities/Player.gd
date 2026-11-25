@@ -76,6 +76,9 @@ var last_dash_distance := 0.0
 var last_grade := -1
 ## Gravity-pocket effect (D045): movement axes are flipped while true.
 var input_inverted := false
+## Gravity-well effect (D055): the void sets this every physics frame while Pip is caught.
+## The player consumes it (clamps speed once) and resets it to 1.0, so it never latches.
+var field_speed_scale := 1.0
 ## Active A/B profile; `set_feel_preset()` lets a debug menu swap it live.
 var feel_preset := FEEL_PRESET
 
@@ -152,6 +155,8 @@ func _physics_process(delta: float) -> void:
 			_finish_dash()
 		return
 
+	var speed_scale := field_speed_scale
+	field_speed_scale = 1.0
 	var input := Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	if input_inverted:
 		input = -input
@@ -159,6 +164,8 @@ func _physics_process(delta: float) -> void:
 		_brake(delta)
 	else:
 		_accelerate(input, delta)
+	if speed_scale < 1.0:
+		velocity = velocity.limit_length(Config.PLAYER_MAX_SPEED * speed_scale)
 	move_and_slide()
 	_track_steps(delta)
 	_sync_visual(delta)

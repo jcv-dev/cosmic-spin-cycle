@@ -502,3 +502,27 @@ nada". El daño existía (−6 en ESTÁNDAR), pero la única señal era el núme
    vértices son los centros de las cuatro lavadoras (`HazardPlanner.arena_rect()`). Las
    columnas laterales y las franjas detrás de las cintas quedan fuera: son espacio que el
    jugador casi nunca pisa, y el dueño las reportó como "spawneando donde no tiene sentido".
+
+## D055 — El vacío es un pozo gravitatorio real (jugador y planetas)
+2026-11-25 · El dueño pidió que el morado "chupe" con lógica física y que los planetas se
+desvíen al pasar cerca. La fuga de vacío deja de ser un disco que golpea una vez.
+
+1. **Duración**: la fuga queda activa **3 beats** (el resto de amenazas, 1 beat). Durante ese
+   tiempo es un campo, no un instante.
+2. **Jugador**: `well_force()` da una aceleración de 380 px/s² en el centro con caída lineal
+   hasta 0 en 170 px, aplicada a `velocity` en `_physics_process`. Dentro del radio de daño
+   (72 px) la velocidad máxima baja al **55 %**: te arrastra y te frena, así que quedarse
+   quieto es peor que salir.
+3. **Daño sostenido**: además del golpe del beat, cada **0.5 s** dentro del radio vuelve a
+   aplicar el daño. Los i-frames (1.0 s en ESTÁNDAR) evitan que sea un shredder; si te
+   quedas, pierdes dos o tres veces.
+4. **Planetas**: los `RigidBody2D` del grupo `items` reciben `apply_central_force` con 520
+   px/s² × masa y la misma caída lineal. Un lanzamiento que cruce el pozo se curva y puede
+   fallar el tiro; cuanto más cerca pasa, más se desvía. Los items en la mano no se ven
+   afectados.
+5. **Arte procedural** (Track B sigue cerrado, no se generan PNG): la fuga dibuja un disco de
+   acreción con tres brazos en espiral, materia cayendo hacia el núcleo y anillo que se
+   cierra; el meteorito cae con estela y roca poligonal; el arco es un relámpago en zigzag
+   entre dos raíles; el bolsillo gira en dos anillos contrarrotatorios.
+6. **Margen del jugador**: 24 px (96 → 48 → 24), porque a 96 y 48 había que perseguir las
+   amenazas.
