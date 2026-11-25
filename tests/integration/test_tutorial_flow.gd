@@ -158,6 +158,58 @@ func test_autoplay_walks_the_real_scene_to_the_completion_plaque() -> void:
 	assert_eq(root.overlay().chip_step_text(), "PASO 7/7")
 
 
+# --- Input routing ----------------------------------------------------------
+
+
+func _key(code: Key) -> InputEventKey:
+	var event := InputEventKey.new()
+	event.keycode = code
+	event.pressed = true
+	return event
+
+
+func test_completion_plaque_ignores_input_inside_the_grace_window() -> void:
+	var root := _spawn()
+	watch_signals(root)
+	root.director().debug_goto(TutorialSteps.STEP_COUNT)
+	assert_true(root.overlay().is_completion_open())
+	root._input(_key(KEY_SPACE))
+	assert_signal_not_emitted(root, "tutorial_completed", "a held key must not skip the plaque")
+	assert_true(root.overlay().is_completion_open())
+
+
+func test_completion_plaque_accepts_input_after_the_grace_window() -> void:
+	var root := _spawn()
+	watch_signals(root)
+	root.director().debug_goto(TutorialSteps.STEP_COUNT)
+	root.debug_arm_completion()
+	root._input(_key(KEY_SPACE))
+	assert_signal_emitted(root, "tutorial_completed")
+
+
+func test_tab_soft_skips_only_once_the_gate_is_stuck() -> void:
+	var root := _spawn()
+	var director := root.director()
+	root._input(_key(KEY_TAB))
+	assert_eq(director.current_step(), 0, "TAB before the 12 s grace does nothing")
+	director.debug_set_elapsed(Config.TUTORIAL_SOFT_SKIP_S + 0.1)
+	director._process(0.016)
+	root._input(_key(KEY_TAB))
+	for _i in range(60):
+		director._process(0.016)
+	assert_eq(director.current_step(), 1, "TAB grants the stuck gate and moves on")
+
+
+func test_pause_never_reaches_the_pause_menu_while_the_tutorial_runs() -> void:
+	var root := _spawn()
+	var event := InputEventAction.new()
+	event.action = &"pause"
+	event.pressed = true
+	root._input(event)
+	assert_true(root.overlay().is_skip_open(), "ESC opens the skip plaque, not pause")
+	assert_true(root.get_viewport().is_input_handled())
+
+
 # --- Real washer integration (pending until the M4 merge) -------------------
 
 

@@ -181,6 +181,11 @@ func _is_soft_skip_key(event: InputEvent) -> bool:
 	return key.pressed and not key.echo and key.keycode == SOFT_SKIP_KEY
 
 
+## Test/evidence hook: pretend the completion plaque has been readable for a while.
+func debug_arm_completion() -> void:
+	_complete_armed_at = _now() - COMPLETE_INPUT_GRACE_S - 0.1
+
+
 func _input_armed() -> bool:
 	return _now() - _complete_armed_at >= COMPLETE_INPUT_GRACE_S
 
