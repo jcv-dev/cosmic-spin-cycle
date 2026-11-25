@@ -71,6 +71,13 @@ func test_reduce_motion_note_only_when_enabled() -> void:
 	assert_not_null(with_note.get_node_or_null("Plaque/ReduceMotionNote"))
 
 
+func test_focus_neighbours_wrap_vertically() -> void:
+	var first := _screen.get_node("Plaque/ResumeButton") as Button
+	var last := _screen.get_node("Plaque/MenuButton") as Button
+	assert_eq(first.focus_neighbor_top, first.get_path_to(last))
+	assert_eq(last.focus_neighbor_bottom, last.get_path_to(first))
+
+
 func test_controls_block_lists_every_action() -> void:
 	var texts: Array[String] = []
 	for node in _screen.get_node("Plaque").get_children():

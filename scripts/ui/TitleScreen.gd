@@ -336,6 +336,17 @@ func _build_menu() -> void:
 		column.add_child(row)
 		_buttons.append(row)
 		row.pressed.connect(_on_row_pressed.bind(MENU_ACTIONS[index]))
+	for index in range(_buttons.size()):
+		_wire_focus(_buttons[index], index)
+
+
+## ↑/↓ walks the column and wraps; ←/→ stays on the row (there is no horizontal axis).
+func _wire_focus(row: Button, index: int) -> void:
+	var count := _buttons.size()
+	row.focus_neighbor_top = row.get_path_to(_buttons[posmod(index - 1, count)])
+	row.focus_neighbor_bottom = row.get_path_to(_buttons[posmod(index + 1, count)])
+	row.focus_neighbor_left = row.get_path_to(row)
+	row.focus_neighbor_right = row.get_path_to(row)
 
 
 func _menu_row(caption: String) -> Button:

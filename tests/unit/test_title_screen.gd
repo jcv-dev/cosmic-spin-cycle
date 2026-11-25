@@ -95,6 +95,15 @@ func test_backdrop_is_a_room_not_a_black_screen() -> void:
 	assert_eq(room.size, Vector2(1280, 720))
 
 
+func test_focus_neighbours_wrap_vertically() -> void:
+	var first := _screen.get_node(ROW_PATHS[0]) as Button
+	var last := _screen.get_node(ROW_PATHS[4]) as Button
+	assert_eq(
+		first.focus_neighbor_top, first.get_path_to(last), "↑ on the first row wraps to SALIR"
+	)
+	assert_eq(last.focus_neighbor_bottom, last.get_path_to(first), "↓ on SALIR wraps to the top")
+
+
 func test_score_grouping_handles_short_and_long_values() -> void:
 	assert_eq(_screen._format_score(0), "0")
 	assert_eq(_screen._format_score(350), "350")

@@ -116,6 +116,16 @@ func _build() -> void:
 		plaque.add_child(row)
 		_rows.append(row)
 		row.pressed.connect(_on_row_pressed.bind(index))
+	for index in range(_rows.size()):
+		var count := _rows.size()
+		_rows[index].focus_neighbor_top = (_rows[index].get_path_to(
+			_rows[posmod(index - 1, count)]
+		))
+		_rows[index].focus_neighbor_bottom = (_rows[index].get_path_to(
+			_rows[posmod(index + 1, count)]
+		))
+		_rows[index].focus_neighbor_left = _rows[index].get_path_to(_rows[index])
+		_rows[index].focus_neighbor_right = _rows[index].get_path_to(_rows[index])
 
 	var hint := UITheme.label(HINT_TEXT, UITheme.FONT_MICRO, Palette.METAL_1)
 	hint.name = "Hint"
