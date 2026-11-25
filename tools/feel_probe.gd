@@ -47,9 +47,13 @@ var _cost_steady := 0
 var _last_physics_frame := -1
 var _saw_nan := false
 var _booted := false
+var _preset := -1
 
 
 func _initialize() -> void:
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--preset="):
+			_preset = int(arg.trim_prefix("--preset="))
 	_last_physics_frame = Engine.get_physics_frames()
 
 
@@ -65,6 +69,8 @@ func _boot() -> void:
 	root.add_child(_player)
 	(_player as Node2D).global_position = Vector2(200.0, 360.0)
 	_player.call("set_aim_direction", Vector2.RIGHT)
+	if _preset >= 0:
+		_player.call("set_feel_preset", _preset)
 	_items_root = Node2D.new()
 	_items_root.name = "ProbeItems"
 	root.add_child(_items_root)

@@ -16,6 +16,10 @@ signal thrown(item: Node, grade: int)
 signal struck(washer: Node, grade: int)
 signal aim_changed(dir: Vector2)
 
+## A/B tuning profiles. Change `FEEL_PRESET` below to compare them by hand; `SNAPPY` is
+## the recommended default (measured turnaround 167 ms, stop 200 ms).
+enum FeelPreset { SNAPPY, WEIGHTED, FLOATY }
+
 const AIM_EPSILON := 0.0001
 const AIM_TURN_DOT := 0.9999
 const STICK_DEADZONE := 0.2
@@ -45,6 +49,16 @@ const FEEL_IDLE_BREATH_S := 0.62
 const FEEL_RUN_LEAN_S := 0.09
 const FEEL_SHADOW_FRAME_S := 0.09
 const FEEL_DASH_RUMBLE_MS := 70
+const FEEL_PRESET := FeelPreset.SNAPPY
+## `reversal_boost`, `brake_gain`, `turn_boost_s` and `accel_scale` per profile.
+const FEEL_PROFILES := {
+	FeelPreset.SNAPPY:
+	{"reversal_boost": 1.6, "brake_gain": 2.5, "turn_boost_s": 0.16, "accel_scale": 1.0},
+	FeelPreset.WEIGHTED:
+	{"reversal_boost": 1.35, "brake_gain": 1.5, "turn_boost_s": 0.12, "accel_scale": 0.9},
+	FeelPreset.FLOATY:
+	{"reversal_boost": 1.15, "brake_gain": 0.8, "turn_boost_s": 0.08, "accel_scale": 0.78},
+}
 
 ## A cooldown keeps dash from being spammed while a strike is already the beat action.
 ## Config has no constant for it yet, so it is an exported tunable instead of a literal.
@@ -60,6 +74,8 @@ var is_dashing := false
 var dash_cooldown_left := 0.0
 var last_dash_distance := 0.0
 var last_grade := -1
+## Active A/B profile; `set_feel_preset()` lets a debug menu swap it live.
+var feel_preset := FEEL_PRESET
 
 var _dash_time := 0.0
 var _dash_direction := Vector2.ZERO
@@ -84,6 +100,10 @@ var _turn_boost_left := 0.0
 var _assisted_target: Node = null
 var _assisted_target_pos := Vector2.ZERO
 var _foot_fx: FootFX = null
+var _reversal_boost := FEEL_REVERSAL_BOOST
+var _brake_gain := FEEL_BRAKE_GAIN
+var _turn_boost_s := FEEL_TURN_BOOST_S
+var _accel_scale := 1.0
 
 @onready var visual: Node2D = $Visual
 @onready var grabber: MagneticGrabber = $Grabber
@@ -92,6 +112,7 @@ var _foot_fx: FootFX = null
 
 func _ready() -> void:
 	add_to_group(Config.GROUP_PLAYER)
+	_apply_feel_preset(feel_preset)
 	_foot_fx = get_node_or_null("FX") as FootFX
 	_setup_art()
 	if aim_indicator != null:
@@ -214,6 +235,12 @@ func clear_aim_override() -> void:
 	_has_aim_override = false
 
 
+## Swaps the movement profile at runtime (debug menu / A-B playtests).
+func set_feel_preset(preset: int) -> void:
+	feel_preset = clampi(preset, 0, FEEL_PROFILES.size() - 1)
+	_apply_feel_preset(feel_preset)
+
+
 func get_buffered_action() -> StringName:
 	return _buffered_action
 
@@ -223,17 +250,17 @@ func get_buffer_left() -> float:
 
 
 func _accelerate(input: Vector2, delta: float) -> void:
-	var acceleration := Config.PLAYER_ACCEL
+	var acceleration := Config.PLAYER_ACCEL * _accel_scale
 	if _turn_boost_left > 0.0:
-		acceleration *= FEEL_REVERSAL_BOOST
+		acceleration *= _reversal_boost
 	elif velocity.length() > 1.0 and input.dot(velocity.normalized()) < -0.1:
-		_turn_boost_left = FEEL_TURN_BOOST_S
-		acceleration *= FEEL_REVERSAL_BOOST
+		_turn_boost_left = _turn_boost_s
+		acceleration *= _reversal_boost
 	velocity = velocity.move_toward(input * Config.PLAYER_MAX_SPEED, acceleration * delta)
 
 
 func _brake(delta: float) -> void:
-	velocity *= pow(1.0 - Config.PLAYER_FRICTION, 60.0 * delta * FEEL_BRAKE_GAIN)
+	velocity *= pow(1.0 - Config.PLAYER_FRICTION, 60.0 * delta * _brake_gain)
 	if velocity.length() < Config.PLAYER_MAX_SPEED * rest_speed_ratio:
 		velocity = Vector2.ZERO
 
@@ -248,6 +275,16 @@ func _track_steps(delta: float) -> void:
 		_step_count += 1
 		if _step_count % 2 == 0:
 			_foot_fx.step_puff(velocity.normalized())
+
+
+func _apply_feel_preset(preset: int) -> void:
+	var profile: Dictionary = FEEL_PROFILES.get(preset, {})
+	if profile.is_empty():
+		return
+	_reversal_boost = float(profile.get("reversal_boost", FEEL_REVERSAL_BOOST))
+	_brake_gain = float(profile.get("brake_gain", FEEL_BRAKE_GAIN))
+	_turn_boost_s = float(profile.get("turn_boost_s", FEEL_TURN_BOOST_S))
+	_accel_scale = float(profile.get("accel_scale", 1.0))
 
 
 func _request_action(action: StringName) -> void:
