@@ -3,6 +3,7 @@ extends GutTest
 ## instruction strip (docs/HUD.md, docs/UX_BIBLE.md §5).
 
 const HUD_SCENE := preload("res://scenes/ui/HUD.tscn")
+const Fakes := preload("res://tests/unit/support/diegetic_fakes.gd")
 
 
 func before_each() -> void:
@@ -62,3 +63,24 @@ func test_hud_clock_warns_in_the_last_ten_seconds() -> void:
 	var warn: Color = hud.get_node("PlaqueA/ClockLabel").get_theme_color("font_color")
 	assert_eq(calm, Palette.METAL_4)
 	assert_eq(warn, Palette.YEL_3)
+
+
+func test_show_grade_is_forwarded_to_the_diegetic_layer() -> void:
+	var layer := Fakes.FakeDiegetic.new()
+	add_child_autofree(layer)
+	var hud := _open_hud()
+	hud.show_grade(RhythmEvaluator.Grade.GOOD)
+	assert_eq(hud.diegetic_layer(), layer, "the layer is found by group")
+	assert_eq(layer.last_grade, RhythmEvaluator.Grade.GOOD)
+
+
+func test_hud_mounts_the_diegetic_layer_when_the_level_has_not() -> void:
+	var level := Fakes.FakeLevel.new()
+	add_child_autofree(level)
+	var hud := HUD_SCENE.instantiate() as Control
+	level.add_child(hud)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	assert_not_null(level.get_node_or_null("DiegeticLayer"), "the level got a diegetic layer")
+	assert_not_null(hud.diegetic_layer())
+	hud.queue_free()

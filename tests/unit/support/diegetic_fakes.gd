@@ -112,3 +112,33 @@ class World:
 	func hold(item: Node) -> void:
 		if player != null:
 			player.held_item = item
+
+
+## Stand-in for the real layer when a test only needs the HUD's forwarding side.
+class FakeDiegetic:
+	extends Node2D
+	var last_grade := -1
+	var calls := 0
+
+	func _ready() -> void:
+		add_to_group(&"diegetic")
+
+	func show_grade(grade: int) -> void:
+		last_grade = grade
+		calls += 1
+
+
+## Minimal shift level: a Node2D that exposes `get_shift_time`, which is what the HUD uses to
+## decide that a world exists to host a diegetic layer.
+class FakeLevel:
+	extends Node2D
+	var mounted_children := 0
+
+	func _ready() -> void:
+		child_entered_tree.connect(_on_child_entered)
+
+	func get_shift_time() -> float:
+		return 0.0
+
+	func _on_child_entered(_child: Node) -> void:
+		mounted_children += 1

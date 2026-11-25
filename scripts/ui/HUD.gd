@@ -34,6 +34,8 @@ const STABILITY_DIAMOND_RADIUS := 6.0
 const RIBBON_RECT := Rect2(400, 6, 480, 28)
 const TOAST_RECT := Rect2(400, 34, 480, 18)
 const REWARD_RECT := Rect2(1156, 104, 100, 18)
+const DIEGETIC_SCENE := "res://scenes/ui/DiegeticLayer.tscn"
+const GROUP_DIEGETIC := &"diegetic"
 
 # --- Timing -----------------------------------------------------------------
 const PANEL_ALPHA := 0.88
@@ -95,6 +97,7 @@ var _toast_left := 0.0
 var _reward_left := 0.0
 var _step_index := 0
 var _step_total := 0
+var _diegetic_node: Node = null
 
 
 ## Interior draw slot: a Control that asks the HUD to paint it, so the plaque can be scaled
@@ -126,6 +129,7 @@ func _ready() -> void:
 	_on_phase(GameState.phase_index)
 	_apply_ui_scale()
 	set_objective(tr(String(DEFAULT_OBJECTIVE)))
+	call_deferred("_mount_diegetic")
 	queue_redraw()
 
 
@@ -413,6 +417,50 @@ func _draw_toast(target: CanvasItem) -> void:
 	HudGlyphs.draw_chip(target, chip, TOAST_ALPHA, Color(Palette.METAL_0, RIBBON_BORDER_ALPHA))
 
 
+# --- Diegetic wiring --------------------------------------------------------
+
+
+## Grades are world-space; the HUD only forwards. The layer is either owned by MainLevel or
+## mounted here when the level has not been wired yet, so the HUD is never mute.
+func _diegetic_layer() -> Node:
+	if _diegetic_node != null and is_instance_valid(_diegetic_node):
+		return _diegetic_node
+	_diegetic_node = null
+	var tree := get_tree()
+	if tree == null:
+		return null
+	_diegetic_node = tree.get_first_node_in_group(GROUP_DIEGETIC)
+	return _diegetic_node
+
+
+func _mount_diegetic() -> void:
+	if _diegetic_layer() != null:
+		return
+	var host := _world_host()
+	if host == null or not ResourceLoader.exists(DIEGETIC_SCENE):
+		return
+	var packed := load(DIEGETIC_SCENE) as PackedScene
+	if packed == null:
+		return
+	var layer := packed.instantiate()
+	if layer == null:
+		return
+	layer.name = "DiegeticLayer"
+	host.add_child(layer)
+	_diegetic_node = layer
+
+
+## The nearest Node2D ancestor that is a shift level (it exposes `get_shift_time`). Tests and
+## the title screen have no such ancestor, and then nothing is mounted.
+func _world_host() -> Node:
+	var node := get_parent()
+	while node != null:
+		if node is Node2D and node.has_method("get_shift_time"):
+			return node
+		node = node.get_parent()
+	return null
+
+
 # --- State ------------------------------------------------------------------
 
 
@@ -622,6 +670,9 @@ func show_grade(grade: int) -> void:
 		text = tr("FUERA DE RITMO")
 	_grade_label.text = text
 	_grade_label.add_theme_color_override("font_color", Palette.grade_color(grade))
+	var layer := _diegetic_layer()
+	if layer != null and layer.has_method("show_grade"):
+		layer.call("show_grade", grade)
 
 
 func clock_text() -> String:
@@ -685,6 +736,10 @@ func plaque_rect(plaque_name: String) -> Rect2:
 ## One snapshot of everything the layout tests assert, so they never walk node paths.
 func scale_factor() -> float:
 	return _plaque_a.scale.x if _plaque_a != null else 1.0
+
+
+func diegetic_layer() -> Node:
+	return _diegetic_layer()
 
 
 func readout() -> Dictionary:
