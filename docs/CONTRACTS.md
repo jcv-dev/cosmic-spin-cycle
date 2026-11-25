@@ -327,3 +327,185 @@ deviations: <none | list, with reason>
 known_issues: <none | list>
 next: <what the lead should do/integrate>
 ```
+
+# Frozen contracts — M4–M6 (screen flow, washers, HUD, tutorial)
+
+These extend the M0–M3 contracts above; nothing in §1–§8 is retracted. Where a name here
+differs from an earlier section, **this section wins**.
+
+## 9. Application shell (`scripts/main/App.gd`, root of `Main.tscn`)
+
+`Main.tscn` root is `Node` with `App.gd`. It owns level lifetime, pause, fades and
+persistence; screens are signal-only `Control`s that may be missing at runtime (a styled
+`FallbackScreens` version is used instead, so `main` always boots).
+
+```gdscript
+signal screen_changed(screen: StringName)
+var level: Node              # MainLevel or Tutorial instance, or null on the title
+var is_paused: bool
+var current_screen: StringName   # &"title" | &"shift" | &"tutorial" | &"pause" | &"end"
+
+func show_title(instant: bool = false) -> void
+func start_shift(with_tutorial: bool = false) -> void   # async (awaits one frame)
+func restart_shift() -> void
+func quit_to_menu() -> void
+func pause_game() -> void
+func resume_game() -> void
+```
+
+Rules:
+- `start_shift` frees the old level and awaits one frame **before** instancing the new one,
+  because `MainLevel._exit_tree()` stops `BeatConductor`; otherwise the new shift's music
+  would be killed by the old level.
+- Pause sets `get_tree().paused = true`; `App` runs with `PROCESS_MODE_ALWAYS`.
+  `pause` action toggles; while paused `ESC` resumes (or closes Options first).
+- Boot option: `--autostart=shift|tutorial` in `OS.get_cmdline_user_args()` skips the title
+  (screenshots, QA). Default is the title.
+- `App` enriches the end result with `rank` and records the best score/rank in `Settings`.
+
+### Screen contracts (signals are connected by name; missing ones are ignored)
+
+| Screen | Scene | Signals | Methods App calls |
+|---|---|---|---|
+| Title | `scenes/ui/TitleScreen.tscn` | `start_requested`, `tutorial_requested`, `options_requested`, `calibration_requested`, `quit_requested` | `focus_first()` |
+| First run | `scenes/ui/FirstRunPrompt.tscn` | `tutorial_selected`, `skip_selected`, `closed` | `focus_first()` |
+| Pause | `scenes/ui/PauseOverlay.tscn` | `resume_requested`, `restart_requested`, `options_requested`, `menu_requested` | `focus_first()` |
+| Options | `scenes/ui/OptionsScreen.tscn` | `closed`, `calibration_requested` | `open(from_pause)`, `focus_first()` |
+| End | `scenes/ui/EndScreen.tscn` | `retry_requested`, `new_seed_requested`, `menu_requested` | `setup(result)` |
+| Calibration | `scenes/ui/CalibrationModal.tscn` (existing) | `closed`, `offset_applied` | `open(bpm = -1, skip_countdown = false)` |
+
+`EndScreen.setup(result)` receives the `GameState.shift_ended` dictionary plus `rank`
+(`S|A|B|C`) and may read `score_ratio` when `ScoreRules` is present.
+
+## 10. Washers and chute (M4)
+
+### `WasherFSM` — `res://scripts/logic/WasherFSM.gd` (pure)
+States `IDLE=0, WASHING=1, TURBULENT=2, DONE=3, BROKEN=4`. Capacity 3 (`galaxy_core`
+takes all 3), compatibility via `Compatibility.item_fits`, cycle time `max(item.wash_s)`
+floored at `MIN_WASH_TIME_S`, beat reductions applied once at insertion, turbulence at
+`turbulence >= 1.0` plus "phase ≥ 3 every 3rd cycle at 50 %", limit
+`min(TURBULENCE_TIMEOUT_S, TURBULENCE_TIMEOUT_BEATS × T_beat)`, grade ≥ GOOD resolves.
+All time arrives through `tick(dt)`/explicit calls (deterministic tests).
+
+### `WasherAssignments` — `res://scripts/logic/WasherAssignments.gd` (pure)
+```gdscript
+static func for_phase(phase: int) -> Dictionary
+# { "washer_nw": {"requirement": &"red", "locked": false}, ... }
+static func requirement_for(phase: int, washer_id: StringName) -> StringName
+static func is_locked(phase: int, washer_id: StringName) -> bool
+static func coverage_ok(phase: int) -> bool
+```
+Table per `docs/DECISIONS.md` D026.
+
+### `CosmicWasher` — `scenes/entities/CosmicWasher.tscn`
+Root `StaticBody2D` (layer WASHER=64, mask 0) + `Mouth` `Area2D` (mask ITEMS=4).
+```gdscript
+signal item_loaded(item: Node)
+signal item_rejected(item: Node, reason: String)
+signal state_changed(old_state: int, new_state: int)
+signal cycle_done(items: Array)
+signal exploded()
+signal turbulence_resolved(grade: int)
+
+func configure(id: StringName, art_rect: Rect2, mouth_art: Vector2, requirement: StringName) -> void
+func set_requirement(req: StringName) -> void
+func get_requirement() -> StringName
+func set_locked(locked: bool) -> void
+func is_locked() -> bool
+func set_carry_hint(item: Node) -> void       # nullable; drives MATCH/MISMATCH holo
+func strike(grade: int) -> bool               # true when it resolved turbulence or started a cycle
+func try_accept(item: Node) -> bool
+func force_turbulent() -> bool                # tutorial
+func force_finish() -> void                   # tutorial / QA
+func get_state() -> int
+func get_progress() -> float
+func get_loaded_items() -> Array
+func get_glow_color() -> Color
+func get_mouth_world() -> Vector2
+```
+Side effects owned by the washer: `-12` wrong washer (`wrong_washer_count += 1`), `-25`
+explosion (`exploded_count += 1`), `washed_count += 1` per item on completion. Group
+`washers` is required (Player's `do_strike` and the HUD reticle use it).
+
+### `DeliveryChute` — `scenes/environment/DeliveryChute.tscn`
+```gdscript
+signal delivered(item: Node, points: int)
+signal dirty_rejected(item: Node)
+func configure(art_rect: Rect2, center: Vector2) -> void
+func set_carry_hint(clean_item: Node) -> void
+func try_deliver(item: Node) -> bool
+```
+Clean items only: `+3` stability, `delivered_count += 1`,
+`score += item.data.points × GameState.combo`, chime, `accept` animation. Dirty items
+bounce out with no penalty. Group `chute`.
+
+## 11. HUD and world-space affordances
+
+`scripts/ui/HUD.gd` / `scenes/ui/HUD.tscn` — kept node names `ClockLabel`, `ScoreLabel`,
+`ComboLabel`, `GradeLabel`, `PhaseLabel`; public API used by `MainLevel`:
+```gdscript
+func set_shift_time(t: float) -> void
+func set_phase(index: int, bpm: int = -1) -> void
+func show_grade(grade: int) -> void
+func set_objective(text: String) -> void
+func objective_text() -> String
+func set_tutorial_mode(enabled: bool) -> void
+func set_step(index: int, total: int) -> void
+func set_danger(critical: bool) -> void
+func flash_reward(points: int) -> void
+func clock_text() -> String
+```
+Layout: two corner plaques `(0,0,312,104)` and `(968,0,312,104)`, mission ribbon
+`(400,6,480,28)`. Nothing in the bottom 24 px except world art. The bottom instruction
+strip is deleted; controls live on the title screen and in pause.
+
+`scenes/ui/DiegeticLayer.tscn` (`Node2D`, world space, optional, added by `MainLevel`
+under `Entities`): pulse ring around Pip, aim reticle with state labels, contextual
+prompt, carried-item label, grade pop at the event, turbulence path. It finds nodes by
+group and must survive their absence.
+
+## 12. Tutorial
+
+`scenes/main/Tutorial.tscn` root script `scripts/tutorial/TutorialRoot.gd`; children:
+`MainLevel` with `mode = "tutorial"`, `UI` (overlay), `Director`.
+
+```gdscript
+signal tutorial_completed
+signal tutorial_skipped
+```
+- The root re-emits `MainLevel.tutorial_completed` (which calls
+  `Settings.mark_tutorial_completed()`), and emits `tutorial_skipped` after
+  `Settings.mark_tutorial_skipped()`.
+- Gates: move → grab → throw → beat → match → strike → deliver (docs/UX_BIBLE.md §16.1);
+  each gate's success is an event from the real systems (`Player.grabbed`,
+  `Player.thrown`, `Player.struck`, chute `delivered`, distance travelled).
+- `GameState.stability_protected = true` until gate 7; always restored to false on exit.
+- Skip: `pause` action → confirm plaque; per-gate soft skip with `TAB` after
+  `Config.TUTORIAL_SOFT_SKIP_S`.
+- Persistence: `Settings.tutorial_completed`, `tutorial_skipped`, `first_run_done`.
+
+## 13. Config / Settings / GameState additions (M4–M6)
+
+`Config`: `WASHER_MOUTH_RADIUS_PX`, `WASHER_REPAIR_S`, `CHUTE_ACCEPT_RADIUS_PX`,
+`STARTER_ITEM_AT_S`, `STARTER_ITEM_ID/COLOR/PATTERN`, `INPUT_BUFFER_S`, `AIM_SNAP_RAD`,
+`AIM_STICKY_RAD`, `AIM_STICKY_RANGE_PX`, `TUTORIAL_SEED`, `TUTORIAL_WINDOW_SCALE`,
+`TUTORIAL_SOFT_SKIP_S`, `TUTORIAL_MAX_S`, `HUD_SCALE_DEFAULT`, `HUD_SCALE_OPTIONS`,
+`TEXT_SPEED`.
+
+`Settings`: `haptics`, `ui_scale`, `tutorial_completed`, `tutorial_skipped`,
+`first_run_done`, `best_score`, `best_rank`; methods `needs_first_run_prompt()`,
+`mark_tutorial_completed()`, `mark_tutorial_skipped()`, `mark_first_run_done()`,
+`record_result(points, rank)`, `set_haptics(v)`, `set_ui_scale(v)`.
+
+`GameState`: `final_load_delivered`, `feedback_count`, `stability_protected`, signal
+`feedback(text, kind)` and `emit_feedback(text, kind)`; `end_shift` results add
+`wrong_washer` and `final_load_delivered`.
+
+## 14. UI design system (`scripts/ui/UITheme.gd`)
+
+One font family (Silkscreen Regular/Bold), type scale 56/40/28/20/16/14/12/10, ink
+`metal_4`/`metal_2`/`metal_1`, accents `funk_cyan` (act), `funk_magenta` (reward),
+`clean_green` (done), `hazard_orange` (danger). Panels are flat 2 px-bordered with one
+cyan corner tick; buttons are left-aligned rows with a `▶` caret on focus; every screen
+calls `UITheme.wire_audio(root)` once. No gradients, glows, second typeface or default
+engine control styles. Screens own no gameplay logic.
