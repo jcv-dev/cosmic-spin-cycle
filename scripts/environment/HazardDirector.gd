@@ -140,6 +140,10 @@ func _pull_items(field: Dictionary) -> void:
 		var body := node as RigidBody2D
 		if body == null or body.freeze or body.get("is_held") == true:
 			continue
+		var distance := body.global_position.distance_to(center)
+		if _swallows(body, distance):
+			_swallow(body, center)
+			continue
 		var force := well_force(
 			center,
 			body.global_position,
@@ -148,6 +152,36 @@ func _pull_items(field: Dictionary) -> void:
 		)
 		if force != Vector2.ZERO:
 			body.apply_central_force(force * body.mass)
+
+
+## The core eats fast planets only: a resting item is dragged but never consumed, and the
+## galaxy core is too dense (it is the shift's unique trophy).
+func _swallows(body: RigidBody2D, distance: float) -> bool:
+	if distance > Config.HAZARD_VENT_CORE_RADIUS_PX:
+		return false
+	if body.linear_velocity.length() < Config.HAZARD_VENT_SWALLOW_MIN_SPEED:
+		return false
+	return StringName(str(body.get(&"item_id"))) != &"galaxy_core"
+
+
+func _swallow(body: RigidBody2D, center: Vector2) -> void:
+	GameState.add_stability(Config.STABILITY_VOID_SWALLOW, "void")
+	GameState.emit_feedback(tr("¡EL VACÍO SE LO TRAGÓ!"), &"danger")
+	_spawn_well_chip(center, "-%d" % int(absf(Config.STABILITY_VOID_SWALLOW)))
+	_play(_impact, 0.55, -12.0)
+	body.queue_free()
+
+
+## A chip needs a parent in the tree; the hazard that owns the well may already be gone, so a
+## short-lived marker carries it and frees itself.
+func _spawn_well_chip(center: Vector2, text: String) -> void:
+	if _root == null:
+		return
+	var marker := Node2D.new()
+	marker.position = center
+	_root.add_child(marker)
+	WasherFX.make_chip(marker, text, false, Palette.HAZARD_ORANGE)
+	get_tree().create_timer(1.2).timeout.connect(marker.queue_free)
 
 
 func _tick_well_damage(field: Dictionary, delta: float) -> void:

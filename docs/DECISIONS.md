@@ -535,3 +535,17 @@ desvíen al pasar cerca. La fuga de vacío deja de ser un disco que golpea una v
 - Fuerza sobre los planetas **520 → 780 px/s²** (+50 %): había que rozar el centro para notar
   la curva del tiro.
 - Sin cambios en radio, caída lineal, freno al 55 % ni duración de 3 beats.
+
+## D057 — El núcleo del vacío se traga los planetas (y cobra −3)
+2026-11-25 · El desvío lateral gustó; el dueño preguntó si un planeta que pasa por el centro
+debería ser tragado. Sí, con tres límites para que no sea una trampa invisible.
+
+1. **Solo el núcleo**: radio de 30 px (frente a los 72 px del daño y los 170 del campo). El
+   resto del pozo sigue desviando, no borrando.
+2. **Solo si va rápido** (≥ 120 px/s): un item quieto en el suelo se arrastra, pero no se
+   pierde; así el vacío castiga el tiro, no la exploración.
+3. **El núcleo de galaxia no se traga**: es único y es la pieza de la Carga Final.
+4. **Coste `STABILITY_VOID_SWALLOW = −3`**, deliberadamente menor que la trituradora (−10) y
+   que la lavadora equivocada (−12): perder el tiro ya cuesta puntos y tiempo; el vacío añade
+   riesgo, no una segunda sentencia. Feedback: chip `−3` en el pozo, texto
+   `¡EL VACÍO SE LO TRAGÓ!`, impacto grave y el planeta desaparece.

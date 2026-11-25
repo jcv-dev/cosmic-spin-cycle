@@ -10,6 +10,11 @@ var _root: Node2D
 
 ## Minimal stand-in for Pip: the director only reads `global_position` and, for the gravity
 ## pocket, calls `set_input_inverted`.
+class FakeItem:
+	extends RigidBody2D
+	var item_id: StringName = &"rocky"
+
+
 class FakePlayer:
 	extends CharacterBody2D
 	var input_inverted := false
@@ -171,6 +176,63 @@ func test_vent_pulls_items_toward_its_centre() -> void:
 	_director.call("_on_beat", 0)
 	await wait_physics_frames(4)
 	assert_lt(body.linear_velocity.x, 0.0, "the well bends the throw toward its centre")
+
+
+func _spawn_item(center: Vector2, offset: Vector2, speed: float, id: StringName) -> FakeItem:
+	var body := FakeItem.new()
+	body.item_id = id
+	body.mass = 1.0
+	body.gravity_scale = 0.0
+	body.add_to_group(Config.GROUP_ITEMS)
+	add_child_autofree(body)
+	body.global_position = center + offset
+	body.linear_velocity = Vector2(speed, 0.0)
+	return body
+
+
+func test_a_fast_planet_crossing_the_core_is_swallowed() -> void:
+	var center := Vector2(400, 300)
+	_player.global_position = center + Vector2(600, 0)
+	var item := _spawn_item(center, Vector2(8, 0), 400.0, &"rocky")
+	_inject(Config.HazardKind.VOID_VENT, center)
+	_director.call("_on_beat", 0)
+	_director.call("_physics_process", 0.016)
+	assert_true(item.is_queued_for_deletion(), "the core eats a planet that crosses it")
+	assert_almost_eq(GameState.stability, 100.0 + Config.STABILITY_VOID_SWALLOW, 0.001)
+
+
+func test_a_slow_item_in_the_core_is_only_dragged() -> void:
+	var center := Vector2(400, 300)
+	_player.global_position = center + Vector2(600, 0)
+	var item := _spawn_item(center, Vector2(8, 0), 10.0, &"rocky")
+	_inject(Config.HazardKind.VOID_VENT, center)
+	_director.call("_on_beat", 0)
+	_director.call("_physics_process", 0.016)
+	assert_false(item.is_queued_for_deletion(), "resting items are not eaten")
+	assert_eq(GameState.stability, 100.0)
+
+
+func test_an_item_outside_the_core_is_not_swallowed() -> void:
+	var center := Vector2(400, 300)
+	_player.global_position = center + Vector2(600, 0)
+	var item := _spawn_item(
+		center, Vector2(Config.HAZARD_VENT_CORE_RADIUS_PX + 4.0, 0), 400.0, &"rocky"
+	)
+	_inject(Config.HazardKind.VOID_VENT, center)
+	_director.call("_on_beat", 0)
+	_director.call("_physics_process", 0.016)
+	assert_false(item.is_queued_for_deletion(), "the outer field only deflects")
+
+
+func test_the_galaxy_core_is_too_dense_to_swallow() -> void:
+	var center := Vector2(400, 300)
+	_player.global_position = center + Vector2(600, 0)
+	var item := _spawn_item(center, Vector2(8, 0), 400.0, &"galaxy_core")
+	_inject(Config.HazardKind.VOID_VENT, center)
+	_director.call("_on_beat", 0)
+	_director.call("_physics_process", 0.016)
+	assert_false(item.is_queued_for_deletion(), "the unique final-load item survives")
+	assert_eq(GameState.stability, 100.0)
 
 
 func test_staying_in_the_void_keeps_hurting() -> void:

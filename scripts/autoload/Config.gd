@@ -197,6 +197,13 @@ const HAZARD_VENT_PULL_SPEED := 155.0
 const HAZARD_VENT_ITEM_PULL := 780.0
 const HAZARD_VENT_SLOW_SCALE := 0.55
 const HAZARD_VENT_TICK_S := 0.5
+## Only the very core swallows: a planet that crosses it at speed is consumed, everything in
+## the outer field is merely deflected. Slower items (resting on the floor) are not eaten.
+const HAZARD_VENT_CORE_RADIUS_PX := 30.0
+const HAZARD_VENT_SWALLOW_MIN_SPEED := 120.0
+## Cheaper than the shredder (-10) on purpose: the well is an aiming obstacle, not a mistake
+## you committed. The galaxy core is too dense to swallow.
+const STABILITY_VOID_SWALLOW := -3.0
 ## Every other hazard stays dangerous for exactly one beat.
 const HAZARD_ACTIVE_BEATS := 1
 
