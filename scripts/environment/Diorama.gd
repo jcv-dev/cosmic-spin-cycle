@@ -187,9 +187,7 @@ func _build_belts() -> void:
 		layer.add_child(node)
 		var flow: Array = belt.get("flow", [1, 0])
 		node.configure(
-			StringName(belt_id),
-			RoomBuilder.art_rect(belt),
-			Vector2(float(flow[0]), float(flow[1]))
+			StringName(belt_id), RoomBuilder.art_rect(belt), Vector2(float(flow[0]), float(flow[1]))
 		)
 		_belts.append(node)
 
@@ -209,7 +207,9 @@ func _build_items() -> void:
 		sprite.name = String(entry.get("id", "item"))
 		sprite.position = Vector2(float(entry.get("from", 400.0)), float(entry.get("y", 72.0)))
 		layer.add_child(sprite)
-		if not SpriteSheet.configure(sprite, String(entry.get("id", "")), entry.get("variant", &"")):
+		if not SpriteSheet.configure(
+			sprite, String(entry.get("id", "")), entry.get("variant", &"")
+		):
 			sprite.queue_free()
 			continue
 		_items.append(sprite)
@@ -292,10 +292,7 @@ func _drift_camera() -> void:
 	if camera == null:
 		return
 	var phase := TAU * _elapsed / PAN_PERIOD_S
-	var offset := Vector2(
-		roundf(sin(phase) * PAN_X),
-		roundf(sin(phase * 0.7) * PAN_Y)
-	)
+	var offset := Vector2(roundf(sin(phase) * PAN_X), roundf(sin(phase * 0.7) * PAN_Y))
 	camera.position = (CAMERA_HOME + offset + _intro_offset).round()
 	if _intro_tween == null or not _intro_tween.is_running():
 		camera.zoom = Vector2(CAMERA_ZOOM, CAMERA_ZOOM)
@@ -335,7 +332,9 @@ func _advance_turbulence(delta: float) -> void:
 func _all_animated_sprites() -> Array[AnimatedSprite2D]:
 	var out: Array[AnimatedSprite2D] = []
 	for child in find_children("*", "AnimatedSprite2D", true, false):
-		out.append(child as AnimatedSprite2D)
+		var sprite := child as AnimatedSprite2D
+		if sprite != null:
+			out.append(sprite)
 	return out
 
 
@@ -408,8 +407,7 @@ class SleepGlyph:
 					continue
 				draw_rect(
 					Rect2(
-						Vector2(float(column) * pixel, float(row) * pixel),
-						Vector2(pixel, pixel)
+						Vector2(float(column) * pixel, float(row) * pixel), Vector2(pixel, pixel)
 					),
 					ink
 				)

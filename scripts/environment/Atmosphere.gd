@@ -157,11 +157,6 @@ func _setup_particles() -> void:
 	_spark_timer.autostart = true
 	_spark_timer.timeout.connect(_on_spark_timeout)
 	add_child(_spark_timer)
-	var falloff := CeilingFalloff.new()
-	falloff.name = "CeilingFalloff"
-	falloff.z_index = -2
-	add_child(falloff)
-	falloff.setup()
 	var shafts := LightShafts.new()
 	shafts.name = "LightShafts"
 	shafts.z_index = -1
@@ -253,19 +248,24 @@ class BeltGlow:
 			var rect := RoomBuilder.rect_world(belt)
 			if rect.size.x >= rect.size.y:
 				_rails.append(
-					Rect2(rect.position.x, rect.position.y - Atmosphere.RAIL_THICKNESS, rect.size.x, Atmosphere.RAIL_THICKNESS)
-				)
-				_rails.append(
 					Rect2(
 						rect.position.x,
-						rect.end.y,
+						rect.position.y - Atmosphere.RAIL_THICKNESS,
 						rect.size.x,
 						Atmosphere.RAIL_THICKNESS
 					)
 				)
+				_rails.append(
+					Rect2(rect.position.x, rect.end.y, rect.size.x, Atmosphere.RAIL_THICKNESS)
+				)
 			else:
 				_rails.append(
-					Rect2(rect.position.x - Atmosphere.RAIL_THICKNESS, rect.position.y, Atmosphere.RAIL_THICKNESS, rect.size.y)
+					Rect2(
+						rect.position.x - Atmosphere.RAIL_THICKNESS,
+						rect.position.y,
+						Atmosphere.RAIL_THICKNESS,
+						rect.size.y
+					)
 				)
 				_rails.append(
 					Rect2(rect.end.x, rect.position.y, Atmosphere.RAIL_THICKNESS, rect.size.y)
@@ -275,7 +275,9 @@ class BeltGlow:
 			var washer_rect := RoomBuilder.rect_world(washer)
 			var center := Vector2(washer_rect.get_center().x, washer_rect.position.y + 88.0)
 			_drums.append(Rect2(center - DRUM_SIZE * 0.5, DRUM_SIZE))
-			var requirement: StringName = Atmosphere.DEFAULT_PALETTE[index % Atmosphere.DEFAULT_PALETTE.size()]
+			var requirement: StringName = Atmosphere.DEFAULT_PALETTE[
+				index % Atmosphere.DEFAULT_PALETTE.size()
+			]
 			_colors.append(Atmosphere.requirement_color(requirement))
 			index += 1
 		set_process(true)
@@ -296,7 +298,10 @@ class BeltGlow:
 			Palette.FUNK_CYAN.r,
 			Palette.FUNK_CYAN.g,
 			Palette.FUNK_CYAN.b,
-			Atmosphere.RAIL_ALPHA_MIN + (Atmosphere.RAIL_ALPHA_MAX - Atmosphere.RAIL_ALPHA_MIN) * envelope
+			(
+				Atmosphere.RAIL_ALPHA_MIN
+				+ (Atmosphere.RAIL_ALPHA_MAX - Atmosphere.RAIL_ALPHA_MIN) * envelope
+			)
 		)
 		for rect: Rect2 in _rails:
 			draw_rect(rect, rail, true)
@@ -306,11 +311,7 @@ class BeltGlow:
 		)
 		for index in range(_drums.size()):
 			var color: Color = _colors[index]
-			draw_rect(
-				_drums[index],
-				Color(color.r, color.g, color.b, drum_alpha),
-				true
-			)
+			draw_rect(_drums[index], Color(color.r, color.g, color.b, drum_alpha), true)
 
 	func beat_envelope() -> float:
 		if Settings.reduce_motion:
@@ -327,36 +328,8 @@ class BeltGlow:
 		if requirements.is_empty():
 			return
 		for index in range(_colors.size()):
-			_colors[index] = Atmosphere.requirement_color(
-				requirements[index % requirements.size()]
-			)
+			_colors[index] = Atmosphere.requirement_color(requirements[index % requirements.size()])
 		queue_redraw()
-
-
-## Additive light falloff from the ceiling: ten stacked bands that fade out by y ≈ 420.
-## This is what makes the floor read as a lit plane instead of a flat fill.
-class CeilingFalloff:
-	extends Node2D
-
-	const BANDS := 10
-	const HEIGHT := 420.0
-
-	func setup() -> void:
-		var additive := CanvasItemMaterial.new()
-		additive.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-		material = additive
-		queue_redraw()
-
-	func _draw() -> void:
-		var band_height := HEIGHT / float(BANDS)
-		for index in range(BANDS):
-			var fraction := 1.0 - float(index) / float(BANDS)
-			var alpha := 0.055 * fraction * fraction
-			draw_rect(
-				Rect2(0.0, float(index) * band_height, 1280.0, band_height),
-				Color(Palette.SPACE_HAZE.r, Palette.SPACE_HAZE.g, Palette.SPACE_HAZE.b, alpha),
-				true
-			)
 
 
 ## Two soft additive shafts under the ceiling lamps: cheap volumetric light that gives the
@@ -375,14 +348,17 @@ class LightShafts:
 		additive.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
 		material = additive
 		for x in [320.0, 980.0]:
-			_quads.append(
-				PackedVector2Array(
-					[
-						Vector2(x - 16.0, 96.0),
-						Vector2(x + 16.0, 96.0),
-						Vector2(x + 84.0, 320.0),
-						Vector2(x - 84.0, 320.0),
-					]
+			(
+				_quads
+				. append(
+					PackedVector2Array(
+						[
+							Vector2(x - 16.0, 96.0),
+							Vector2(x + 16.0, 96.0),
+							Vector2(x + 84.0, 320.0),
+							Vector2(x - 84.0, 320.0),
+						]
+					)
 				)
 			)
 		queue_redraw()
