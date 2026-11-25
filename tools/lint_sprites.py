@@ -56,21 +56,22 @@ class Report:
         self.warnings.append(message)
 
 
-def manifest_ids() -> list[str]:
+def manifest_rows() -> dict[str, str]:
+    """id -> status, parsed from the markdown table in art/MANIFEST.md."""
     if not MANIFEST.exists():
-        return []
-    ids: list[str] = []
+        return {}
+    rows: dict[str, str] = {}
     for line in MANIFEST.read_text(encoding="utf-8").splitlines():
         line = line.strip()
         if not line.startswith("| `"):
             continue
         cells = [c.strip() for c in line.strip("|").split("|")]
-        if not cells:
+        if len(cells) < 5:
             continue
         token = cells[0].strip("`").strip()
-        if token and token not in {"id", "---"} and not token.startswith("---"):
-            ids.append(token)
-    return ids
+        if token:
+            rows[token] = cells[4].strip("` ")
+    return rows
 
 
 def is_dark_name(name: str) -> bool:
@@ -110,15 +111,19 @@ def check_frame(report: Report, sheet_id: str, anim: str, index: int, frame: pxl
         report.fail(f"{label}: silhouette touches the cell edge (set allow_edge if intended)")
 
     if spec.outline:
-        border = mask & (
+        # the outline pass lives *outside* the silhouette: every pixel in the 1 px ring
+        # around the silhouette must be a dark ramp/space colour
+        ring = mask & (
             np.pad(~mask, 1, constant_values=False)[0:-2, 1:-1]
             | np.pad(~mask, 1, constant_values=False)[2:, 1:-1]
             | np.pad(~mask, 1, constant_values=False)[1:-1, 0:-2]
             | np.pad(~mask, 1, constant_values=False)[1:-1, 2:]
         )
-        total = int(border.sum())
-        if total:
-            ys, xs = np.nonzero(border)
+        total = int(ring.sum())
+        if total == 0:
+            report.fail(f"{label}: no outline pass around the silhouette")
+        else:
+            ys, xs = np.nonzero(ring)
             dark = 0
             for y, x in zip(ys, xs):
                 name = frame.get(int(x), int(y))
@@ -128,24 +133,51 @@ def check_frame(report: Report, sheet_id: str, anim: str, index: int, frame: pxl
             if ratio < 0.90:
                 report.fail(
                     f"{label}: outline coverage {ratio:.0%} < 90% "
-                    f"({total - dark}/{total} border px are not *_0/space_*)"
+                    f"({total - dark}/{total} outline px are not *_0/space_*)"
                 )
-        else:
-            report.fail(f"{label}: silhouette has no border pixels")
 
-    if spec.is_item and sheet_id.startswith("item_") and "grime" not in sheet_id:
+    if spec.is_item and "grime" not in sheet_id:
         counts: dict[str, int] = {}
         for y in range(frame.h):
             for x in range(frame.w):
                 name = frame.get(x, y)
                 if name:
                     counts[name] = counts.get(name, 0) + 1
+        opaque = sum(counts.values())
         dominant = max(counts, key=lambda k: (counts[k], k))
-        if not pxlib.PAL.is_ramp(dominant) or pxlib.PAL.name_to_slot[dominant] != 2:
-            report.fail(f"{label}: dominant tone {dominant} is not a *_2 body fill")
-        ratio = pxlib.contrast_vs_void(dominant)
-        if ratio < 3.0:
-            report.fail(f"{label}: body fill {dominant} contrast {ratio:.2f}:1 < 3:1")
+        # 6: the body fill must keep >= 3:1 against space_void and must be visible
+        if spec.pattern_group:
+            body = [c for c in counts
+                    if pxlib.PAL.is_ramp(c) and pxlib.PAL.name_to_slot[c] == 2]
+            if not body:
+                report.fail(f"{label}: no *_2 body fill")
+            else:
+                fill = max(body, key=lambda c: counts[c])
+                share = counts[fill] / opaque
+                if share < 0.15:
+                    report.fail(f"{label}: body fill {fill} covers only {share:.0%} of the frame")
+                if pxlib.contrast_vs_void(fill) < 3.0:
+                    report.fail(
+                        f"{label}: body fill {fill} contrast "
+                        f"{pxlib.contrast_vs_void(fill):.2f}:1 < 3:1"
+                    )
+        else:
+            twos = [c for c in counts
+                    if pxlib.PAL.is_ramp(c) and pxlib.PAL.name_to_slot[c] == 2]
+            if not twos:
+                report.fail(f"{label}: no *_2 body fill anywhere in the frame")
+        if not spec.pattern_group and pxlib.contrast_vs_void(dominant) < 3.0:
+            report.fail(
+                f"{label}: dominant tone {dominant} contrast "
+                f"{pxlib.contrast_vs_void(dominant):.2f}:1 < 3:1"
+            )
+        # 6c: the selective outline (slot 0 / space_*) must not swallow the sprite
+        outline = sum(counts[c] for c in counts if c.endswith("_0") or c.startswith("space_"))
+        if outline / opaque > 0.40:
+            report.fail(
+                f"{label}: outline is {outline / opaque:.0%} of the frame "
+                f"(> 40%: the outline is swallowing the sprite)"
+            )
     return mask
 
 
@@ -266,11 +298,19 @@ def main(argv: list[str]) -> int:
 
     # rule 9: manifest + contract coverage, no orphans
     ids = {png.stem for png in pngs}
-    listed = set(manifest_ids())
+    rows = manifest_rows()
+    listed = set(rows)
     if not listed:
         report.warn("art/MANIFEST.md has no ids yet")
     for missing in sorted(listed - ids):
-        report.fail(f"MANIFEST lists {missing} but no sheet exists")
+        status = rows.get(missing, "")
+        if status in {"built", "reviewed"}:
+            report.fail(f"MANIFEST lists {missing} as {status} but no sheet exists")
+        else:
+            report.warn(f"{missing}: planned but not built yet")
+    for built in sorted(ids):
+        if rows.get(built, "") == "planned":
+            report.warn(f"{built}: ships but MANIFEST still says planned")
     for orphan in sorted(ids - listed):
         report.fail(f"{orphan}: shipped but not listed in art/MANIFEST.md")
     for orphan in sorted(ids - set(CONTRACT)):

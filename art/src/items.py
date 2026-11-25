@@ -393,50 +393,52 @@ def build_core() -> list[Canvas]:
 
 
 def build_grime(size: int) -> Canvas:
-    """Three overlapping splats: mud body, lit top-left edge, shaded bottom-right edge.
+    """Grime overlay: splat body from a Kenney Planets mask, cracks from a Roguelike tile.
 
-    Stains stay one pixel inside the cell so an overlay never touches the item edge.
+    Both masks are CC0 and box-downscaled to the overlay size, then hard-thresholded:
+    planet04's dark craters give the organic splat, tile_0702's cracks give the thin
+    fractures that sell "this item has been on the floor".  The 3-tone shading is
+    authored so the stain keeps the project's top-left light.
     """
-    scale = size / 16.0
-    shape = np.zeros((size, size), dtype=bool)
-    splats = [
-        (0.34, 0.62, 0.16, 0.6),
-        (0.62, 0.50, 0.12, 2.1),
-        (0.52, 0.70, 0.13, 4.0),
-    ]
-    for bx, by, br, phase in splats:
-        cx, cy, r = bx * size, by * size, br * size
-        for y in range(size):
-            for x in range(size):
-                dx, dy = x - cx, y - cy
-                dist = (dx * dx + dy * dy) ** 0.5
-                angle = np.arctan2(dy, dx)
-                wobble = 1.0 + 0.16 * np.sin(3 * angle + phase) + 0.08 * np.sin(5 * angle - phase)
-                if dist <= r * wobble:
-                    shape[y, x] = True
-    # a drip off the main splat, plus detached specks - all kept off the cell edge
-    drip_x = min(size - 2, int(0.36 * size))
-    for step in range(int(3 * scale) + 1):
-        y = min(size - 2, int(0.80 * size) + step)
-        shape[y, drip_x] = True
-        if step < 2:
-            shape[y, min(size - 2, drip_x + 1)] = True
-    for sx, sy in ((int(0.13 * size), int(0.40 * size)),
-                   (int(0.80 * size), int(0.30 * size)),
-                   (int(0.82 * size), int(0.66 * size))):
-        shape[min(size - 2, sy), min(size - 2, sx)] = True
+    planet = pxlib.load_source("kenney-planets", "planets/planet04.png")
+    body = pxlib.clean_mask(
+        pxlib.source_pattern_mask(planet, size, size, percentile=68),
+        keep=2, min_px=max(6, size // 2), smooth=1,
+    )
+    # a drip off the lowest blob keeps the stain from reading as a clean circle
+    ys, xs = np.nonzero(body)
+    if len(ys):
+        drip_x = int(np.median(xs))
+        drip_y = int(ys.max())
+        for step in range(1, max(2, size // 5) + 1):
+            y = min(size - 2, drip_y + step)
+            if 1 <= y < size - 1:
+                body[y, min(size - 2, drip_x)] = True
+    crack = pxlib.clean_mask(
+        pxlib.source_pattern_mask(
+            pxlib.load_source("kenney-roguelike", "tiles/tile_0702.png"),
+            size, size, percentile=22,
+        ),
+        keep=2, min_px=3, smooth=0,
+    )
 
+    shape = np.zeros((size, size), dtype=bool)
+    shape[1:size - 1, 1:size - 1] = body[1:size - 1, 1:size - 1]
     canvas = Canvas(size, size)
-    ys, xs = np.nonzero(shape)
-    for y, x in zip(ys, xs):
+    for y, x in np.argwhere(shape):
         canvas.set(int(x), int(y), "yel_0")
-    # light comes from the top-left: highlight the top-left edge, shade the bottom-right
     lit = shape & ~shift(shape, -1, -1)
     shadow = shape & ~shift(shape, 1, 1)
     for y, x in np.argwhere(lit):
         canvas.set(int(x), int(y), "yel_1")
     for y, x in np.argwhere(shadow):
         canvas.set(int(x), int(y), "space_haze")
+    # cracks: only inside the stain, dark recess with a lit lip
+    inside = shape & crack
+    for y, x in np.argwhere(inside):
+        canvas.set(int(x), int(y), "space_haze")
+        if 0 <= y - 1 < size and inside[y - 1, x] is False and shape[y - 1, x]:
+            canvas.set(int(x), int(y) - 1, "yel_1")
     return canvas
 
 

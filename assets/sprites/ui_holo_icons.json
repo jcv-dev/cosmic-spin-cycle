@@ -1,0 +1,59 @@
+{
+  "id": "ui_holo_icons",
+  "frame_size": [
+    12,
+    12
+  ],
+  "scale": 4,
+  "pivot": [
+    6,
+    6
+  ],
+  "animations": {
+    "red": {
+      "row": 0,
+      "frames": 1,
+      "fps": 1,
+      "loop": true
+    },
+    "blue": {
+      "row": 1,
+      "frames": 1,
+      "fps": 1,
+      "loop": true
+    },
+    "yellow": {
+      "row": 2,
+      "frames": 1,
+      "fps": 1,
+      "loop": true
+    },
+    "solid": {
+      "row": 3,
+      "frames": 1,
+      "fps": 1,
+      "loop": true
+    },
+    "ringed": {
+      "row": 4,
+      "frames": 1,
+      "fps": 1,
+      "loop": true
+    },
+    "spotted": {
+      "row": 5,
+      "frames": 1,
+      "fps": 1,
+      "loop": true
+    },
+    "wild": {
+      "row": 6,
+      "frames": 1,
+      "fps": 1,
+      "loop": true
+    }
+  },
+  "tier": "A",
+  "source": "art/src/ui.py",
+  "note": "washer requirement holograms"
+}

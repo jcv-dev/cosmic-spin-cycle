@@ -184,11 +184,13 @@ def _env_assets() -> dict[str, Asset]:
 
 def _fx_assets() -> dict[str, Asset]:
     return {
-        "fx_clean_sparkle": Asset((8, 8), (4, 4), {"play": Anim(4, FPS["sparkle"])}, "fx"),
-        "fx_burst_perfect": Asset((16, 16), (8, 8), {"play": Anim(4, 14)}, "fx"),
-        "fx_burst_good": Asset((12, 12), (6, 6), {"play": Anim(3, 14)}, "fx"),
-        "fx_miss_puff": Asset((12, 12), (6, 6), {"play": Anim(3, 10)}, "fx"),
-        "fx_explosion": Asset((32, 32), (16, 16), {"play": Anim(6, FPS["explosion"])}, "fx"),
+        "fx_clean_sparkle": Asset((8, 8), (4, 4),
+                                  {"play": Anim(4, FPS["sparkle"], loop=False)}, "fx"),
+        "fx_burst_perfect": Asset((16, 16), (8, 8), {"play": Anim(4, 14, loop=False)}, "fx"),
+        "fx_burst_good": Asset((12, 12), (6, 6), {"play": Anim(3, 14, loop=False)}, "fx"),
+        "fx_miss_puff": Asset((12, 12), (6, 6), {"play": Anim(3, 10, loop=False)}, "fx"),
+        "fx_explosion": Asset((32, 32), (16, 16),
+                              {"play": Anim(6, FPS["explosion"], loop=False)}, "fx"),
         "fx_bubbles": Asset((8, 8), (4, 4), {"play": Anim(3, 8)}, "fx"),
     }
 

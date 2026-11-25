@@ -1,0 +1,24 @@
+{
+  "id": "ui_bar_stability_fill",
+  "frame_size": [
+    8,
+    6
+  ],
+  "scale": 4,
+  "pivot": [
+    4,
+    3
+  ],
+  "animations": {
+    "fill": {
+      "row": 0,
+      "frames": 1,
+      "fps": 1,
+      "loop": true
+    }
+  },
+  "tier": "A",
+  "source": "art/src/ui.py",
+  "allow_edge": true,
+  "note": "neutral fill tile; tinted by threshold"
+}

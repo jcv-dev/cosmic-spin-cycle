@@ -1,0 +1,24 @@
+{
+  "id": "ui_logo",
+  "frame_size": [
+    160,
+    48
+  ],
+  "scale": 4,
+  "pivot": [
+    80,
+    24
+  ],
+  "animations": {
+    "logo": {
+      "row": 0,
+      "frames": 1,
+      "fps": 1,
+      "loop": true
+    }
+  },
+  "tier": "A",
+  "source": "art/src/ui.py",
+  "allow_edge": true,
+  "note": "COSMIC SPIN CYCLE wordmark"
+}

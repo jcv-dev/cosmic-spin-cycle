@@ -1,0 +1,23 @@
+{
+  "id": "ui_reticle",
+  "frame_size": [
+    16,
+    16
+  ],
+  "scale": 4,
+  "pivot": [
+    8,
+    8
+  ],
+  "animations": {
+    "aim": {
+      "row": 0,
+      "frames": 1,
+      "fps": 1,
+      "loop": true
+    }
+  },
+  "tier": "A",
+  "source": "art/src/ui.py",
+  "note": "aim crosshair"
+}

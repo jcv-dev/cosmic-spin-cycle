@@ -1,0 +1,24 @@
+{
+  "id": "ui_panel",
+  "frame_size": [
+    24,
+    24
+  ],
+  "scale": 4,
+  "pivot": [
+    12,
+    12
+  ],
+  "animations": {
+    "panel": {
+      "row": 0,
+      "frames": 1,
+      "fps": 1,
+      "loop": true
+    }
+  },
+  "tier": "A",
+  "source": "art/src/ui.py",
+  "allow_edge": true,
+  "note": "9-slice, corner 8"
+}

@@ -1,0 +1,24 @@
+{
+  "id": "ui_bar_stability",
+  "frame_size": [
+    96,
+    10
+  ],
+  "scale": 4,
+  "pivot": [
+    48,
+    5
+  ],
+  "animations": {
+    "bar": {
+      "row": 0,
+      "frames": 1,
+      "fps": 1,
+      "loop": true
+    }
+  },
+  "tier": "A",
+  "source": "art/src/ui.py",
+  "allow_edge": true,
+  "note": "segmented stability frame"
+}

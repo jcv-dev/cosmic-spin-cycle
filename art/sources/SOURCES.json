@@ -17,21 +17,25 @@
         {
           "member": "Planets/planet03.png",
           "as": "planets/planet03.png",
+          "tile": null,
           "sha256": "b23893179576c6d833221a6f343896b33d057a5be509e28c6871fd44125cc958"
         },
         {
           "member": "Planets/planet04.png",
           "as": "planets/planet04.png",
+          "tile": null,
           "sha256": "b9e5fd3a164a4d5d29b0ee28b93eb7e6524df43dcdbcb2615c323f6c6a509650"
         },
         {
           "member": "Planets/planet07.png",
           "as": "planets/planet07.png",
+          "tile": null,
           "sha256": "ffd85aa57cda3bf888628a05133eed33e2fbd9aa1cb337b7d23f9560a2eadf97"
         },
         {
           "member": "Planets/planet09.png",
           "as": "planets/planet09.png",
+          "tile": null,
           "sha256": "8c6bdd9f220646aa6c0331e2220fcbe484c2307c10c63ae624c9065245d25444"
         }
       ],
@@ -69,6 +73,62 @@
       ]
     },
     {
+      "id": "kenney-roguelike",
+      "title": "Roguelike/RPG pack",
+      "author": "Kenney (Kenney Vleugels), with Lynn Evers",
+      "page": "https://kenney.nl/assets/roguelike-rpg-pack",
+      "license": "CC0-1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "license_member": "License.txt",
+      "dir": "kenney-roguelike",
+      "retrieved": "2026-11-24",
+      "sha256": "8e7d2378f8f794245645f6d7dc7aeeb246791410a7e512293c594b46a5a9524b",
+      "uses": [
+        {
+          "member": "Spritesheet/roguelikeSheet_transparent.png",
+          "as": "tiles/tile_0860.png",
+          "tile": 860,
+          "sha256": "11fd2b4ae1762b6a31547e00dee42d9d19341f7436289ca9cab33acc242046e4"
+        },
+        {
+          "member": "Spritesheet/roguelikeSheet_transparent.png",
+          "as": "tiles/tile_0692.png",
+          "tile": 692,
+          "sha256": "82e73dfe330fd2258fe5c6cbb32de2c4e795d99b60a7be34ac426f3430f754cc"
+        },
+        {
+          "member": "Spritesheet/roguelikeSheet_transparent.png",
+          "as": "tiles/tile_0702.png",
+          "tile": 702,
+          "sha256": "af63423e432390ec9f1f48972ab8fb3a86fefeaebb74634073fcde72d9abf662"
+        }
+      ],
+      "extracted": [
+        {
+          "path": "art/sources/kenney-roguelike/tiles/tile_0860.png",
+          "sha256": "11fd2b4ae1762b6a31547e00dee42d9d19341f7436289ca9cab33acc242046e4"
+        },
+        {
+          "path": "art/sources/kenney-roguelike/tiles/tile_0692.png",
+          "sha256": "82e73dfe330fd2258fe5c6cbb32de2c4e795d99b60a7be34ac426f3430f754cc"
+        },
+        {
+          "path": "art/sources/kenney-roguelike/tiles/tile_0702.png",
+          "sha256": "af63423e432390ec9f1f48972ab8fb3a86fefeaebb74634073fcde72d9abf662"
+        },
+        {
+          "path": "art/sources/kenney-roguelike/LICENSE.txt",
+          "sha256": "e3158109ad8580ef266db5b00f97bbed853870a99c0721200ef23880bdfd416e"
+        }
+      ],
+      "rejected": [
+        {
+          "member": "Spritesheet/roguelikeSheet_transparent.png",
+          "reason": "sheet itself; tiles are extracted instead"
+        }
+      ]
+    },
+    {
       "id": "kenney-industrial",
       "title": "Pixel Platformer: Industrial Expansion",
       "author": "Kenney (Kenney Vleugels)",
@@ -83,106 +143,127 @@
         {
           "member": "Tiles/tile_0056.png",
           "as": "tiles/tile_0056.png",
+          "tile": null,
           "sha256": "9a2f139dda5442767c254f1667b786f79f59cace14a23ed88be67c6b1c103c31"
         },
         {
           "member": "Tiles/tile_0057.png",
           "as": "tiles/tile_0057.png",
+          "tile": null,
           "sha256": "49d9a02579f93775a93bac37534c4750a2496a473eab82f7b4e0e4fef1f03872"
         },
         {
           "member": "Tiles/tile_0062.png",
           "as": "tiles/tile_0062.png",
+          "tile": null,
           "sha256": "fc846497ec5dee5e2abcc39f767be89c2219c55b2ced9213e143e255d007ec05"
         },
         {
           "member": "Tiles/tile_0063.png",
           "as": "tiles/tile_0063.png",
+          "tile": null,
           "sha256": "1f929892199f79a97f7da89d0c372083f518624b2e08041b6481133274f05695"
         },
         {
           "member": "Tiles/tile_0068.png",
           "as": "tiles/tile_0068.png",
+          "tile": null,
           "sha256": "7ac3ef8d44c14b80a1a651f8fb84fe7bdbe3b30cade54510db0b8cfdb3f8bb54"
         },
         {
           "member": "Tiles/tile_0073.png",
           "as": "tiles/tile_0073.png",
+          "tile": null,
           "sha256": "e806aa2e613cc0a3c2553d85b41894439bba11b57fee1c5b10454d1b17e91c23"
         },
         {
           "member": "Tiles/tile_0079.png",
           "as": "tiles/tile_0079.png",
+          "tile": null,
           "sha256": "380c257e5fc4887784cdd06cfb706a805708d6902a52baebca775dc37d31d187"
         },
         {
           "member": "Tiles/tile_0084.png",
           "as": "tiles/tile_0084.png",
+          "tile": null,
           "sha256": "42ac665700e81b722fc967672eb26aa5fc04cb26c25befc8ca67cd34c0beb631"
         },
         {
           "member": "Tiles/tile_0085.png",
           "as": "tiles/tile_0085.png",
+          "tile": null,
           "sha256": "e229b411ff20f403c94be346bd0fad40b31970ae916da6a50221c693c97a9aed"
         },
         {
           "member": "Tiles/tile_0086.png",
           "as": "tiles/tile_0086.png",
+          "tile": null,
           "sha256": "b8af6ad70d6fd6b4f98c7f35c012c21bd58cab10776a56274701319c0622830d"
         },
         {
           "member": "Tiles/tile_0087.png",
           "as": "tiles/tile_0087.png",
+          "tile": null,
           "sha256": "0be3cc38c132caebcde2d5249e29b45385cf58a50b839ba374f4965378931e23"
         },
         {
           "member": "Tiles/tile_0088.png",
           "as": "tiles/tile_0088.png",
+          "tile": null,
           "sha256": "f26a98012d4dd5ca0b221639f8875b0570eeebb7dac8d59537d33011220c56e6"
         },
         {
           "member": "Tiles/tile_0094.png",
           "as": "tiles/tile_0094.png",
+          "tile": null,
           "sha256": "7298689014263f53fbeaa3c40caf3a1196417edca35011376bfb48172df81363"
         },
         {
           "member": "Tiles/tile_0099.png",
           "as": "tiles/tile_0099.png",
+          "tile": null,
           "sha256": "db5cef9d1876c07aead700f1f5652400237e0e6188794d450c07777bb12c34e8"
         },
         {
           "member": "Tiles/tile_0100.png",
           "as": "tiles/tile_0100.png",
+          "tile": null,
           "sha256": "06e0c0b171bf4052ed7e3e59737cd6875bb6ba607e7ce946225b548adbb14b1c"
         },
         {
           "member": "Tiles/tile_0101.png",
           "as": "tiles/tile_0101.png",
+          "tile": null,
           "sha256": "c95980faf00c6085bef87cee6c371fa4c9f71a2a52769ed5e28f9844d74709a0"
         },
         {
           "member": "Tiles/tile_0102.png",
           "as": "tiles/tile_0102.png",
+          "tile": null,
           "sha256": "d08aa37c51656a59ff02822cf3b212643d4fb55d09ada0a544476cd40caa7bb1"
         },
         {
           "member": "Tiles/tile_0103.png",
           "as": "tiles/tile_0103.png",
+          "tile": null,
           "sha256": "aff1402089ae6c0751873e5cc7bc53c969220715d7018513e98b89388d8555de"
         },
         {
           "member": "Tiles/tile_0108.png",
           "as": "tiles/tile_0108.png",
+          "tile": null,
           "sha256": "bbc13ed3ee8d0ffcb3616a4e737ef20a1687c4e40c28032cc5582d55e535ef13"
         },
         {
           "member": "Tiles/tile_0110.png",
           "as": "tiles/tile_0110.png",
+          "tile": null,
           "sha256": "a521adc1ceb99916abdbff3de748f3a88fb0b5e4cf95c9a4e9de57ccb5baafa0"
         },
         {
           "member": "Tiles/tile_0111.png",
           "as": "tiles/tile_0111.png",
+          "tile": null,
           "sha256": "0cc5df3a3d7dae8f9f33f58e76f15af9ccd0007b73043b8edf503073af729100"
         }
       ],

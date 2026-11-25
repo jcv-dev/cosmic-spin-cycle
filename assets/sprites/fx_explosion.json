@@ -1,0 +1,23 @@
+{
+  "id": "fx_explosion",
+  "frame_size": [
+    32,
+    32
+  ],
+  "scale": 4,
+  "pivot": [
+    16,
+    16
+  ],
+  "animations": {
+    "play": {
+      "row": 0,
+      "frames": 6,
+      "fps": 12,
+      "loop": false
+    }
+  },
+  "tier": "A",
+  "source": "art/src/fx.py",
+  "note": "washer singularity explosion"
+}
