@@ -17,7 +17,11 @@ const PATTERN_SHIFT := 0.3
 const SPARKLE_COLOR := Color("#5CFF8A")
 const SPARKLE_COUNT := 3
 const SPRITE_DIR := "res://assets/sprites/"
-const SHADOW_COLOR := Color(0.043, 0.047, 0.063, 0.55)
+const SHADOW_COLOR := Color(0.043, 0.047, 0.063, 0.5)
+## Light comes from the top-left, so the ground shadow sits down-right of the body.
+const SHADOW_OFFSET := Vector2(3.0, 5.0)
+const SHADOW_RADIUS_SCALE := 0.85
+const SHADOW_FLATTEN := 0.38
 const PULL_DURATION_S := 0.06
 const PULL_MAX_PX := 14.0
 const SQUASH_DURATION_S := 0.04
@@ -82,7 +86,7 @@ func is_clean() -> bool:
 func set_height(value: float) -> void:
 	_height = maxf(value, 0.0)
 	if _sprite != null:
-		_sprite.position = _visual_offset()
+		_sprite.position = _sprite_position()
 	if not _has_sprite:
 		queue_redraw()
 
@@ -161,7 +165,7 @@ func _process(delta: float) -> void:
 		queue_redraw()
 	_tick_smears(delta)
 	if _sprite != null:
-		_sprite.position = _visual_offset()
+		_sprite.position = _sprite_position()
 	_update_shadow()
 	var offset := _visual_offset()
 	if not _has_sprite and offset != _last_draw_offset:
@@ -284,6 +288,14 @@ func _tick_smears(delta: float) -> void:
 		(node as CanvasItem).modulate.a = SMEAR_ALPHA * (float(entry["left"]) / SMEAR_LIFETIME)
 
 
+## The art is x4; snapping the sprite's *global* position to that grid keeps texels crisp
+## while `ItemVisual.global_position` still tracks the rigid body exactly (contract test).
+func _sprite_position() -> Vector2:
+	var art := float(Config.ART_SCALE)
+	var snapped := (global_position / art).round() * art
+	return snapped - global_position + _visual_offset()
+
+
 func _visual_offset() -> Vector2:
 	var offset := Vector2.ZERO
 	var art := float(Config.ART_SCALE)
@@ -304,9 +316,12 @@ func _update_shadow() -> void:
 	var radius := _radius()
 	var lift := 1.0 + _height / 48.0
 	var squash := 1.25 if _squash_left > 0.0 else 1.0
+	_shadow.position = SHADOW_OFFSET
 	_shadow.rotation = angle
-	_shadow.scale = Vector2(radius * lift * squash, radius * 0.42 * lift)
-	var alpha := clampf(0.55 - _height / 96.0, 0.18, 0.55)
+	_shadow.scale = Vector2(
+		radius * SHADOW_RADIUS_SCALE * lift * squash, radius * SHADOW_FLATTEN * lift
+	)
+	var alpha := clampf(SHADOW_COLOR.a - _height / 96.0, 0.16, SHADOW_COLOR.a)
 	_shadow.color = Color(SHADOW_COLOR.r, SHADOW_COLOR.g, SHADOW_COLOR.b, alpha)
 
 
