@@ -28,7 +28,8 @@ signal schedule_finished
 ## Optional `Callable(event: Dictionary, phase: PhaseData) -> Vector2`, so the sandbox can
 ## place each item on the belt that is actually running.
 var position_resolver: Callable = Callable()
-## Optional `Callable(event: Dictionary) -> Node`, used when no `item_scene` is available.
+## Optional `Callable(event: Dictionary) -> Node`; when valid it overrides `item_scene`
+## (tests, stub sandbox, headless runs).
 var stub_factory: Callable = Callable()
 
 ## Spawn count per phase; the M3 acceptance metric.
@@ -178,11 +179,13 @@ func _spawn_event(event: Dictionary) -> void:
 
 
 func _instantiate(event: Dictionary) -> Node:
-	if item_scene != null:
-		return item_scene.instantiate()
+	# An explicitly injected stub/factory always wins, so tests and the sandbox stay
+	# independent of the shipped item scene.
 	if stub_factory.is_valid():
 		var made: Variant = stub_factory.call(event)
 		return made as Node
+	if item_scene != null:
+		return item_scene.instantiate()
 	return null
 
 

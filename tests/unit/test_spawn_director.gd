@@ -87,7 +87,8 @@ func test_phase_one_spawns_its_interval_only() -> void:
 
 
 func test_full_shift_accounts_every_event() -> void:
-	# Accounting mode: with a live item scene the cap would swallow the tail.
+	# Accounting mode: no item scene and no stub, so every event is only counted.
+	director.item_scene = null
 	director.stub_factory = Callable()
 	director.start(SEED)
 	director.advance_to(Config.SHIFT_DURATION_S)
