@@ -87,3 +87,10 @@ winnability with `tools/balance_sim.gd`.
 ## D016 — CI target
 2026-11-24 · GitHub Actions uses `chickensoft-games/setup-godot@v2` with 4.7.2, imports
 the project, runs GUT, then gdlint/gdformat and `tools/lint_sprites.py` when it exists.
+
+## D017 — Localization keys for M0–M3 UI
+2026-11-24 · Player-facing strings go through `tr()` from day one, but until the Godot
+`Translation` resources land (M6), the **Spanish source string is the key** (`tr("TURNO")`,
+gettext-style). This keeps the UI readable now and lets English be added later without
+rewriting call sites. M6 must add `data/i18n/es.*`/`en.*` keyed by these strings and switch
+to stable `HUD_*` keys only if the Spanish copy changes.
