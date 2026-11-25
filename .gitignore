@@ -1,13 +1,51 @@
-# Godot 4+ specific ignores
+# --- Godot -------------------------------------------------------------------
 .godot/
 /android/
+/build/
+/builds/
+/export/
+/exports/
+*.pck
+*.zip
+*.exe
+*.x86_64
+*.pdb
+*.translation
 
-# Local scratch and tooling
+# --- Local scratch, parallel session worktrees, shared tools -----------------
 .work/
-
-# Parallel session worktrees
 .worktrees/
+art/__pycache__/
+tools/__pycache__/
 
-# Python tooling
+# --- Python tooling ----------------------------------------------------------
 __pycache__/
-*.pyc
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+
+# --- Logs and temporary files ------------------------------------------------
+*.log
+*.tmp
+*.temp
+*.bak
+*.orig
+*.rej
+*.swp
+*~
+
+# --- OS / editor cruft -------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.sublime-workspace
+
+# --- Local secrets, never commit --------------------------------------------
+.env
+.env.*
+*.pem
+*.key

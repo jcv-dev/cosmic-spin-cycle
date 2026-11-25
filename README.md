@@ -97,6 +97,11 @@ Current state: **668 tests / 10,214 asserts green**, 29/29 sprite sheets pass th
 linter, 16/16 audio checks pass, and the 480 s simulation reports exactly 98 spawns. The
 in-game frame is ~12.8 ms median on this llvmpipe box ([`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md)).
 
+## Entrega final
+
+La lista de verificación de la rúbrica (repositorio público, commits del equipo, nivel
+completo, audio, demo y sustentación) está en [`docs/DELIVERY.md`](docs/DELIVERY.md).
+
 ## Documentation
 
 | File | Contents |

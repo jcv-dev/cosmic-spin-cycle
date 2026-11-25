@@ -193,9 +193,9 @@ have ~4 ms of headroom. Treat UX §14's 60 FPS as a hardware-GL target and this 
 ## 7. Rebuild, screenshot, measure
 
 ```bash
-cd /home/moravak/proyecto/.worktrees/environment
+cd "$PWD/.worktrees/environment"   # from the repo root
 export XDG_DATA_HOME="$PWD/.work/xdg/data" XDG_CACHE_HOME="$PWD/.work/xdg/cache" \
-       XDG_CONFIG_HOME="$PWD/.work/xdg/config" HOME="/home/moravak/proyecto/.work/home"
+       XDG_CONFIG_HOME="$PWD/.work/xdg/config" HOME="$PWD/.work/home"
 
 godot --headless --path . --import
 

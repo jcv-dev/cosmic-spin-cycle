@@ -38,8 +38,8 @@ godot --headless --path . --quit                    # smoke: must exit 0
 /usr/bin/python3 tools/lint_sprites.py               # assets only (Pillow + numpy available)
 
 # Lint tooling (shared read-only venv):
-/home/moravak/proyecto/.work/venv/bin/gdlint scripts tests tools
-/home/moravak/proyecto/.work/venv/bin/gdformat --check scripts tests
+"$PWD/.work/venv/bin/gdlint" scripts tests tools
+"$PWD/.work/venv/bin/gdformat" --check scripts tests
 ```
 
 If `gdlint`/`gdformat` do not exist yet, use `godot --headless --check-only` style checks

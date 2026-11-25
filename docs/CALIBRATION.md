@@ -83,7 +83,7 @@ silent window, and a normal playthrough free-runs the conductor without audio.
 ## Running BeatLab
 
 ```bash
-cd /home/moravak/proyecto/.worktrees/m1-beat
+cd "$PWD/.worktrees/m1-beat"   # from the repo root
 export XDG_DATA_HOME="$PWD/.work/xdg/data" XDG_CACHE_HOME="$PWD/.work/xdg/cache" \
        XDG_CONFIG_HOME="$PWD/.work/xdg/config"
 godot --path . res://scenes/dev/BeatLab.tscn
