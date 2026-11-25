@@ -273,7 +273,8 @@ func test_auto_turbulence_phase_rule_table() -> void:
 	assert_true(_has_type(events, &"turbulent"), "cycle 3 goes turbulent at 50 %")
 	assert_eq(phase_three.get_state(), WasherFSM.State.TURBULENT)
 
-	for phase in range(2):
+	# Phase 0 is calm; from phase 1 (the GDD's phase 2) every third cycle shakes.
+	for phase in range(1):
 		var calm := _new_fsm(&"red", phase)
 		_complete_cycle(calm)
 		_complete_cycle(calm)

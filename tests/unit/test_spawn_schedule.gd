@@ -136,7 +136,7 @@ func test_total_is_the_sum_of_the_phases() -> void:
 	for count in counts:
 		total += count
 	assert_eq(events.size(), total)
-	assert_almost_eq(float(events.size()), 83.0, 2.0, "retuned cadence: 66 +/- 2 spawns")
+	assert_almost_eq(float(events.size()), 98.0, 2.0, "retuned cadence: 98 +/- 2 spawns")
 
 
 func test_counts_pad_to_the_requested_width() -> void:

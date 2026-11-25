@@ -13,8 +13,8 @@ extends Node2D
 ## Pulse ring geometry (world px). It starts wide at the beat and contracts toward the next.
 const RING_MIN := 42.0
 const RING_MAX := 70.0
-const RING_WIDTH := 2.0
-const RING_WIDTH_PERFECT := 4.0
+const RING_WIDTH := 3.0
+const RING_WIDTH_PERFECT := 5.0
 const RING_ALPHA := 0.22
 const RING_ALPHA_PERFECT := 0.70
 const RING_IDLE_ALPHA := 0.28
@@ -93,11 +93,13 @@ var _gamepad_forced := -1
 var _grade := -1
 var _grade_left := 0.0
 var _grade_origin := Vector2.ZERO
+var _grade_sfx: AudioStreamPlayer
 var _turbulent: Node = null
 var _turbulent_mouth := Vector2.ZERO
 
 
 func _ready() -> void:
+	_ensure_grade_audio()
 	add_to_group(GROUP_DIEGETIC)
 	_font = Fonts.pixel_font()
 	_font_bold = Fonts.pixel_font_bold()
@@ -433,6 +435,37 @@ func show_grade(grade: int) -> void:
 	_grade_left = GRADE_POPUP_S
 	_grade_origin = _player_position()
 	_dirty = true
+	_play_grade_sound(grade)
+
+
+## A distinct chime per grade: the visual popup is brief, the sound confirms it.
+func _play_grade_sound(grade: int) -> void:
+	if _grade_sfx == null or _grade_sfx.stream == null:
+		return
+	match grade:
+		RhythmEvaluator.Grade.PERFECT:
+			_grade_sfx.pitch_scale = 1.35
+			_grade_sfx.volume_db = -11.0
+		RhythmEvaluator.Grade.GOOD:
+			_grade_sfx.pitch_scale = 1.0
+			_grade_sfx.volume_db = -14.0
+		_:
+			_grade_sfx.pitch_scale = 0.7
+			_grade_sfx.volume_db = -16.0
+	_grade_sfx.play()
+
+
+func _ensure_grade_audio() -> void:
+	if _grade_sfx != null:
+		return
+	var path := "res://assets/audio/sfx/delivery_chime.ogg"
+	if not ResourceLoader.exists(path):
+		return
+	_grade_sfx = AudioStreamPlayer.new()
+	_grade_sfx.name = "GradeSfx"
+	_grade_sfx.stream = load(path) as AudioStream
+	_grade_sfx.bus = "SFX" if AudioServer.get_bus_index("SFX") >= 0 else "Master"
+	add_child(_grade_sfx)
 
 
 func _update_grade(delta: float) -> void:
@@ -452,14 +485,16 @@ func _update_turbulence() -> void:
 	_dirty = true
 
 
+## The grade names the reward, not just the judgement: a player who does not know what a
+## PERFECT buys cannot learn to chase it.
 func _grade_text() -> String:
 	match _grade:
 		RhythmEvaluator.Grade.GOOD:
-			return tr("BIEN")
+			return tr("BIEN  +1 combo")
 		RhythmEvaluator.Grade.MISS:
 			return tr("FUERA DE RITMO")
 		_:
-			return tr("PERFECTO")
+			return tr("PERFECTO  +2 combo")
 
 
 func _grade_font_size() -> int:
@@ -593,6 +628,10 @@ func _draw_grade(origin: Vector2) -> void:
 	if not Settings.reduce_motion:
 		scale = lerpf(1.3, 1.0, clampf(progress / 0.3, 0.0, 1.0))
 	draw_set_transform(anchor, 0.0, Vector2(scale, scale))
+	var plate := Rect2(
+		Vector2(-width * 0.5 - 10.0, -float(size) * 0.82), Vector2(width + 20.0, float(size) * 1.05)
+	)
+	HudGlyphs.draw_chip(self, plate, 0.72, Color(Palette.METAL_0, 0.55))
 	draw_string(
 		_font_bold, Vector2(-width * 0.5, 0.0), text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, ink
 	)
@@ -619,20 +658,54 @@ func _draw_prompt(center: Vector2) -> void:
 	_draw_text_chip(_prompt, center, Palette.METAL_4)
 
 
-## The chip sits under the held item, so the label and the object it describes move together.
+## The chip sits ABOVE Pip at a fixed spot: under the item it could be covered by the item
+## itself (owner: "the object can cover the text that tells you if it's liso or moteado"),
+## and the pattern must be readable at a glance.
 func _draw_held_chip(origin: Vector2) -> void:
 	if _held == null:
 		return
 	var text := _item_chip_text(_held)
 	if text == "":
 		return
-	var anchor := _held_anchor(origin)
-	var chip_center := anchor + Vector2(0.0, ITEM_CHIP_DY)
-	var ink := Palette.METAL_4
-	if bool(_held.get("is_clean")):
-		ink = Palette.CLEAN_GREEN
-		_draw_text_chip(tr("LIMPIA"), anchor + Vector2(0.0, ITEM_TAG_DY), Palette.CLEAN_GREEN)
-	_draw_text_chip(text, chip_center, ink)
+	var clean := bool(_held.get("is_clean"))
+	var ink := Palette.CLEAN_GREEN if clean else Palette.METAL_4
+	var font := _font_bold
+	var size := 16
+	var width := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
+	var chip := Rect2(
+		(origin + Vector2(-width * 0.5 - 34.0, -118.0)).round(), Vector2(width + 68.0, 28.0).round()
+	)
+	HudGlyphs.draw_chip(self, chip, 0.9, Color(ink, 0.55))
+	draw_string(
+		font, chip.position + Vector2(34.0, 20.0), text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, ink
+	)
+	# Colour swatch (triangle/circle/square) and pattern swatch (square/ring/dots).
+	var color_name := _property_name(_held, "color")
+	var pattern := _property_name(_held, "pattern")
+	var body := HudGlyphs.body_color(color_name)
+	var swatch := chip.position + Vector2(17.0, 14.0)
+	match color_name:
+		&"red":
+			HudGlyphs.draw_triangle(self, swatch, 8.0, body)
+		&"blue":
+			draw_circle(swatch, 8.0, body)
+		&"yellow":
+			HudGlyphs.draw_square(self, swatch, 8.0, body)
+		_:
+			HudGlyphs.draw_diamond(self, swatch, 8.0, body)
+	var pat := chip.position + Vector2(chip.size.x - 17.0, 14.0)
+	match pattern:
+		&"solid":
+			HudGlyphs.draw_square(self, pat, 7.0, Palette.METAL_4)
+		&"ringed":
+			draw_arc(pat, 8.0, 0.0, TAU, 16, Palette.METAL_4, 2.0, true)
+		&"spotted":
+			for offset in [Vector2(-4, -4), Vector2(4, -4), Vector2(0, 4)]:
+				draw_circle(pat + offset, 2.2, Palette.METAL_4)
+		_:
+			HudGlyphs.draw_diamond(self, pat, 7.0, Palette.METAL_4)
+	if clean:
+		_draw_text_chip(tr("LIMPIA"), origin + Vector2(0.0, -140.0), Palette.CLEAN_GREEN)
 
 
 func _held_anchor(origin: Vector2) -> Vector2:
@@ -677,6 +750,8 @@ func _draw_ring(origin: Vector2) -> void:
 	var ink := Palette.FUNK_CYAN
 	ink.a = clampf(_ring_alpha, 0.0, 1.0)
 	draw_arc(origin, _ring_radius, 0.0, TAU, HudGlyphs.RING_SEGMENTS, ink, _ring_width, false)
+	# A bright bead on the ring's edge: the eye catches a moving dot faster than a circle.
+	draw_circle(origin + Vector2(0.0, -_ring_radius), 4.0, Color(ink, minf(1.0, ink.a + 0.35)))
 
 
 # --- Test surface -----------------------------------------------------------

@@ -758,6 +758,18 @@ func _on_item_spawned(_item: Node) -> void:
 	_spawn_sfx.play()
 
 
+## The shift gets faster from the first minute instead of stepping only at phase cuts:
+## belts accelerate up to +35 % by 06:00. Phase boundaries still change BPM, assignments
+## and the spawn interval, at the frozen 120/270/420 s marks.
+func _apply_speed_ramp() -> void:
+	var progress := clampf(shift_time / Config.SHIFT_DURATION_S, 0.0, 1.0)
+	var scale := 1.0 + 0.35 * progress
+	for belt_id in _belts:
+		var belt: Node = _belts[belt_id]
+		if belt != null and is_instance_valid(belt):
+			belt.set("belt_speed", Config.BELT_SPEED * scale)
+
+
 func _on_belt_warning(beats_left: int) -> void:
 	if _warning_sfx == null or beats_left != Config.BELT_REVERSE_WARNING_BEATS:
 		return
@@ -767,6 +779,7 @@ func _on_belt_warning(beats_left: int) -> void:
 func _on_beat(beat: int) -> void:
 	if _ended:
 		return
+	_apply_speed_ramp()
 	var measure := int(beat / Config.BEATS_PER_MEASURE)
 	for belt_id in _belts:
 		var node: Node = _belts[belt_id]

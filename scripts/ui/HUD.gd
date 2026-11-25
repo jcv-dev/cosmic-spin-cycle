@@ -20,8 +20,8 @@ enum Slot {
 }
 
 # --- Geometry (1280×720, docs/UX_BIBLE.md §5) -------------------------------
-const PLAQUE_A_RECT := Rect2(0, 0, 312, 94)
-const PLAQUE_B_RECT := Rect2(968, 0, 312, 94)
+const PLAQUE_A_RECT := Rect2(0, 0, 300, 86)
+const PLAQUE_B_RECT := Rect2(980, 0, 300, 86)
 const BAR_RECT := Rect2(24, 26, 200, 16)
 const SEGMENTS := 12
 const BEAT_DOT_ORIGIN := Vector2(232, 34)
@@ -40,7 +40,7 @@ const DIEGETIC_SCENE := "res://scenes/ui/DiegeticLayer.tscn"
 const GROUP_DIEGETIC := &"diegetic"
 
 # --- Timing -----------------------------------------------------------------
-const PANEL_ALPHA := 0.97
+const PANEL_ALPHA := 0.9
 const CLOCK_WARN_S := 10.0
 const PHASE_NAME_HOLD_S := 4.0
 const DANGER_STABILITY := 35.0

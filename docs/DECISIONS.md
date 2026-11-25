@@ -299,3 +299,26 @@ assert the new numbers.
    chute when the throw points at it. This removes "it went to the wrong washer".
 6. **Copy**: gate 4 `Lanza al cerrarse el anillo`; gate 6 `Golpéala para que no explote`
    (turbulence named as the threat, not "calmar").
+
+## D040 — Playtest #4: pressure up, beat legible, item identity, broken machines
+2026-11-25 · Owner feedback after the audio/copy pass.
+1. **Difficulty up**: spawn cadence 6/5/4 s → **98 spawns per shift** (19/29/37/13).
+2. **Gradual ramp**: belts accelerate continuously to **+35 %** by 06:00 (`MainLevel._apply_speed_ramp`
+   on each beat), while the official phase marks stay frozen at 120/270/420 s and still own
+   BPM, assignments and the base spawn interval. A full spawn-interval ramp is left for M9.
+3. **Beat legibility**: the metronome click is now −9 dB (downbeat) / −12 dB, and the *chute*
+   carries the beat — a swelling ring plus four quadrant arcs, one per beat of the bar. The
+   active HUD dot also gained a white core and halo.
+4. **Rewards made explicit**: grade popups read `PERFECTO +2 combo` / `BIEN +1 combo` and each
+   grade has its own chime pitch. Previously the player could not know what a grade bought.
+5. **Item identity**: the carried-item chip moved **above Pip** (never occluded by the item)
+   at 16 px with a colour swatch (triangle/circle/square) and a pattern swatch (square/ring/
+   dots), because "moteado" was hard to read on a small sprite.
+6. **Broken path**: turbulence now starts in phase 2 (`AUTO_TURBULENCE_PHASE = 1`), so
+   explosions and `AVERIADA` are reachable before the last phase. Explosion posts an
+   `AVERIADA` chip and a HUD line; the auto-repair posts `REPARADA` with a green flash and a
+   bell. Locked machines now read `ABRE EN FASE 2/3` instead of the ambiguous "out of service".
+7. **Corner rescue**: a free item that has not moved for 3 s gets a 320 px/s nudge toward the
+   room centre, so items that pile at the far end of a reversed belt cannot stay stuck.
+8. **HUD smaller**: plaques 300×86 at 90 % instead of 312×94 at 97 %; holograms sit 64 px into
+   the cabinet so the drum is never covered.

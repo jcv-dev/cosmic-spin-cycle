@@ -462,6 +462,9 @@ class BeaconRing:
 				continue
 			var start := time * 0.6 + TAU * float(index) / float(segments)
 			draw_arc(Vector2.ZERO, radius, start, start + TAU / float(segments), 8, tint, 3.0)
+		# The chute is the room's focal point, so the beat lives here: a ring that swells on
+		# every beat plus four quadrant arcs showing which beat of the bar we are on.
+		_draw_beat_ring()
 		if hint:
 			var pulse := 84.0 + sin(time * 3.2) * 6.0
 			draw_arc(Vector2.ZERO, pulse, 0.0, TAU, 64, Color(tint, 0.45), 3.0, true)
@@ -489,3 +492,39 @@ class BeaconRing:
 			size,
 			tint
 		)
+
+	## Beat cue on the chute: a ring that swells on every beat plus four quadrant arcs
+	## showing which beat of the bar we are on. Reads the conductor; no allocation.
+	func _draw_beat_ring() -> void:
+		if not BeatConductor.is_playing:
+			return
+		if BeatConductor.beat_seconds() <= 0.0:
+			return
+		var phase := clampf(BeatConductor.get_beat_phase(), 0.0, 1.0)
+		var swell := 1.0 - phase
+		var beat_index := BeatConductor.get_beat_index()
+		var downbeat := beat_index % Config.BEATS_PER_MEASURE == 0
+		var ink := Palette.METAL_4 if downbeat else Palette.FUNK_CYAN
+		draw_arc(
+			Vector2.ZERO,
+			92.0 + swell * 14.0,
+			0.0,
+			TAU,
+			48,
+			Color(ink, 0.10 + swell * 0.55),
+			2.0 + swell * 2.0,
+			true
+		)
+		for index in range(Config.BEATS_PER_MEASURE):
+			var start := -PI * 0.5 + TAU * float(index) / float(Config.BEATS_PER_MEASURE)
+			var active := index == beat_index % Config.BEATS_PER_MEASURE
+			draw_arc(
+				Vector2.ZERO,
+				112.0,
+				start + 0.08,
+				start + TAU / float(Config.BEATS_PER_MEASURE) - 0.08,
+				10,
+				Color(Palette.FUNK_CYAN, 0.95 if active else 0.28),
+				4.0 if active else 2.0,
+				true
+			)

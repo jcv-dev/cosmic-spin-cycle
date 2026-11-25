@@ -107,7 +107,7 @@ func test_configure_positions_the_mouth_and_requirement() -> void:
 	assert_almost_eq(holo.global_position.x, 240.0, 0.001, "centred on the machine")
 	assert_almost_eq(
 		holo.global_position.y,
-		176.0,
+		192.0,
 		0.001,
 		"bottom edge inside the control panel, clear of the HUD"
 	)
@@ -289,7 +289,7 @@ func test_carry_hint_matches_and_mismatches() -> void:
 func test_locked_holo_says_out_of_service() -> void:
 	washer.set_locked(true)
 	assert_eq(washer.holo_state, CosmicWasher.HoloState.LOCKED)
-	assert_eq(washer.holo_label, "FUERA DE SERVICIO")
+	assert_eq(washer.holo_label, "BLOQUEADA")
 
 
 func test_done_and_broken_holo_states() -> void:

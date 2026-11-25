@@ -111,7 +111,7 @@ func test_grade_popup_appears_at_the_action_for_380_ms() -> void:
 	world.add_player(Vector2(500, 400))
 	_add_layer()
 	layer.show_grade(RhythmEvaluator.Grade.PERFECT)
-	assert_eq(layer.grade_text(), "PERFECTO")
+	assert_eq(layer.grade_text(), "PERFECTO  +2 combo")
 	assert_true(layer.is_grade_active())
 	layer.advance(0.2)
 	assert_true(layer.is_grade_active(), "still visible at 200 ms")
@@ -123,7 +123,7 @@ func test_grade_copy_matches_the_grade() -> void:
 	world.add_player()
 	_add_layer()
 	layer.show_grade(RhythmEvaluator.Grade.GOOD)
-	assert_eq(layer.grade_text(), "BIEN")
+	assert_eq(layer.grade_text(), "BIEN  +1 combo")
 	layer.show_grade(RhythmEvaluator.Grade.MISS)
 	assert_eq(layer.grade_text(), "FUERA DE RITMO")
 

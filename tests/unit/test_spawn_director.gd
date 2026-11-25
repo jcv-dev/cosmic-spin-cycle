@@ -94,7 +94,7 @@ func test_full_shift_accounts_every_event() -> void:
 	director.advance_to(Config.SHIFT_DURATION_S)
 	var expected := SpawnSchedule.counts_by_phase(director.schedule, 4)
 	assert_eq(director.spawned_count_by_phase, expected, "every event becomes an item")
-	assert_almost_eq(float(_sum(expected)), 83.0, 2.0)
+	assert_almost_eq(float(_sum(expected)), 98.0, 2.0)
 
 
 func test_nothing_spawns_after_the_shift() -> void:

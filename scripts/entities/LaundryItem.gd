@@ -20,6 +20,11 @@ const MIN_INPUT_LENGTH := 0.0001
 const HOME_IN_TIME_S := 0.55
 const HOME_IN_RANGE_PX := 460.0
 const HOME_IN_ACCEL := 1900.0
+## Items that stop moving outside a washer (for example at the end of a reversed belt) are
+## nudged back toward the room centre, so nothing can sit in a corner forever.
+const STUCK_SPEED := 10.0
+const STUCK_LIMIT_S := 3.0
+const STUCK_NUDGE := 320.0
 
 # --- Feel tunables (owned here until promoted) -----------------------------------------
 ## Fraction of the player's velocity carried into the throw, and its cap in px/s.
@@ -69,6 +74,7 @@ var _air_active := false
 ## few pixels (the owner's "aiming exactly at the door is near impossible").
 var _home_time := 0.0
 var _throw_direction := Vector2.ZERO
+var _stuck_time := 0.0
 var _throw_grade := -1
 var _rng := RandomNumberGenerator.new()
 var _throw_player: AudioStreamPlayer2D = null
@@ -256,6 +262,7 @@ func _integrate_forces(state: PhysicsDirectBodyState2D) -> void:
 		_carry_velocity *= 1.0 - decay
 		_carry_time = maxf(_carry_time - step, 0.0)
 	_apply_home_in(state)
+	_rescue_if_stuck(state)
 	# Throws queue an impulse; clamp after the solver has applied it (no tunnelling at speed).
 	if state.linear_velocity.length() > Config.MAX_ITEM_SPEED:
 		state.linear_velocity = state.linear_velocity.normalized() * Config.MAX_ITEM_SPEED
@@ -283,6 +290,28 @@ func _apply_home_in(state: PhysicsDirectBodyState2D) -> void:
 		return
 	var closeness := 1.0 - distance / HOME_IN_RANGE_PX
 	state.linear_velocity += to_target * HOME_IN_ACCEL * (0.35 + 0.65 * closeness) * step
+
+
+## Corner rescue: a free item that has not moved for a few seconds gets a gentle push toward
+## the middle of the room (never teleported, never silently deleted).
+func _rescue_if_stuck(state: PhysicsDirectBodyState2D) -> void:
+	if is_held or is_queued_for_deletion():
+		_stuck_time = 0.0
+		return
+	var step := maxf(state.step, 0.0)
+	if state.linear_velocity.length() > STUCK_SPEED:
+		_stuck_time = 0.0
+		return
+	_stuck_time += step
+	if _stuck_time < STUCK_LIMIT_S:
+		return
+	_stuck_time = 0.0
+	var to_centre := Vector2(640.0, 360.0) - global_position
+	if to_centre.length() < 40.0:
+		return
+	state.linear_velocity += to_centre.normalized() * STUCK_NUDGE
+	if visual != null:
+		FootFX.burst(self, global_position, Color("#9AA4C4"), 3)
 
 
 func _home_target() -> Vector2:

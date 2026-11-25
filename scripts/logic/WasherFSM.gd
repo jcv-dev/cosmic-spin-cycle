@@ -47,7 +47,9 @@ const GRADE_UNKNOWN := -1
 
 ## Provisional (see docs/M4_WASHERS.md): the GDD numbers live in Config, these two encode
 ## §A6 #6's "phases >= 3" (the GDD counts phases from 1) and the cycle cadence.
-const AUTO_TURBULENCE_PHASE := 2
+## Phase index (0-based) from which every third cycle shakes. Was 2 (phase 3); lowered to 1
+## so players meet turbulence — and therefore the AVERIADA state — before the last phase.
+const AUTO_TURBULENCE_PHASE := 1
 const AUTO_TURBULENCE_EVERY := 3
 
 ## Seconds a finished load stays in the drum before it can be collected, so the node can

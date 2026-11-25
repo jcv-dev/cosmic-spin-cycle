@@ -24,7 +24,7 @@ const PHASE_START_S: Array[float] = [0.0, 120.0, 270.0, 420.0]
 const PHASE_BPM: Array[int] = [105, 118, 130, 142]
 ## Retuned after the E2E bot proved the old 3.5/2.4/1.7 s cadence was 1.5x faster than one
 ## player can physically process (13 s loop). 10/8/6 s keeps pressure without being unwinnable.
-const PHASE_SPAWN_INTERVAL_S: Array[float] = [7.0, 6.0, 5.0, 0.0]
+const PHASE_SPAWN_INTERVAL_S: Array[float] = [6.0, 5.0, 4.0, 0.0]
 const FINAL_LOAD_START_S := 420.0
 const FINAL_LOAD_HEAVY_COUNT := 12
 const FINAL_LOAD_CORE_COUNT := 1

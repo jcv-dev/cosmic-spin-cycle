@@ -43,7 +43,7 @@ const RELEASE_COOLDOWN_S := 0.4
 ## 48 px below the `art_rect` top, so it never collides with the HUD corner plaques (which
 ## end at y = 104) and all four stay fully on screen at 1280x720.
 const MACHINE_TOP := -184.0
-const HOLO_DROP_PX := 48.0
+const HOLO_DROP_PX := 64.0
 const HOLO_ORIGIN := Vector2(0.0, -144.0)
 ## Steel cabinets are the brightest thing on screen; pull them back 12-15 % so the holo,
 ## items and chute win the eye.
@@ -370,7 +370,10 @@ func _handle_events(events: Array[Dictionary]) -> void:
 				_on_exploded(event.get("items", []))
 			&"repaired":
 				_alarm_pending = 0
-				_play_oneshot("click", CLICK_DB)
+				_play_oneshot("done", DONE_DB)
+				WasherFX.make_chip(self, tr("REPARADA"), true, Palette.CLEAN_GREEN)
+				GameState.emit_feedback(tr("LAVADORA REPARADA"), &"success")
+				_flash_rim(Palette.CLEAN_GREEN)
 			_:
 				pass
 
@@ -412,12 +415,23 @@ func _on_cycle_done(items: Array) -> void:
 	cycle_done.emit(items)
 
 
+## Locked machines are not broken: say when they open instead of "out of service".
+func _locked_text() -> String:
+	if washer_id == &"washer_sw":
+		return tr("ABRE EN FASE 2")
+	if washer_id == &"washer_se":
+		return tr("ABRE EN FASE 3")
+	return tr("BLOQUEADA")
+
+
 func _on_exploded(items: Array) -> void:
 	_stop_loop()
 	_alarm_pending = 0
 	_play_oneshot("explode", EXPLODE_DB)
 	_spawn_explosion_fx()
 	_spawn_text("¡EXPLOSIÓN!", 24, Palette.HAZARD_ORANGE)
+	WasherFX.make_chip(self, tr("AVERIADA"), true, Palette.HAZARD_ORANGE)
+	GameState.emit_feedback(tr("LAVADORA AVERIADA: SE REPARA SOLA"), &"danger")
 	_shake_left = FEEDBACK_S
 	_flash_porthole(Palette.HAZARD_ORANGE)
 	GameState.add_stability(Config.STABILITY_EXPLOSION, "washer_explosion")
@@ -433,6 +447,8 @@ func _sync_state() -> void:
 		return
 	var old_state := _last_state
 	_last_state = new_state
+	if new_state == WasherFSM.State.TURBULENT and old_state == WasherFSM.State.WASHING:
+		GameState.emit_feedback(tr("¡LAVADORA AGITADA! GOLPE"), &"danger")
 	_apply_animation()
 	state_changed.emit(old_state, new_state)
 
@@ -632,7 +648,7 @@ func _refresh_holo() -> void:
 		holo_state = HoloState.LOCKED
 		alpha = 0.85
 		tint = Palette.METAL_1
-		text = tr("FUERA DE SERVICIO")
+		text = _locked_text()
 	else:
 		match state:
 			WasherFSM.State.BROKEN:

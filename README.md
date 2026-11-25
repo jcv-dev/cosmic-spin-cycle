@@ -36,7 +36,7 @@ their requirement holograms, and clean items go into the central delivery chute.
   fast/skittish sock, boomerang moon, bouncy gas giant, gravity-field galaxy core).
 - **The floor** — three conveyor belts with a pure 16-measure reversal schedule in phase 3,
   three vacuum shredders (−8 % stability each), deterministic phase-driven spawning
-  (11/18/24/13 = 66 items over 480 s, retuned to one player's throughput), the 480 s shift spine and a functional HUD.
+  (19/29/37/13 = 98 items over 480 s, retuned across four playtests), the 480 s shift spine and a functional HUD.
 - **HUD & affordances** — two corner plaques + a mission ribbon (no bottom instruction
   strip), segmented stability with numeric value and glyph, beat dots, a two-beat pulse ring
   around Pip, a four-state aim reticle (`LANZAR` / `NO` / `ENTREGAR`), contextual prompts and
@@ -93,7 +93,7 @@ godot --headless --path . -s tools/sim_run.gd -- --seed=1234
 ```
 
 Current state: **668 tests / 10,214 asserts green**, 29/29 sprite sheets pass the contract
-linter, 16/16 audio checks pass, and the 480 s simulation reports exactly 66 spawns. The
+linter, 16/16 audio checks pass, and the 480 s simulation reports exactly 98 spawns. The
 in-game frame is ~12.8 ms median on this llvmpipe box ([`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md)).
 
 ## Documentation

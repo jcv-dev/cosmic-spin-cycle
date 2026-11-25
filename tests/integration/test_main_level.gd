@@ -114,7 +114,7 @@ func test_warp_skips_past_spawns() -> void:
 	assert_eq(level.get_phase_index(), 2)
 	var spawner := level.get_node("SpawnDirector")
 	assert_almost_eq(float(spawner.get("time")), 300.0, 0.01)
-	level._process(8.0)
+	level._process(4.2)
 	assert_eq(level.get_node("Items").get_child_count(), 1, "one interval after the warp")
 	spawner.call("stop")
 	BeatConductor.stop()

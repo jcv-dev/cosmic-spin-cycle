@@ -99,7 +99,7 @@ func test_ring_snaps_wide_and_thick_on_the_beat() -> void:
 	BeatConductor.advance_clock(BeatConductor.beat_seconds())
 	layer.refresh_now()
 	assert_almost_eq(layer.ring_radius(), 70.0, 0.5, "wide at the beat")
-	assert_almost_eq(layer.ring_width(), 4.0, 0.01, "thick inside the PERFECT window")
+	assert_almost_eq(layer.ring_width(), 5.0, 0.01, "thick inside the PERFECT window")
 	assert_gte(layer.ring_alpha(), 0.7)
 
 
@@ -116,7 +116,7 @@ func test_reduce_motion_keeps_the_ring_static_but_readable() -> void:
 	layer.refresh_now()
 	assert_almost_eq(layer.ring_radius(), first_radius, 0.01, "no scale snap")
 	assert_ne(layer.ring_alpha(), first_alpha, "information moves to alpha instead")
-	assert_almost_eq(layer.ring_width(), 2.0, 0.01)
+	assert_almost_eq(layer.ring_width(), 3.0, 0.01)
 
 
 # --- Aim reticle ------------------------------------------------------------

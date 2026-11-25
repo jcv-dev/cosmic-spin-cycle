@@ -27,8 +27,8 @@ func _all_text(node: Node, out: Array[String]) -> void:
 
 func test_plaques_sit_at_the_exact_rects() -> void:
 	var hud := _open_hud()
-	assert_eq(hud.plaque_rect("PlaqueA"), Rect2(0, 0, 312, 94))
-	assert_eq(hud.plaque_rect("PlaqueB"), Rect2(968, 0, 312, 94))
+	assert_eq(hud.plaque_rect("PlaqueA"), Rect2(0, 0, 300, 86))
+	assert_eq(hud.plaque_rect("PlaqueB"), Rect2(980, 0, 300, 86))
 
 
 func test_play_field_is_clear_of_hud_controls() -> void:
@@ -203,7 +203,7 @@ func test_hud_scale_scales_only_the_plaques() -> void:
 	assert_eq(hud.get_node("PlaqueA").pivot_offset, Vector2.ZERO, "plaque A grows from the corner")
 	assert_eq(
 		hud.get_node("PlaqueB").pivot_offset,
-		Vector2(312, 0),
+		Vector2(300, 0),
 		"plaque B grows toward the field, never off-screen"
 	)
 	assert_eq(hud.get_node("Ribbon").scale, Vector2.ONE, "the ribbon never scales")
