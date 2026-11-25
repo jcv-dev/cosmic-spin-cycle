@@ -46,14 +46,14 @@ func test_scene_contract() -> void:
 	assert_not_null(chute.get_node_or_null(^"Beacon"), "procedural beacon")
 	assert_not_null(chute.get_node_or_null(^"Audio"), "audio player")
 	var shape := chute.get_node(^"CollisionShape2D") as CollisionShape2D
-	assert_almost_eq((shape.shape as CircleShape2D).radius, 64.0, 0.001)
+	assert_almost_eq((shape.shape as CircleShape2D).radius, DeliveryChute.HATCH_RADIUS, 0.001)
 
 
 func test_configure_centres_the_hatch() -> void:
 	assert_almost_eq(chute.position.x, 640.0, 0.001)
 	assert_almost_eq(chute.position.y, 360.0, 0.001)
 	assert_eq(chute.get_center_world(), chute.global_position)
-	assert_eq(chute.get_label_text(), "DUCTO", "idle beacon copy")
+	assert_eq(chute.get_label_text(), "TAPA VERDE", "idle beacon copy")
 	assert_eq(chute.get_beacon_color(), Palette.METAL_2)
 
 
@@ -103,7 +103,7 @@ func test_dirty_label_expires() -> void:
 	assert_false(chute.try_deliver(item))
 	chute.tick(1.3)
 	assert_false(chute.is_rejecting())
-	assert_eq(chute.get_label_text(), "DUCTO", "back to idle copy")
+	assert_eq(chute.get_label_text(), "TAPA VERDE", "back to idle copy")
 
 
 func test_double_delivery_is_guarded() -> void:
@@ -119,7 +119,7 @@ func test_double_delivery_is_guarded() -> void:
 func test_carry_hint_copies() -> void:
 	var clean := _make_item(true)
 	chute.set_carry_hint(clean)
-	assert_eq(chute.get_label_text(), "ENTREGAR")
+	assert_eq(chute.get_label_text(), "TIRA AQUÍ")
 	assert_eq(chute.get_beacon_color(), Palette.CLEAN_GREEN)
 	assert_true(chute.has_clean_hint)
 	var dirty := _make_item(false)
@@ -128,7 +128,7 @@ func test_carry_hint_copies() -> void:
 	assert_eq(chute.get_beacon_color(), Palette.HAZARD_ORANGE)
 	assert_true(chute.has_dirty_hint)
 	chute.set_carry_hint(null)
-	assert_eq(chute.get_label_text(), "DUCTO")
+	assert_eq(chute.get_label_text(), "TAPA VERDE")
 	assert_eq(chute.get_beacon_color(), Palette.METAL_2)
 
 

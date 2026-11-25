@@ -82,7 +82,7 @@ func test_scene_contract() -> void:
 	var body := washer.get_node(^"CollisionShape2D") as CollisionShape2D
 	assert_almost_eq((body.shape as RectangleShape2D).size.x, 176.0, 0.001)
 	var mouth_shape := mouth.get_node(^"CollisionShape2D") as CollisionShape2D
-	assert_almost_eq((mouth_shape.shape as CircleShape2D).radius, 60.0, 0.001)
+	assert_almost_eq((mouth_shape.shape as CircleShape2D).radius, CosmicWasher.MOUTH_RADIUS, 0.001)
 	assert_eq(CosmicWasher.State.IDLE, 0)
 	assert_eq(CosmicWasher.State.WASHING, 1)
 	assert_eq(CosmicWasher.State.TURBULENT, 2)

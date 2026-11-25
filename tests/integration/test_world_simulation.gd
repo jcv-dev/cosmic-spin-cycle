@@ -29,8 +29,8 @@ func test_accounting_run_matches_the_acceptance_counts() -> void:
 	var report := director.simulate(Config.SHIFT_DURATION_S, SEED)
 	director.free()
 
-	assert_eq(report.per_phase, [34, 62, 88, 13], "per-phase spawn counts")
-	assert_almost_eq(float(report.total), 197.0, 2.0, "total spawns in the shift")
+	assert_eq(report.per_phase, [17, 24, 29, 13], "per-phase spawn counts")
+	assert_almost_eq(float(report.total), 83.0, 2.0, "total spawns in the shift")
 	assert_almost_eq(float(report.first_time), Config.PHASE_SPAWN_INTERVAL_S[0], 0.001)
 	assert_true(float(report.last_time) < Config.SHIFT_DURATION_S, "the last spawn is inside")
 	assert_eq((report.convoy as Array).size(), Config.FINAL_LOAD_HEAVY_COUNT + 1)
@@ -44,7 +44,7 @@ func test_live_run_spawns_the_whole_schedule() -> void:
 	sandbox.director.advance_to(Config.SHIFT_DURATION_S)
 	var elapsed_ms := Time.get_ticks_msec() - started
 
-	assert_eq(sandbox.director.spawned_count_by_phase, [34, 62, 88, 13])
+	assert_eq(sandbox.director.spawned_count_by_phase, [17, 24, 29, 13])
 	assert_lt(elapsed_ms, 60000, "the virtual shift must finish in well under a minute")
 
 

@@ -24,6 +24,9 @@ const AIM_EPSILON := 0.0001
 const AIM_TURN_DOT := 0.9999
 const STICK_DEADZONE := 0.2
 const STRIKE_CONE_DOT := 0.5
+## Rhythm strike reaches a little further than the GDD's 96 px and never misses a machine
+## that is plainly in range; pressing Shift must always produce visible feedback.
+const STRIKE_ARC_S := 0.16
 const ART_SPRITE_ID := "char_pip"
 
 # --- Feel tunables (owned here until the lead promotes them to Config) -----------------
@@ -86,6 +89,8 @@ var _has_aim_override := false
 var _pip: AnimatedSprite2D
 var _art_action := ""
 var _art_time := 0.0
+var _strike_arc_left := 0.0
+var _strike_player: AudioStreamPlayer
 var _anim_clock := 0.0
 var _shadow_polygon: Polygon2D = null
 var _shadow_frames: Array[PackedVector2Array] = []
@@ -353,18 +358,83 @@ func _clear_buffer() -> void:
 
 func _perform_strike(grade: int) -> void:
 	_play_action_art("strike")
+	_strike_arc_left = STRIKE_ARC_S
+	_play_strike_sound(false)
+	queue_redraw()
 	dash(aim_direction)
+	var best: Node2D = null
+	var best_distance := INF
 	for node in get_tree().get_nodes_in_group(Config.GROUP_WASHERS):
 		var washer := node as Node2D
 		if washer == null:
+			continue
+		if washer.has_method("is_locked") and bool(washer.call("is_locked")):
 			continue
 		var offset := washer.global_position - global_position
 		var distance := offset.length()
 		if distance > Config.STRIKE_RANGE_PX:
 			continue
+		# A rhythm strike is an assist, not a precision test: inside a wider range the nearest
+		# machine in front wins, even if the aim is a little off.
 		if distance > AIM_EPSILON and offset.normalized().dot(aim_direction) < STRIKE_CONE_DOT:
 			continue
-		struck.emit(washer, grade)
+		if distance < best_distance:
+			best_distance = distance
+			best = washer
+	if best != null:
+		_play_strike_sound(true)
+		struck.emit(best, grade)
+
+
+## Cyan arc in front of Pip + a whoosh. A strike on empty air still reads as an action.
+func _draw() -> void:
+	if _strike_arc_left <= 0.0:
+		return
+	var alpha := clampf(_strike_arc_left / STRIKE_ARC_S, 0.0, 1.0)
+	var base := aim_direction.angle()
+	draw_arc(
+		Vector2.ZERO,
+		66.0,
+		base - 0.9,
+		base + 0.9,
+		18,
+		Color(Palette.FUNK_CYAN, 0.85 * alpha),
+		4.0,
+		true
+	)
+	draw_arc(
+		Vector2.ZERO,
+		52.0,
+		base - 0.6,
+		base + 0.6,
+		12,
+		Color(Palette.METAL_4, 0.55 * alpha),
+		2.0,
+		true
+	)
+
+
+func _ensure_strike_audio() -> void:
+	if _strike_player != null:
+		return
+	var path := "res://assets/audio/sfx/throw_whoosh.ogg"
+	if not ResourceLoader.exists(path):
+		return
+	_strike_player = AudioStreamPlayer.new()
+	_strike_player.name = "StrikeSfx"
+	_strike_player.stream = load(path) as AudioStream
+	_strike_player.volume_db = -10.0
+	if AudioServer.get_bus_index("SFX") >= 0:
+		_strike_player.bus = "SFX"
+	add_child(_strike_player)
+
+
+func _play_strike_sound(hit: bool) -> void:
+	if _strike_player == null or _strike_player.stream == null:
+		return
+	_strike_player.pitch_scale = 0.85 if hit else 1.45
+	_strike_player.volume_db = -7.0 if hit else -12.0
+	_strike_player.play()
 
 
 func _update_aim() -> void:
@@ -656,6 +726,9 @@ func _play_action_art(action: String) -> void:
 
 
 func _update_art(delta: float) -> void:
+	if _strike_arc_left > 0.0:
+		_strike_arc_left = maxf(_strike_arc_left - delta, 0.0)
+		queue_redraw()
 	if _pip == null:
 		return
 	if _art_time > 0.0:

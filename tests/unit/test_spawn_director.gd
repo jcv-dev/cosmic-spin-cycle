@@ -81,7 +81,7 @@ func test_advance_before_start_does_nothing() -> void:
 func test_phase_one_spawns_its_interval_only() -> void:
 	director.start(SEED)
 	director.advance_to(120.0)
-	var expected := int(floor(120.0 / Config.PHASE_SPAWN_INTERVAL_S[0]))
+	var expected := int(floor(119.999 / Config.PHASE_SPAWN_INTERVAL_S[0]))
 	assert_eq(director.spawned_count_by_phase[0], expected)
 	assert_eq(director.spawned_count_by_phase[1], 0, "phase 2 has not started")
 
@@ -94,7 +94,7 @@ func test_full_shift_accounts_every_event() -> void:
 	director.advance_to(Config.SHIFT_DURATION_S)
 	var expected := SpawnSchedule.counts_by_phase(director.schedule, 4)
 	assert_eq(director.spawned_count_by_phase, expected, "every event becomes an item")
-	assert_almost_eq(float(_sum(expected)), 197.0, 2.0)
+	assert_almost_eq(float(_sum(expected)), 83.0, 2.0)
 
 
 func test_nothing_spawns_after_the_shift() -> void:
@@ -111,7 +111,7 @@ func test_nothing_spawns_after_the_shift() -> void:
 func test_alive_cap_is_respected() -> void:
 	director.stub_factory = _make_counted_stub
 	director.start(SEED)
-	director.advance_to(300.0)
+	director.advance_to(480.0)
 	assert_true(director.alive_count() <= Config.MAX_ALIVE_ITEMS, "cap holds")
 	assert_eq(director.alive_count(), Config.MAX_ALIVE_ITEMS, "the cap is actually reached")
 	assert_gt(director.skipped_count, 0, "overflow events are reported, not queued")
@@ -171,7 +171,7 @@ func test_seek_skips_without_spawning() -> void:
 	assert_eq(_sum(director.spawned_count_by_phase), 0, "skipped phases are not replayed")
 	assert_almost_eq(director.time, 200.0, 0.001)
 	assert_eq(director.current_phase, 1, "seeking lands in the right phase")
-	director.advance_to(205.0)
+	director.advance_to(215.0)
 	assert_gt(_sum(director.spawned_count_by_phase), 0, "the clock continues from there")
 
 

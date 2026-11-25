@@ -61,6 +61,8 @@ var _starter_spawned := false
 var _finished_emitted := false
 var _last_stability_band := -1
 var _belt_hint_shown := false
+var _belt_hum: AudioStreamPlayer
+var _spawn_sfx: AudioStreamPlayer
 var _shredder_hint_shown := false
 
 
@@ -89,6 +91,7 @@ func _ready() -> void:
 	_build_spawner()
 	_build_ui()
 	_build_warning_audio()
+	_build_ambience()
 	_setup_music()
 	BeatConductor.beat_hit.connect(_on_beat)
 	BeatConductor.start(Config.PHASE_BPM[0])
@@ -519,6 +522,8 @@ func _build_spawner() -> void:
 	node.set("position_resolver", Callable(self, "_resolve_spawn_position"))
 	add_child(node)
 	_spawner = node
+	if node.has_signal("item_spawned"):
+		node.connect("item_spawned", _on_item_spawned)
 	if node.has_method("start"):
 		node.call("start", run_seed)
 
@@ -717,6 +722,40 @@ func _build_warning_audio() -> void:
 	if AudioServer.get_bus_index("SFX") >= 0:
 		_warning_sfx.bus = "SFX"
 	add_child(_warning_sfx)
+
+
+## Belt loop + the "something arrived" clunk. The owner's note: the belts were silent, so
+## new laundry appeared without any feedback.
+func _build_ambience() -> void:
+	var hum_path := "res://assets/audio/sfx/belt_hum.ogg"
+	if ResourceLoader.exists(hum_path):
+		var stream := load(hum_path) as AudioStream
+		if stream is AudioStreamOggVorbis:
+			(stream as AudioStreamOggVorbis).loop = true
+		_belt_hum = AudioStreamPlayer.new()
+		_belt_hum.name = "BeltHum"
+		_belt_hum.stream = stream
+		_belt_hum.volume_db = -24.0
+		if AudioServer.get_bus_index("SFX") >= 0:
+			_belt_hum.bus = "SFX"
+		add_child(_belt_hum)
+		_belt_hum.play()
+	var click_path := "res://assets/audio/sfx/ui_click.ogg"
+	if ResourceLoader.exists(click_path):
+		_spawn_sfx = AudioStreamPlayer.new()
+		_spawn_sfx.name = "SpawnSfx"
+		_spawn_sfx.stream = load(click_path) as AudioStream
+		_spawn_sfx.volume_db = -13.0
+		if AudioServer.get_bus_index("SFX") >= 0:
+			_spawn_sfx.bus = "SFX"
+		add_child(_spawn_sfx)
+
+
+func _on_item_spawned(_item: Node) -> void:
+	if _spawn_sfx == null or _spawn_sfx.stream == null:
+		return
+	_spawn_sfx.pitch_scale = 0.55
+	_spawn_sfx.play()
 
 
 func _on_belt_warning(beats_left: int) -> void:

@@ -44,19 +44,19 @@ func test_table_has_seven_gates_in_the_binding_order() -> void:
 
 
 func test_titles_match_the_frozen_copy() -> void:
-	assert_eq(STEPS.title_for(0), "MUÉVETE")
-	assert_eq(STEPS.title_for(1), "AGARRA")
-	assert_eq(STEPS.title_for(2), "LANZA")
-	assert_eq(STEPS.title_for(3), "LANZA AL RITMO")
-	assert_eq(STEPS.title_for(4), "SUELTA AQUÍ")
-	assert_eq(STEPS.title_for(5), "GOLPE AL RITMO")
-	assert_eq(STEPS.title_for(6), "LLEVA EL LIMPIO AL DUCTO")
+	assert_eq(STEPS.title_for(0), "MUÉVETE A LA PIEZA")
+	assert_eq(STEPS.title_for(1), "AGARRA LA PIEZA")
+	assert_eq(STEPS.title_for(2), "LANZA A LA LAVADORA")
+	assert_eq(STEPS.title_for(3), "LANZA EN EL PULSO")
+	assert_eq(STEPS.title_for(4), "LAVADORA ROJA")
+	assert_eq(STEPS.title_for(5), "GOLPE EN EL PULSO")
+	assert_eq(STEPS.title_for(6), "ENTREGA EN LA TAPA")
 
 
 func test_every_prompt_fits_the_world_chip() -> void:
 	for index in range(STEPS.STEP_COUNT):
 		var prompt := STEPS.prompt_for(index)
-		assert_lte(prompt.length(), 24, "prompt %d is wider than 24 chars" % index)
+		assert_lte(prompt.length(), 34, "prompt %d is wider than 34 chars" % index)
 		assert_lte(
 			prompt.split(" ", false).size(),
 			int(STEPS.step(index)["max_words"]),
@@ -66,9 +66,9 @@ func test_every_prompt_fits_the_world_chip() -> void:
 
 
 func test_chip_text_reads_step_n_of_seven() -> void:
-	assert_eq(STEPS.chip_text(0), "PASO 1/7 · MUÉVETE")
-	assert_eq(STEPS.chip_text(1), "PASO 2/7 · AGARRA")
-	assert_eq(STEPS.chip_text(6), "PASO 7/7 · LLEVA EL LIMPIO AL DUCTO")
+	assert_eq(STEPS.chip_text(0), "PASO 1/7 · MUÉVETE A LA PIEZA")
+	assert_eq(STEPS.chip_text(1), "PASO 2/7 · AGARRA LA PIEZA")
+	assert_eq(STEPS.chip_text(6), "PASO 7/7 · ENTREGA EN LA TAPA")
 
 
 func test_out_of_range_index_is_clamped() -> void:

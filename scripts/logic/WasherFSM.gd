@@ -38,6 +38,7 @@ const REJECT_FULL := &"full"
 const REJECT_INCOMPATIBLE := &"incompatible"
 const REJECT_BUSY := &"busy"
 const REJECT_LOCKED := &"locked"
+const REJECT_CLEAN := &"clean"
 const REJECT_WILDCARD_NEEDS_EMPTY := &"wildcard_needs_empty"
 const REJECT_INVALID := &"invalid"
 
@@ -312,6 +313,7 @@ static func _read_info(item: Variant) -> Dictionary:
 		"pattern": &"",
 		"wash_s": Config.WASH_BASE_S,
 		"slots": 1,
+		"clean": false,
 	}
 	if item == null:
 		return out
@@ -328,6 +330,10 @@ static func _read_dict(out: Dictionary, source: Dictionary) -> void:
 		out["id"] = StringName(str(source["id"]))
 	elif source.has("item_id"):
 		out["id"] = StringName(str(source["item_id"]))
+	if source.has("is_clean"):
+		out["clean"] = bool(source["is_clean"])
+	elif source.has("clean"):
+		out["clean"] = bool(source["clean"])
 	if source.has("color"):
 		out["color"] = StringName(str(source["color"]))
 	if source.has("pattern"):
@@ -352,6 +358,9 @@ static func _read_object(out: Dictionary, item: Object) -> void:
 	var pattern_value: Variant = item.get(&"pattern")
 	if pattern_value != null:
 		out["pattern"] = StringName(str(pattern_value))
+	var clean_value: Variant = item.get(&"is_clean")
+	if clean_value != null:
+		out["clean"] = bool(clean_value)
 	var wash_value: Variant = source.get(&"wash_s")
 	if wash_value != null:
 		out["wash_s"] = float(wash_value)
@@ -382,6 +391,10 @@ func _can_accept(entry: Dictionary) -> StringName:
 		reason = REJECT_BUSY
 	elif item_id == &"" or slots <= 0:
 		reason = REJECT_INVALID
+	elif bool(entry.get("clean", false)):
+		# A washed item is finished product. Without this, an item ejected from an upper
+		# machine dropped straight into the lower machine's catch volume and was re-inserted.
+		reason = REJECT_CLEAN
 	elif Compatibility.is_wildcard(item_id):
 		if slots_used > 0:
 			reason = REJECT_WILDCARD_NEEDS_EMPTY

@@ -61,8 +61,8 @@ func test_simulate_works_without_any_scene() -> void:
 	headless.stub_factory = Callable()
 	var report := headless.simulate(Config.SHIFT_DURATION_S, SEED)
 	headless.free()
-	assert_eq(int(report.total), 197, "accounting mode counts the whole schedule")
-	assert_eq(report.spawned, [34, 62, 88, 13])
+	assert_eq(int(report.total), 83, "accounting mode counts the whole schedule")
+	assert_eq(report.spawned, [17, 24, 29, 13])
 
 
 # --- helpers ----------------------------------------------------------------

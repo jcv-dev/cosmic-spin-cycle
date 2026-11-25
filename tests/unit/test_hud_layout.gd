@@ -27,8 +27,8 @@ func _all_text(node: Node, out: Array[String]) -> void:
 
 func test_plaques_sit_at_the_exact_rects() -> void:
 	var hud := _open_hud()
-	assert_eq(hud.plaque_rect("PlaqueA"), Rect2(0, 0, 312, 104))
-	assert_eq(hud.plaque_rect("PlaqueB"), Rect2(968, 0, 312, 104))
+	assert_eq(hud.plaque_rect("PlaqueA"), Rect2(0, 0, 312, 94))
+	assert_eq(hud.plaque_rect("PlaqueB"), Rect2(968, 0, 312, 94))
 
 
 func test_play_field_is_clear_of_hud_controls() -> void:

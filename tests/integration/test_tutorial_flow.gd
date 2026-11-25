@@ -57,7 +57,7 @@ func test_director_starts_on_gate_one_with_the_chip() -> void:
 	assert_eq(director.current_step(), 0)
 	assert_true(director.is_active())
 	assert_eq(root.overlay().chip_step_text(), "PASO 1/7")
-	assert_eq(root.overlay().chip_title_text(), "MUÉVETE")
+	assert_eq(root.overlay().chip_title_text(), "MUÉVETE A LA PIEZA")
 	assert_true(root.overlay().prompt_visible(), "gate 1 must show its prompt immediately")
 
 

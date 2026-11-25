@@ -106,6 +106,10 @@ func set_stream(stream: AudioStream, first_beat_offset: float = 0.0) -> void:
 	_player.stream = stream
 	if stream is AudioStreamWAV:
 		_enable_wav_loop(stream as AudioStreamWAV)
+	# Assigning a stream stops playback. Phase changes call set_bpm() (which plays) *and*
+	# set_stream(), so without this the stem went silent right after every start.
+	if is_playing and stream != null and not _player.playing:
+		_player.play()
 
 
 ## Latency/calibration-compensated song time in seconds, clamped to >= 0.

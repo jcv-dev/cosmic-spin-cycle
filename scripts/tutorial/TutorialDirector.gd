@@ -229,7 +229,13 @@ func _stage_gate(index: int) -> void:
 			show_gate_prompt(_item_anchor())
 		&"throw":
 			_ensure_gate_item()
+			# Light a compatible machine so "lanza para lavar" is literally true here.
+			_target_washer = _pick_match_washer()
+			_lock_washers_except(_target_washer)
+			_free_washer(_target_washer)
 			show_gate_prompt(_item_anchor())
+			if _target_washer != null:
+				overlay.pulse_at(_washer_anchor(_target_washer), UITheme.ACCENT)
 		&"grade":
 			clear_gate_items()
 			_gate_item = _spawn_dirty(_anchor_in_front())

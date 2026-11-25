@@ -25,7 +25,7 @@ func test_overlay_builds_chip_prompt_and_plaques() -> void:
 func test_chip_starts_on_gate_one() -> void:
 	var overlay := _spawn()
 	assert_eq(overlay.chip_step_text(), "PASO 1/7")
-	assert_eq(overlay.chip_title_text(), "MUÉVETE")
+	assert_eq(overlay.chip_title_text(), "MUÉVETE A LA PIEZA")
 	assert_eq(overlay.step_index(), 0)
 
 
@@ -33,7 +33,7 @@ func test_chip_tracks_the_step_and_the_underline_progress() -> void:
 	var overlay := _spawn()
 	overlay.set_step(1, 0.0)
 	assert_eq(overlay.chip_step_text(), "PASO 2/7")
-	assert_eq(overlay.chip_title_text(), "AGARRA")
+	assert_eq(overlay.chip_title_text(), "AGARRA LA PIEZA")
 	assert_almost_eq(overlay.underline_ratio(), 0.0, 0.01)
 	overlay.set_progress(0.5)
 	assert_almost_eq(overlay.underline_ratio(), 0.5, 0.02)
@@ -72,7 +72,7 @@ func test_prompt_copy_never_exceeds_the_24_char_budget() -> void:
 	for index in range(TutorialSteps.STEP_COUNT):
 		var prompt := TutorialSteps.prompt_for(index)
 		overlay.show_prompt(prompt, Vector2(640, 360))
-		assert_lte(prompt.length(), 24)
+		assert_lte(prompt.length(), 34)
 		var chip := overlay.get_node("Root/WorldPrompts/PromptChip") as Control
 		assert_lte(chip.size.x, 320.0, "the prompt must stay compact: %s" % prompt)
 

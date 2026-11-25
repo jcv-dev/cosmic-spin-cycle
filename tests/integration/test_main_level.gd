@@ -66,11 +66,11 @@ func test_environment_belts_and_shredders_from_layout() -> void:
 
 func test_spawner_emits_an_item_on_the_first_interval() -> void:
 	var level := _spawn_level()
-	level.shift_time = 3.4
+	level.shift_time = 9.9
 	level._process(0.2)
 	var spawner := level.get_node_or_null("SpawnDirector")
 	assert_not_null(spawner)
-	assert_gt(level.get_node("Items").get_child_count(), 0, "first item at 3.5 s")
+	assert_gt(level.get_node("Items").get_child_count(), 0, "first item at 10 s (retuned cadence)")
 	assert_gt(int(spawner.call("alive_count")), 0)
 	spawner.call("stop")
 	BeatConductor.stop()
@@ -92,9 +92,9 @@ func test_phase_two_activates_the_south_belt() -> void:
 
 func test_spawned_item_rides_the_north_belt() -> void:
 	var level := _spawn_level()
-	level.set_shift_time(4.0)
+	level.set_shift_time(10.1)
 	var items := level.get_node("Items")
-	assert_gt(items.get_child_count(), 0, "an item exists at t=4.0")
+	assert_gt(items.get_child_count(), 0, "an item exists at t=10.1")
 	var item := items.get_child(0) as Node2D
 	var belt := level.get_node("Environment/BeltNorth") as ConveyorBelt
 	assert_true(belt.is_active(), "phase 1 activates the north belt")
@@ -114,7 +114,7 @@ func test_warp_skips_past_spawns() -> void:
 	assert_eq(level.get_phase_index(), 2)
 	var spawner := level.get_node("SpawnDirector")
 	assert_almost_eq(float(spawner.get("time")), 300.0, 0.01)
-	level._process(1.75)
+	level._process(8.0)
 	assert_eq(level.get_node("Items").get_child_count(), 1, "one interval after the warp")
 	spawner.call("stop")
 	BeatConductor.stop()

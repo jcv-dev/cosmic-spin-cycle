@@ -61,9 +61,9 @@ func test_consume_applies_the_stability_penalty() -> void:
 	var item := _make_item()
 	assert_true(shredder.consume(item))
 	assert_almost_eq(
-		GameState.stability, before + Config.STABILITY_FELL_OFF_BELT, 0.001, "-8 stability"
+		GameState.stability, before + Config.STABILITY_FELL_OFF_BELT, 0.001, "config stability"
 	)
-	assert_eq(Config.STABILITY_FELL_OFF_BELT, -8.0, "GDD §5.3 value")
+	assert_eq(Config.STABILITY_FELL_OFF_BELT, -3.0, "retuned after the E2E playtest (D036)")
 
 
 func test_consume_bumps_the_drop_counter() -> void:
@@ -117,7 +117,7 @@ func test_non_items_are_ignored() -> void:
 
 
 func test_stability_never_goes_below_zero() -> void:
-	GameState.stability = 4.0
+	GameState.stability = 2.0
 	var item := _make_item()
 	shredder.consume(item)
 	assert_almost_eq(GameState.stability, 0.0, 0.001, "clamped at zero")

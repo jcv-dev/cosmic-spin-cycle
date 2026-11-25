@@ -16,7 +16,7 @@ func test_reset_state() -> void:
 
 func test_stability_is_clamped_and_ends_shift() -> void:
 	GameState.add_stability(Config.STABILITY_FELL_OFF_BELT)
-	assert_almost_eq(GameState.stability, 92.0, 0.0001)
+	assert_almost_eq(GameState.stability, 100.0 + Config.STABILITY_FELL_OFF_BELT, 0.0001)
 	assert_false(GameState.is_ended)
 	GameState.add_stability(-500.0, "shredder")
 	assert_almost_eq(GameState.stability, 0.0, 0.0001)

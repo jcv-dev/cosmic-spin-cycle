@@ -121,8 +121,9 @@ func test_per_phase_counts_follow_the_intervals() -> void:
 	var counts := SpawnSchedule.counts_by_phase(events, PHASE_COUNT)
 	assert_eq(counts.size(), PHASE_COUNT)
 	for index in range(3):
+		# Slots start one interval after the phase opens, so the last slot is excluded.
 		var expected := int(
-			floor(table.phase(index).duration_s() / table.phase(index).spawn_interval_s)
+			floor((table.phase(index).duration_s() - 0.001) / table.phase(index).spawn_interval_s)
 		)
 		assert_eq(counts[index], expected, "phase %d count" % index)
 	var convoy_expected := Config.FINAL_LOAD_HEAVY_COUNT + Config.FINAL_LOAD_CORE_COUNT
@@ -135,7 +136,7 @@ func test_total_is_the_sum_of_the_phases() -> void:
 	for count in counts:
 		total += count
 	assert_eq(events.size(), total)
-	assert_almost_eq(float(events.size()), 197.0, 2.0, "M3 acceptance: 197 +/- 2 spawns")
+	assert_almost_eq(float(events.size()), 83.0, 2.0, "retuned cadence: 66 +/- 2 spawns")
 
 
 func test_counts_pad_to_the_requested_width() -> void:

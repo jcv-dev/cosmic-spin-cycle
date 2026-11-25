@@ -241,7 +241,8 @@ func _reject_dirty(item: Node) -> void:
 	beacon_color = Palette.HAZARD_ORANGE
 	_play_animation(&"opening")
 	_play_oneshot(_click, CLICK_DB)
-	_bounce(item)
+	# No bounce: items used to rebound off the hatch and read as a solid wall. A dirty item
+	# simply crosses the funnel while the label explains why it was not taken.
 	dirty_rejected.emit(item)
 
 
