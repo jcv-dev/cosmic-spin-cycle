@@ -54,7 +54,7 @@ func _ready() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if event is InputEventMouseMotion:
+	if event is InputEventMouseMotion or event is InputEventMouseButton:
 		_mouse_active_until = Time.get_ticks_msec() + mouse_aim_timeout_ms
 	if event.is_action_pressed("grab_throw"):
 		grab_or_throw()
