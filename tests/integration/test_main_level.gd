@@ -35,6 +35,6 @@ func test_seed_is_recorded_and_phase_starts() -> void:
 func test_clock_reaches_phase_two() -> void:
 	var level := _spawn_level()
 	level.shift_time = 120.1
-	await wait_frames(4)
+	level._process(0.0)
 	assert_eq(level.get_phase_index(), 1)
 	BeatConductor.stop()
