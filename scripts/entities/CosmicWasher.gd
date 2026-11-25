@@ -1,15 +1,16 @@
 class_name CosmicWasher
 extends StaticBody2D
 ## One washing machine: the pure [WasherFSM] plus every pixel, sound and stability effect.
+##
 ## The node owns no washer rule. It turns a throw into `WasherFSM.insert`, forwards strikes,
 ## renders the state and applies the authoritative consequences (wrong washer -12,
 ## explosion -25, clean items bumped into `GameState.washed_count`, once per item).
 ##
-## Wiring is in the class doc of `docs/M4_WASHERS.md`: `configure`, `set_phase`,
-## `set_requirement`, `set_locked`, `set_carry_hint`, `strike`, and the `Mouth` Area2D that
-## accepts thrown items by itself. `Visual`/`Holo`/`ProgressRing`/`Mouth`/`Audio` and
-## `SteamAnchor` exist after `_ready`; the sprite is `mach_washer` x4, never rotated.
-## Provisional constants and the wiring list live in `docs/M4_WASHERS.md`.
+## Feedback follows the measured UX notes: local chips instead of camera shake, turbulence
+## gets a persistent 3-segment gauge + deadline timer, the drum starts on the beat and every
+## action feedback is shorter than `0.45 x T_beat` (190 ms at 142 BPM).
+##
+## Wiring and the frozen state ordinals live in `docs/M4_WASHERS.md`.
 
 signal item_loaded(item: Node)
 signal item_rejected(item: Node, reason: String)
@@ -35,22 +36,36 @@ const BOUNCE_IMPULSE := 320.0
 const REJECT_COOLDOWN_S := 0.6
 const RELEASE_COOLDOWN_S := 0.4
 
-## Holo panel anchor: 40 world px above the 48 art px machine (UX bible §6.1).
+## Holo panel anchor: 40 world px above the machine (below it for the south row, because the
+## frozen layout leaves only 64 world px between rows).
 const HOLO_GAP := 40.0
-## Machine art height (48 art px) plus the pivot overhang, scaled to world px.
 const MACHINE_TOP := -184.0
 const HOLO_ORIGIN := Vector2(0.0, MACHINE_TOP - HOLO_GAP)
-## Share of the south row: the frozen layout leaves no room above those machines.
 const HOLO_ORIGIN_BELOW := Vector2(0.0, 8.0 + HOLO_GAP + 84.0)
-const SHAKE_PX := 6.0
-const SHAKE_TIME_S := 0.26
+
+## Every action feedback must stay under `0.45 x T_beat`; 190 ms is the tightest phase.
+const FEEDBACK_S := 0.18
+## One rendered frame at 60 FPS (`red_1` porthole flash, mouth rim).
+const RIM_FRAME_S := 0.02
+## Wrong-washer buzz length.
+const BUZZ_S := 0.12
+## Delay between the two bell notes of a finished load.
+const BELL_GAP_S := 0.15
 const LOAD_FLASH_S := 0.18
-const ALARM_MAX := 3
+## Explosion shake: 8 px maximum, quantised to whole art pixels (4 px steps).
+const EXPLOSION_SHAKE_PX := 8.0
+const SHAKE_STEP_PX := 4.0
+## Turbulent drum vibration: 1 art px at 2 Hz.
+const TURBULENCE_VIBRATION_PX := 4.0
+const TURBULENCE_VIBRATION_HZ := 2.0
+## Two alarm beeps on the beat, then silence (not a looping siren).
+const ALARM_BEEPS := 2
 
 const DRUM_DB := -16.0
 const DONE_DB := -8.0
 const EXPLODE_DB := -6.0
 const ALARM_DB := -9.0
+const BUZZ_DB := -12.0
 const CLICK_DB := -12.0
 
 const SFX_DIR := "res://assets/audio/sfx/"
@@ -58,7 +73,7 @@ const SFX_DIR := "res://assets/audio/sfx/"
 ## Stable identity from `data/layout.json` (`washer_nw`, …).
 var washer_id: StringName = &""
 
-## Holo presentation state for the current frame (read by `_HoloPanel`).
+## Holo presentation state for the current frame (read by `WasherFX.HoloPanel`).
 var holo_state: int = HoloState.IDLE
 var holo_alpha := 0.6
 var holo_label := ""
@@ -69,20 +84,22 @@ var _fsm: WasherFSM = WasherFSM.new()
 var _configured := false
 var _requirement: StringName = &"wild"
 var _locked := false
+var _holo_origin := HOLO_ORIGIN
 
 var _visual: AnimatedSprite2D
 var _holo: Node2D
 var _ring: Node2D
 var _glow: Node2D
 var _fallback: Node2D
+var _bubbles: AnimatedSprite2D
 var _mouth: Area2D
 var _body_shape: CollisionShape2D
 var _mouth_shape: CollisionShape2D
-var _holo_origin := HOLO_ORIGIN
 
 var _audio: AudioStreamPlayer
 var _oneshots: Array[AudioStreamPlayer] = []
 var _oneshot_index := 0
+var _buzz_player: AudioStreamPlayer
 var _sfx: Dictionary = {}
 
 var _carry_hint: Node = null
@@ -92,12 +109,21 @@ var _shake_left := 0.0
 var _holo_flash := 0.0
 var _beat_pulse := 0.0
 var _last_beat := -1
-var _alarm_count := 0
+var _alarm_pending := 0
 var _animate_time := 0.0
 var _reject_cooldown: Dictionary = {}
 var _release_cooldown: Dictionary = {}
 var _clean_counted: Dictionary = {}
 var _absorbed: Dictionary = {}
+var _rim_color: Color = Palette.CLEAN_GREEN
+var _rim_left := 0.0
+var _porthole_flash_color: Color = Palette.RED_1
+var _porthole_flash_left := 0.0
+var _turbulence_limit_s := 0.0
+var _turbulence_elapsed := 0.0
+var _start_pending := false
+var _bell_repeat := 0.0
+var _buzz_left := 0.0
 
 
 func _ready() -> void:
@@ -109,6 +135,7 @@ func _ready() -> void:
 	_ensure_collisions()
 	_ensure_visual()
 	_ensure_procedural()
+	_ensure_bubbles()
 	_ensure_audio()
 	_ensure_steam()
 	_fsm.set_requirement(_requirement)
@@ -121,6 +148,16 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	tick(delta)
+
+
+## Mouth rim: a 1-frame clean-green flash on a correct load, orange on a wrong one.
+func _draw() -> void:
+	if _rim_left <= 0.0:
+		return
+	draw_arc(Vector2.ZERO, MOUTH_RADIUS, 0.0, TAU, 48, Color(_rim_color, 0.9), 3.0, true)
+
+
+# --- public API -------------------------------------------------------------
 
 
 ## Places the machine. `art_rect` and `mouth_art` are `data/layout.json` art-pixel values;
@@ -142,7 +179,7 @@ func configure(
 	_fsm.set_requirement(_requirement)
 	if is_node_ready():
 		_apply_config()
-		_holo_flash = 0.5
+		_holo_flash = FEEDBACK_S
 		_update_visuals(0.0)
 
 
@@ -150,7 +187,7 @@ func configure(
 func set_requirement(value: StringName) -> void:
 	_requirement = &"wild" if value == &"" else value
 	_fsm.set_requirement(_requirement)
-	_holo_flash = 0.5
+	_holo_flash = FEEDBACK_S
 	if is_node_ready():
 		_update_visuals(0.0)
 
@@ -202,7 +239,7 @@ func try_accept(item: Node, grade: int = WasherFSM.GRADE_UNKNOWN) -> bool:
 	_absorb(item)
 	_load_flash_left = LOAD_FLASH_S
 	_apply_animation()
-	_play_oneshot("click", CLICK_DB)
+	_flash_rim(Palette.CLEAN_GREEN)
 	_handle_events(_fsm.take_events())
 	_sync_state()
 	_update_visuals(0.0)
@@ -287,14 +324,16 @@ func tick(delta: float) -> Array[Dictionary]:
 	return events
 
 
+# --- state + events ---------------------------------------------------------
+
+
 func _handle_events(events: Array[Dictionary]) -> void:
 	for event in events:
 		match StringName(str(event.get("type", &""))):
 			&"washing_started":
-				_alarm_count = 0
-				_play_loop("drum", DRUM_DB)
+				_on_washing_started()
 			&"turbulent":
-				_on_turbulent()
+				_on_turbulent(float(event.get("limit", Config.TURBULENCE_TIMEOUT_S)))
 			&"turbulence_resolved":
 				_on_turbulence_resolved(int(event.get("grade", -1)))
 			&"cycle_done":
@@ -302,23 +341,37 @@ func _handle_events(events: Array[Dictionary]) -> void:
 			&"exploded":
 				_on_exploded(event.get("items", []))
 			&"repaired":
-				_alarm_count = 0
+				_alarm_pending = 0
 				_play_oneshot("click", CLICK_DB)
 			_:
 				pass
 
 
-func _on_turbulent() -> void:
-	_alarm_count = 1
-	_play_oneshot("alarm", ALARM_DB)
-	_spawn_burst(Palette.HAZARD_ORANGE, 10, 180.0, 3.0)
-	_shake_left = SHAKE_TIME_S
+func _on_washing_started() -> void:
+	_alarm_pending = 0
+	# Correct insert: the drum starts (and chimes) on the next beat when music is running.
+	if BeatConductor.is_playing:
+		_start_pending = true
+	else:
+		_start_drum()
+
+
+func _start_drum() -> void:
+	_start_pending = false
+	_play_loop("drum", DRUM_DB)
+	_play_oneshot("click", CLICK_DB)
+
+
+func _on_turbulent(limit: float) -> void:
+	_turbulence_limit_s = maxf(limit, 0.0)
+	_turbulence_elapsed = 0.0
+	_alarm_pending = ALARM_BEEPS
 
 
 func _on_turbulence_resolved(grade: int) -> void:
-	_alarm_count = ALARM_MAX
+	_alarm_pending = 0
+	_turbulence_elapsed = 0.0
 	turbulence_resolved.emit(grade)
-	_spawn_burst(Palette.FUNK_CYAN, 12, 240.0, 3.0)
 	_play_oneshot("click", CLICK_DB)
 
 
@@ -327,17 +380,18 @@ func _on_cycle_done(items: Array) -> void:
 	for item: Variant in items:
 		_mark_clean(item)
 	_play_oneshot("done", DONE_DB)
-	_spawn_burst(Palette.CLEAN_GREEN, 14, 200.0, 3.0)
+	_bell_repeat = BELL_GAP_S
 	cycle_done.emit(items)
 
 
 func _on_exploded(items: Array) -> void:
 	_stop_loop()
-	_alarm_count = ALARM_MAX
+	_alarm_pending = 0
 	_play_oneshot("explode", EXPLODE_DB)
-	_spawn_burst(Palette.HAZARD_ORANGE, 18, 320.0, 4.0)
-	_spawn_burst(Palette.YEL_2, 10, 220.0, 3.0)
-	_shake_left = SHAKE_TIME_S * 1.6
+	_spawn_explosion_fx()
+	_spawn_text("¡EXPLOSIÓN!", 24, Palette.HAZARD_ORANGE)
+	_shake_left = FEEDBACK_S
+	_flash_porthole(Palette.HAZARD_ORANGE)
 	GameState.add_stability(Config.STABILITY_EXPLOSION, "washer_explosion")
 	GameState.exploded_count += 1
 	for index in range(items.size()):
@@ -380,6 +434,9 @@ func _apply_animation() -> void:
 		_visual.play(animation)
 
 
+# --- consequences -----------------------------------------------------------
+
+
 func _mark_clean(item: Variant) -> void:
 	if item == null or not is_instance_valid(item):
 		return
@@ -400,11 +457,17 @@ func _reject(item: Node, reason: StringName) -> void:
 		if not _is_wildcard_item(item):
 			GameState.add_stability(Config.STABILITY_WRONG_WASHER, "wrong_washer")
 			GameState.wrong_washer_count += 1
-			_spawn_burst(Palette.HAZARD_ORANGE, 6, 120.0, 3.0)
-			_shake_left = SHAKE_TIME_S
-			_play_oneshot("alarm", ALARM_DB - 1.0)
+			# Local and small: a -12 chip with a glyph, a 1-frame porthole flash and a buzz.
+			_spawn_chip("-12", false, Palette.HAZARD_ORANGE)
+			_flash_porthole(Palette.RED_1)
+			_play_buzz()
+			_flash_rim(Palette.HAZARD_ORANGE)
+	elif reason_name == WasherFSM.REJECT_LOCKED:
+		_play_oneshot("click", CLICK_DB)
+		_flash_rim(Palette.METAL_2)
 	_reject_cooldown[item.get_instance_id()] = REJECT_COOLDOWN_S
 	_bounce(item)
+	_update_visuals(0.0)
 	item_rejected.emit(item, String(reason_name))
 
 
@@ -475,11 +538,28 @@ func _is_wildcard_item(item: Node) -> bool:
 	return Compatibility.is_wildcard(StringName(str(item_id)))
 
 
+# --- rendering --------------------------------------------------------------
+
+
 func _update_visuals(delta: float) -> void:
 	_animate_time += delta
 	_load_flash_left = maxf(_load_flash_left - delta, 0.0)
 	_shake_left = maxf(_shake_left - delta, 0.0)
 	_holo_flash = maxf(_holo_flash - delta, 0.0)
+	var rim_was := _rim_left
+	_rim_left = maxf(_rim_left - delta, 0.0)
+	if rim_was > 0.0 and _rim_left <= 0.0:
+		queue_redraw()
+	_porthole_flash_left = maxf(_porthole_flash_left - delta, 0.0)
+	var bell_due := _bell_repeat > 0.0 and _bell_repeat - delta <= 0.0
+	_bell_repeat = maxf(_bell_repeat - delta, 0.0)
+	_buzz_left = maxf(_buzz_left - delta, 0.0)
+	if _buzz_left <= 0.0 and _buzz_player != null and _buzz_player.playing:
+		_buzz_player.stop()
+	if _fsm.get_state() == WasherFSM.State.TURBULENT:
+		_turbulence_elapsed += delta
+	if bell_due:
+		_play_oneshot("done", DONE_DB)
 	_decay(_reject_cooldown, delta)
 	_decay(_release_cooldown, delta)
 	_collect_done_items()
@@ -490,17 +570,23 @@ func _update_visuals(delta: float) -> void:
 	_refresh_animation()
 	if _load_flash_left <= 0.0:
 		_apply_animation()
+	if _rim_left > 0.0:
+		queue_redraw()
+	if _bubbles != null:
+		_bubbles.visible = _fsm.get_state() == WasherFSM.State.DONE
 
 
 func _refresh_animation() -> void:
 	if _visual == null:
 		return
-	var shake := Vector2.ZERO
+	var offset := Vector2.ZERO
+	if _fsm.get_state() == WasherFSM.State.TURBULENT and not Settings.reduce_motion:
+		var phase := _animate_time * TAU * TURBULENCE_VIBRATION_HZ
+		offset.x = sin(phase) * TURBULENCE_VIBRATION_PX
 	if _shake_left > 0.0 and not Settings.reduce_motion:
-		var strength := _shake_left / SHAKE_TIME_S
-		shake = Vector2(sin(_animate_time * 91.0), cos(_animate_time * 77.0)) * SHAKE_PX
-		shake *= strength
-	_visual.position = shake.round()
+		var raw := sin(_animate_time * 140.0) * EXPLOSION_SHAKE_PX
+		offset += Vector2(roundf(raw / SHAKE_STEP_PX) * SHAKE_STEP_PX, 0.0)
+	_visual.position = offset
 	_visual.rotation = 0.0
 	var dim := 0.55 if _fsm.is_locked() else 1.0
 	_visual.modulate = Color(dim, dim, dim, 1.0)
@@ -513,6 +599,7 @@ func _refresh_holo() -> void:
 	var alpha := 0.6
 	var text := _requirement_text(_fsm.get_requirement())
 	var tint := get_glow_color()
+	var size := 12
 	holo_state = HoloState.IDLE
 	if _fsm.is_locked():
 		holo_state = HoloState.LOCKED
@@ -535,7 +622,8 @@ func _refresh_holo() -> void:
 				holo_state = HoloState.TURBULENT
 				alpha = 1.0
 				tint = Palette.HAZARD_ORANGE
-				text = tr("¡GOLPE!")
+				text = tr("TURBULENTO")
+				size = 14
 			WasherFSM.State.WASHING:
 				holo_state = HoloState.WASHING
 				alpha = 1.0
@@ -555,6 +643,7 @@ func _refresh_holo() -> void:
 	_holo.modulate = Color(1.0, 1.0, 1.0, alpha)
 	_holo.set(&"requirement", _fsm.get_requirement())
 	_holo.set(&"label_text", text)
+	_holo.set(&"label_size", size)
 	_holo.set(&"tint", tint)
 	_holo.set(&"flash", _holo_flash)
 	_holo.set(&"matched", holo_state == HoloState.MATCH)
@@ -572,9 +661,8 @@ func _refresh_ring() -> void:
 	match state:
 		WasherFSM.State.WASHING, WasherFSM.State.TURBULENT:
 			mode = 1
-			color = (
-				Palette.HAZARD_ORANGE if state == WasherFSM.State.TURBULENT else Palette.FUNK_CYAN
-			)
+			var hot := state == WasherFSM.State.TURBULENT
+			color = Palette.HAZARD_ORANGE if hot else Palette.FUNK_CYAN
 		WasherFSM.State.DONE:
 			mode = 2
 			color = Palette.CLEAN_GREEN
@@ -584,10 +672,15 @@ func _refresh_ring() -> void:
 		_:
 			mode = 0
 	ring_color = color
-	_ring.visible = mode != 0
+	_ring.visible = mode != 0 or _porthole_flash_left > 0.0
 	_ring.set(&"mode", mode)
 	_ring.set(&"progress", _fsm.get_progress())
 	_ring.set(&"ring_color", color)
+	_ring.set(&"turbulent", state == WasherFSM.State.TURBULENT)
+	_ring.set(&"time_left", maxf(_turbulence_limit_s - _turbulence_elapsed, 0.0))
+	_ring.set(&"time_total", maxf(_turbulence_limit_s, 0.001))
+	_ring.set(&"flash_color", _porthole_flash_color)
+	_ring.set(&"flash_left", _porthole_flash_left)
 	_ring.queue_redraw()
 
 
@@ -614,8 +707,10 @@ func _refresh_audio_beat(delta: float) -> void:
 		return
 	_last_beat = beat
 	_beat_pulse = 1.0
-	if _fsm.get_state() == WasherFSM.State.TURBULENT and _alarm_count < ALARM_MAX:
-		_alarm_count += 1
+	if _start_pending:
+		_start_drum()
+	if _fsm.get_state() == WasherFSM.State.TURBULENT and _alarm_pending > 0:
+		_alarm_pending -= 1
 		_play_oneshot("alarm", ALARM_DB)
 
 
@@ -661,6 +756,9 @@ func _requirement_text(requirement: StringName) -> String:
 		&"spotted":
 			text = "MOTAS"
 	return tr(text)
+
+
+# --- node construction ------------------------------------------------------
 
 
 func _apply_config() -> void:
@@ -712,7 +810,7 @@ func _ensure_visual() -> void:
 	_visual.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	if SpriteSheet.configure(_visual, ART_ID, &"idle"):
 		return
-	_fallback = FallbackBody.new()
+	_fallback = WasherFX.FallbackBody.new()
 	_fallback.name = "FallbackBody"
 	_fallback.position = Vector2(-96.0, MACHINE_TOP)
 	_fallback.z_index = 0
@@ -720,26 +818,13 @@ func _ensure_visual() -> void:
 
 
 func _ensure_procedural() -> void:
-	_holo = get_node_or_null(^"Holo") as Node2D
-	if _holo == null:
-		_holo = HoloPanel.new()
-		_holo.name = "Holo"
-		add_child(_holo)
-	_holo.z_index = 2
-	_holo.position = HOLO_ORIGIN
-	_ring = get_node_or_null(^"ProgressRing") as Node2D
-	if _ring == null:
-		_ring = ProgressRing.new()
-		_ring.name = "ProgressRing"
-		add_child(_ring)
-	_ring.z_index = 1
-	_ring.visible = false
-	_glow = get_node_or_null(^"Glow") as Node2D
-	if _glow == null:
-		_glow = DrumGlow.new()
-		_glow.name = "Glow"
-		add_child(_glow)
-	_glow.z_index = -1
+	_holo = WasherFX.make_holo(self, HOLO_ORIGIN)
+	_ring = WasherFX.make_ring(self)
+	_glow = WasherFX.make_glow(self)
+
+
+func _ensure_bubbles() -> void:
+	_bubbles = WasherFX.make_bubbles(self)
 
 
 func _ensure_audio() -> void:
@@ -764,6 +849,12 @@ func _ensure_audio() -> void:
 			player.bus = "SFX"
 		add_child(player)
 		_oneshots.append(player)
+	_buzz_player = AudioStreamPlayer.new()
+	_buzz_player.name = "AudioBuzz"
+	if AudioServer.get_bus_index("SFX") >= 0:
+		_buzz_player.bus = "SFX"
+	_buzz_player.stream = _sfx["alarm"] as AudioStream
+	add_child(_buzz_player)
 
 
 func _ensure_steam() -> void:
@@ -779,6 +870,59 @@ func _on_mouth_body_entered(body: Node) -> void:
 	if GameState.is_ended:
 		return
 	try_accept(body)
+
+
+# --- feedback helpers -------------------------------------------------------
+
+
+func _flash_rim(color: Color) -> void:
+	_rim_color = color
+	_rim_left = RIM_FRAME_S
+	queue_redraw()
+
+
+func _flash_porthole(color: Color) -> void:
+	_porthole_flash_color = color
+	_porthole_flash_left = RIM_FRAME_S
+	if _ring != null:
+		_ring.queue_redraw()
+
+
+func _play_buzz() -> void:
+	if _buzz_player == null or _buzz_player.stream == null:
+		return
+	_buzz_player.volume_db = BUZZ_DB
+	_buzz_player.play()
+	_buzz_left = BUZZ_S
+
+
+func _spawn_chip(text: String, gain: bool, color: Color) -> void:
+	WasherFX.make_chip(self, text, gain, color)
+
+
+func _spawn_text(text: String, size: int, color: Color) -> void:
+	WasherFX.make_text(self, text, size, color)
+
+
+func _spawn_explosion_fx() -> void:
+	WasherFX.make_explosion(self, Vector2(0.0, -96.0))
+
+
+func _decay(timers: Dictionary, delta: float) -> void:
+	if timers.is_empty():
+		return
+	var expired: Array = []
+	for key: Variant in timers.keys():
+		var left := float(timers[key]) - delta
+		if left <= 0.0:
+			expired.append(key)
+		else:
+			timers[key] = left
+	for key: Variant in expired:
+		timers.erase(key)
+
+
+# --- audio ------------------------------------------------------------------
 
 
 func _load_stream(id: String, loop: bool) -> AudioStream:
@@ -823,178 +967,3 @@ func _play_oneshot(id: String, volume_db: float) -> void:
 	player.stream = stream
 	player.volume_db = volume_db
 	player.play()
-
-
-func _spawn_burst(color: Color, count: int, speed: float, size: float) -> void:
-	var burst := SparkBurst.new()
-	burst.color = color
-	burst.count = int(float(count) * (0.35 if Settings.reduce_motion else 1.0))
-	burst.speed = speed
-	burst.size = size
-	burst.position = Vector2(0.0, -60.0)
-	burst.z_index = 3
-	add_child(burst)
-
-
-func _decay(timers: Dictionary, delta: float) -> void:
-	if timers.is_empty():
-		return
-	var expired: Array = []
-	for key: Variant in timers.keys():
-		var left := float(timers[key]) - delta
-		if left <= 0.0:
-			expired.append(key)
-		else:
-			timers[key] = left
-	for key: Variant in expired:
-		timers.erase(key)
-
-
-## Hologram: panel + two requirement glyphs + one text line, all procedural.
-class HoloPanel:
-	extends Node2D
-
-	var requirement: StringName = &"wild"
-	var label_text := ""
-	var tint: Color = Palette.METAL_3
-	var flash := 0.0
-	var matched := false
-
-	func _draw() -> void:
-		var rect := Rect2(-64.0, -84.0, 128.0, 84.0)
-		var background := Color(Palette.SPACE_DEEP, 0.84)
-		draw_rect(rect, background, true)
-		draw_rect(Rect2(-62.0, -82.0, 124.0, 80.0), Color(Palette.SPACE_HAZE, 0.35), true)
-		draw_rect(rect, Color(tint, 0.95), false, 2.0)
-		var tick := Color(Palette.METAL_4, 0.9)
-		draw_rect(Rect2(-64.0, -84.0, 10.0, 2.0), tick, true)
-		draw_rect(Rect2(-64.0, -84.0, 2.0, 10.0), tick, true)
-		draw_rect(Rect2(54.0, -2.0, 10.0, 2.0), tick, true)
-		draw_rect(Rect2(62.0, -10.0, 2.0, 10.0), tick, true)
-		_draw_icon(_icon_a(), Vector2(-52.0, -76.0))
-		_draw_icon(_icon_b(), Vector2(4.0, -76.0))
-		var font := Fonts.pixel_font()
-		var size := 9 if label_text.length() > 13 else 12
-		var width := font.get_string_size(label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
-		var color := Palette.FUNK_CYAN if matched else Palette.METAL_4
-		draw_string(
-			font,
-			Vector2(-width * 0.5, -10.0),
-			label_text,
-			HORIZONTAL_ALIGNMENT_LEFT,
-			-1.0,
-			size,
-			color
-		)
-		if matched:
-			draw_rect(Rect2(-34.0, -5.0, 68.0, 3.0), Palette.FUNK_CYAN, true)
-
-	func _draw_icon(icon_name: StringName, at: Vector2) -> void:
-		var texture := SpriteSheet.frame_texture("ui_holo_icons", icon_name, 0)
-		if texture == null:
-			draw_rect(Rect2(at, Vector2(48.0, 48.0)), Color(tint, 0.5), false, 2.0)
-			return
-		draw_texture_rect(texture, Rect2(at, Vector2(48.0, 48.0)), false)
-
-	func _icon_a() -> StringName:
-		return requirement if _is_colour(requirement) else &"wild"
-
-	func _icon_b() -> StringName:
-		return &"wild" if _is_colour(requirement) else requirement
-
-	func _is_colour(value: StringName) -> bool:
-		return value == &"red" or value == &"blue" or value == &"yellow"
-
-
-## Progress arc around the drum (UX bible §6.1): wash %, done ring, or repair countdown.
-class ProgressRing:
-	extends Node2D
-
-	## 0 hidden, 1 wash, 2 done, 3 repair.
-	var mode := 0
-	var progress := 0.0
-	var ring_color: Color = Palette.FUNK_CYAN
-
-	func _draw() -> void:
-		if mode == 0:
-			return
-		var center := Vector2(0.0, -96.0)
-		var radius := 66.0
-		draw_arc(center, radius, 0.0, TAU, 64, Color(Palette.SPACE_VOID, 0.65), 6.0, true)
-		var start := -PI * 0.5
-		var sweep := TAU * clampf(progress, 0.0, 1.0)
-		if sweep > 0.001:
-			draw_arc(center, radius, start, start + sweep, 64, ring_color, 4.0, true)
-			var tip := center + Vector2(cos(start + sweep), sin(start + sweep)) * radius
-			draw_circle(tip, 4.0, ring_color)
-		if mode == 1:
-			draw_arc(center, radius + 6.0, 0.0, TAU, 64, Color(ring_color, 0.25), 2.0, true)
-
-
-## Additive light pool on the floor; energy pulses on the beat (UX bible §3.5).
-class DrumGlow:
-	extends Node2D
-
-	var energy := 0.35
-	var tint: Color = Palette.METAL_3
-
-	func _draw() -> void:
-		draw_set_transform(Vector2(0.0, 12.0), 0.0, Vector2(1.0, 0.34))
-		for index in range(4):
-			var radius := 120.0 - float(index) * 24.0
-			var alpha := (0.05 + 0.05 * energy) * (1.0 + float(index) * 0.35)
-			draw_circle(Vector2.ZERO, radius, Color(tint, alpha))
-		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-
-
-## Deterministic spark burst used for loads, turbulence, done and explosions.
-class SparkBurst:
-	extends Node2D
-
-	var color: Color = Palette.HAZARD_ORANGE
-	var count := 10
-	var speed := 200.0
-	var size := 3.0
-	var lifetime := 0.5
-	var age := 0.0
-
-	func _process(delta: float) -> void:
-		age += delta
-		if age >= lifetime:
-			queue_free()
-			return
-		queue_redraw()
-
-	func _draw() -> void:
-		var t := clampf(age / lifetime, 0.0, 1.0)
-		var alpha := 1.0 - t
-		var travel := speed * sqrt(t)
-		for index in range(maxi(count, 1)):
-			var angle := TAU * float(index) / float(maxi(count, 1)) + 0.4
-			var direction := Vector2(cos(angle), sin(angle))
-			var tip := direction * travel
-			draw_line(tip, tip - direction * 8.0, Color(color, alpha), size)
-		if t < 0.35:
-			draw_circle(Vector2.ZERO, 10.0 * (1.0 - t), Color(color, alpha * 0.5))
-
-
-## Procedural stand-in machine, drawn only when `mach_washer` is missing.
-class FallbackBody:
-	extends Node2D
-
-	func _draw() -> void:
-		draw_rect(Rect2(0.0, 0.0, 192.0, 184.0), Palette.METAL_0, true)
-		draw_rect(Rect2(4.0, 4.0, 184.0, 176.0), Palette.METAL_2, true)
-		draw_rect(Rect2(4.0, 4.0, 184.0, 12.0), Palette.METAL_3, true)
-		draw_rect(Rect2(16.0, 22.0, 160.0, 26.0), Palette.SPACE_DEEP, true)
-		draw_rect(Rect2(20.0, 26.0, 52.0, 8.0), Palette.FUNK_CYAN, true)
-		for index in range(8):
-			var color := Palette.YEL_2 if index % 2 == 0 else Palette.HAZARD_ORANGE
-			draw_rect(Rect2(8.0 + float(index) * 22.0, 56.0, 12.0, 8.0), color, true)
-		var drum := Vector2(96.0, 116.0)
-		draw_circle(drum, 60.0, Palette.SPACE_VOID)
-		draw_arc(drum, 60.0, 0.0, TAU, 40, Palette.METAL_1, 6.0, true)
-		draw_circle(drum, 48.0, Palette.SPACE_DEEP)
-		draw_arc(drum, 34.0, 0.5, 2.6, 24, Palette.FUNK_CYAN, 4.0, true)
-		draw_circle(drum + Vector2(-14.0, -18.0), 5.0, Palette.BLUE_4)
-		draw_rect(Rect2(150.0, 150.0, 30.0, 10.0), Palette.METAL_1, true)
