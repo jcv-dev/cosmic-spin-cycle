@@ -26,6 +26,11 @@ static func art_to_world(value: float) -> float:
 	return value * float(Config.ART_SCALE)
 
 
+## Untransformed art-pixel rect, for helpers that multiply by ART_SCALE themselves.
+static func art_rect(rect: Dictionary) -> Rect2:
+	return Rect2(float(rect.x), float(rect.y), float(rect.w), float(rect.h))
+
+
 static func rect_world(rect: Dictionary) -> Rect2:
 	return Rect2(
 		art_to_world(float(rect.x)),
