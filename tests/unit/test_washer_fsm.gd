@@ -332,6 +332,18 @@ func test_turbulence_timeout_and_forced_table() -> void:
 	assert_false(empty.force_turbulent(), "nothing to make turbulent")
 
 
+func test_turbulence_timeout_at_142_bpm_explodes() -> void:
+	var fast := _new_fsm(&"red", 0)
+	fast.set_beat_seconds(T_142)
+	fast.insert(_item(&"rocky", 6.0))
+	fast.force_turbulent()
+	fast.tick(8.0 * T_142 - 0.01)
+	assert_eq(fast.get_state(), WasherFSM.State.TURBULENT, "not yet at 8 beats")
+	var events := fast.tick(0.02)
+	assert_true(_has_type(events, &"exploded"), "8 beats at 142 BPM is the limit")
+	assert_eq(fast.get_state(), WasherFSM.State.BROKEN)
+
+
 func test_strike_resolution_table() -> void:
 	for grade: int in [RhythmEvaluator.Grade.GOOD, RhythmEvaluator.Grade.PERFECT]:
 		var machine := _new_fsm(&"red", 0)
