@@ -128,11 +128,11 @@ func _process(delta: float) -> void:
 		shift_time += delta
 	if _hud != null:
 		_hud.set_shift_time(shift_time)
-	if clock_running:
+	if clock_running and mode != &"tutorial":
 		var next_phase := Config.phase_index_at(shift_time)
 		if next_phase != phase_index:
 			_apply_phase(next_phase, false)
-		if mode != &"tutorial" and shift_time >= Config.SHIFT_DURATION_S:
+		if shift_time >= Config.SHIFT_DURATION_S:
 			_finish(GameState.stability > 0.0, "shift_complete")
 	if _spawner != null and _spawner.has_method("advance_to"):
 		_spawner.call("advance_to", shift_time)

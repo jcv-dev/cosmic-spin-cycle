@@ -15,6 +15,7 @@ var reduce_motion := false
 var trauma := 0.0
 var _shake_decay := 2.4
 var _hitstop_left := 0.0
+var _hitstop_until_ms := 0
 var _flash_left := 0.0
 var _flash_color := Color(1, 1, 1, 0)
 var _zoom_punch := 0.0
@@ -33,8 +34,9 @@ func _process(delta: float) -> void:
 	var real_delta := delta
 	trauma = maxf(trauma - _shake_decay * real_delta, 0.0)
 	if _hitstop_left > 0.0:
-		_hitstop_left = maxf(_hitstop_left - real_delta, 0.0)
-		if _hitstop_left <= 0.0:
+		# `delta` is scaled by Engine.time_scale, so use wall-clock time to end the freeze.
+		if Time.get_ticks_msec() >= _hitstop_until_ms:
+			_hitstop_left = 0.0
 			Engine.time_scale = 1.0
 	if _flash_left > 0.0:
 		_flash_left = maxf(_flash_left - real_delta, 0.0)
@@ -67,6 +69,7 @@ func hitstop(duration: float, time_scale: float = 0.05) -> void:
 	if _hitstop_left >= clamped:
 		return
 	_hitstop_left = clamped
+	_hitstop_until_ms = Time.get_ticks_msec() + int(clamped * 1000.0)
 	Engine.time_scale = clampf(time_scale, 0.0, 1.0)
 	hit_stopped.emit(clamped)
 
