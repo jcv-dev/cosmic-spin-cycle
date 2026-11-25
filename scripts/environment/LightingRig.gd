@@ -13,8 +13,13 @@ extends Node2D
 
 ## Hard cap from the performance budget; `build()` never creates more than this.
 const MAX_LIGHTS := 8
+## GL Compatibility on this llvmpipe box measures 8 `PointLight2D` at ~56 ms/frame (they put
+## every canvas item through the lit shader and fill a screen-sized light buffer). Additive
+## gradient sprites give the same read for ~1.5 ms, so they are the default; flip this to
+## true on hardware GL when real 2D lights matter more than the frame budget.
+const USE_POINT_LIGHTS := false
 ## Washer pool radius in world pixels (UX_BIBLE §3.5).
-const WASHER_RADIUS := 260.0
+const WASHER_RADIUS := 220.0
 ## Washer pool energy and its pulse amplitude (0.42…0.58).
 const WASHER_ENERGY := 0.34
 const WASHER_PULSE := 0.07
@@ -22,10 +27,10 @@ const WASHER_PULSE := 0.07
 const CHUTE_ENERGY := 0.45
 ## Cold overhead lamp energy and radius.
 const COLD_ENERGY := 0.18
-const COLD_RADIUS := 420.0
+const COLD_RADIUS := 260.0
 ## Warm lamp over the player spawn.
 const WARM_ENERGY := 0.16
-const WARM_RADIUS := 280.0
+const WARM_RADIUS := 200.0
 ## Room tint: cool and ~55 % brightness (UX_BIBLE §3.5).
 const ROOM_TINT := Color(0.70, 0.72, 0.84)
 ## Pulse decay in seconds after each beat.
@@ -44,14 +49,14 @@ static var _radial: GradientTexture2D = null
 @export var intensity := 1.0
 
 var _modulate: CanvasModulate
-var _pools: Array[PointLight2D] = []
-var _chute: PointLight2D
-var _cold: Array[PointLight2D] = []
-var _warm: PointLight2D
-var _floor_pools: Array[Sprite2D] = []
+var _pools: Array[Node2D] = []
+var _chute: Node2D
+var _cold: Array[Node2D] = []
+var _warm: Node2D
+var _emitters: Array[CanvasItem] = []
 var _base_energy: Dictionary = {}
 var _amplitude: Dictionary = {}
-var _all: Array[PointLight2D] = []
+var _all: Array[CanvasItem] = []
 var _clock := 0.0
 
 
@@ -116,11 +121,10 @@ func _setup() -> void:
 			palette[index % palette.size()]
 		)
 		_pools.append(light)
-	_build_floor_pools(palette)
 	_chute = _add_light(
 		"ChuteCone",
 		RoomBuilder.layout_rect("chute").get_center(),
-		220.0,
+		180.0,
 		CHUTE_ENERGY,
 		&"clean_green"
 	)
@@ -128,82 +132,46 @@ func _setup() -> void:
 		var x := 240.0 if index == 0 else 1040.0
 		_cold.append(
 			_add_light(
-				"ColdLamp%d" % index,
-				Vector2(x, 104.0),
-				COLD_RADIUS,
-				COLD_ENERGY,
-				&"funk_cyan"
+				"ColdLamp%d" % index, Vector2(x, 104.0), COLD_RADIUS, COLD_ENERGY, &"funk_cyan"
 			)
 		)
-	_warm = _add_light(
-		"SpawnWarm",
-		RoomBuilder.player_spawn(),
-		WARM_RADIUS,
-		WARM_ENERGY,
-		&"yel_3"
-	)
+	_warm = _add_light("SpawnWarm", RoomBuilder.player_spawn(), WARM_RADIUS, WARM_ENERGY, &"yel_3")
 	_update_energy()
 
 
-## Coloured light spill painted on the floor itself (z −89): it tints the decals and the
-## concrete without washing out the machine sprites, which sit above it.
-func _build_floor_pools(palette: Array[StringName]) -> void:
-	var layer := Node2D.new()
-	layer.name = "FloorPools"
-	layer.z_index = -89
-	var additive := CanvasItemMaterial.new()
-	additive.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-	layer.material = additive
-	add_child(layer)
-	var mouths := [
-		Vector2(60, 80),
-		Vector2(260, 80),
-		Vector2(60, 144),
-		Vector2(260, 144),
-	]
-	for index in range(mouths.size()):
-		var pool := Sprite2D.new()
-		pool.name = "WasherSpill%d" % index
-		pool.texture = radial_texture()
-		pool.centered = true
-		pool.position = RoomBuilder.point_world([mouths[index].x, mouths[index].y])
-		var tint := _tint_color(palette[index % palette.size()])
-		pool.self_modulate = Color(tint.r, tint.g, tint.b, 0.16)
-		layer.add_child(pool)
-		_floor_pools.append(pool)
-	var chute_pool := Sprite2D.new()
-	chute_pool.name = "ChuteSpill"
-	chute_pool.texture = radial_texture()
-	chute_pool.position = RoomBuilder.layout_rect("chute").get_center()
-	chute_pool.scale = Vector2(0.8, 0.8)
-	chute_pool.self_modulate = Color(
-		Palette.CLEAN_GREEN.r, Palette.CLEAN_GREEN.g, Palette.CLEAN_GREEN.b, 0.16
-	)
-	layer.add_child(chute_pool)
-	_floor_pools.append(chute_pool)
-
-
 func _add_light(
-	light_name: String,
-	at: Vector2,
-	radius: float,
-	energy: float,
-	tint: StringName
-) -> PointLight2D:
-	var light := PointLight2D.new()
-	light.name = light_name
-	light.texture = radial_texture()
-	light.texture_scale = radius / float(GRADIENT_RADIUS)
-	light.position = Vector2(roundf(at.x), roundf(at.y))
-	light.color = _tint_color(tint)
-	light.energy = energy
-	light.shadow_enabled = false
-	light.blend_mode = Light2D.BLEND_MODE_ADD
-	add_child(light)
-	_base_energy[light] = energy
-	_amplitude[light] = WASHER_PULSE if light_name.begins_with("WasherPool") else WASHER_PULSE * 0.3
-	_all.append(light)
-	return light
+	light_name: String, at: Vector2, radius: float, energy: float, tint: StringName
+) -> Node2D:
+	var node: Node2D
+	if USE_POINT_LIGHTS:
+		var light := PointLight2D.new()
+		light.texture = radial_texture()
+		light.texture_scale = radius / float(GRADIENT_RADIUS)
+		light.color = _tint_color(tint)
+		light.energy = energy
+		light.shadow_enabled = false
+		light.blend_mode = Light2D.BLEND_MODE_ADD
+		node = light
+		_base_energy[light] = energy
+	else:
+		var glow := Sprite2D.new()
+		glow.texture = radial_texture()
+		glow.centered = true
+		glow.scale = Vector2.ONE * (radius / float(GRADIENT_RADIUS))
+		glow.z_index = 6
+		var additive := CanvasItemMaterial.new()
+		additive.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+		glow.material = additive
+		var colour := _tint_color(tint)
+		glow.self_modulate = Color(colour.r, colour.g, colour.b, energy)
+		node = glow
+		_base_energy[glow] = energy
+	node.name = light_name
+	node.position = Vector2(roundf(at.x), roundf(at.y))
+	add_child(node)
+	_amplitude[node] = WASHER_PULSE if light_name.begins_with("WasherPool") else WASHER_PULSE * 0.3
+	_all.append(node)
+	return node
 
 
 func _process(delta: float) -> void:
@@ -220,20 +188,22 @@ func set_phase_palette(requirements: Array[StringName]) -> void:
 	for index in range(_pools.size()):
 		var requirement: StringName = requirements[index % requirements.size()]
 		var tint := _tint_color(requirement)
-		_pools[index].color = tint
-		if index < _floor_pools.size():
-			_floor_pools[index].self_modulate = Color(tint.r, tint.g, tint.b, 0.16)
+		if _pools[index] is PointLight2D:
+			(_pools[index] as PointLight2D).color = tint
+		else:
+			var alpha: float = float(_base_energy.get(_pools[index], WASHER_ENERGY))
+			_pools[index].self_modulate = Color(tint.r, tint.g, tint.b, alpha)
 
 
-## Every light the rig created (tests assert the budget).
-func lights() -> Array[PointLight2D]:
-	var out: Array[PointLight2D] = []
+## Every light emitter the rig created (tests assert the budget).
+func lights() -> Array[CanvasItem]:
+	var out: Array[CanvasItem] = []
 	out.append_array(_all)
 	return out
 
 
 ## Light pools only, in washer order (NW, NE, SW, SE).
-func pools() -> Array[PointLight2D]:
+func pools() -> Array[Node2D]:
 	return _pools
 
 
@@ -260,10 +230,15 @@ func _beat_elapsed() -> float:
 
 func _update_energy() -> void:
 	var envelope := beat_envelope()
-	for light: PointLight2D in _all:
-		var base: float = float(_base_energy.get(light, light.energy))
+	for light: CanvasItem in _all:
+		var base: float = float(_base_energy.get(light, 0.0))
 		var amplitude: float = float(_amplitude.get(light, 0.0))
-		light.energy = (base + amplitude * envelope) * intensity
+		var value := (base + amplitude * envelope) * intensity
+		if light is PointLight2D:
+			(light as PointLight2D).energy = value
+		else:
+			var tint: Color = (light as CanvasItem).self_modulate
+			(light as CanvasItem).self_modulate = Color(tint.r, tint.g, tint.b, value)
 
 
 static func _tint_color(name: StringName) -> Color:
