@@ -135,6 +135,8 @@ func refresh_flight_count() -> int:
 
 
 func _process(delta: float) -> void:
+	if target == null or not is_instance_valid(target):
+		_acquire_target()
 	if target != null and is_instance_valid(target):
 		_update_follow(delta)
 	_update_kick(delta)
@@ -145,6 +147,17 @@ func _process(delta: float) -> void:
 		refresh_flight_count()
 	_update_zoom(delta)
 	global_position = _pixel(_smooth_position + get_shake_offset() + _kick_offset)
+
+
+## Order-independent binding: `MainLevel` builds the camera before the player, so the rig
+## adopts the first node in the `player` group as soon as one exists.
+func _acquire_target() -> void:
+	var tree := get_tree()
+	if tree == null:
+		return
+	var node := tree.get_first_node_in_group(Config.GROUP_PLAYER)
+	if node != null:
+		setup(node)
 
 
 func _update_follow(delta: float) -> void:

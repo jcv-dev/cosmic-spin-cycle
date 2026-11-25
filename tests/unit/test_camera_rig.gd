@@ -112,6 +112,18 @@ func test_zoom_out_is_disabled_by_its_flag() -> void:
 	assert_almost_eq(_rig.zoom.x, 1.0, 0.0005, "flag off keeps the zoom at 1.0")
 
 
+func test_rig_auto_binds_the_player_group() -> void:
+	var rig := RIG_SCRIPT.new()
+	add_child_autofree(rig)
+	var player := Node2D.new()
+	player.add_to_group(&"player")
+	add_child_autofree(player)
+	player.global_position = Vector2(500.0, 300.0)
+	rig.call("_process", 1.0 / 60.0)
+	assert_eq(rig.target, player, "the rig adopts the player without an explicit setup call")
+	assert_eq(rig.global_position, Vector2(500.0, 300.0))
+
+
 func test_scan_ignores_held_items() -> void:
 	var item := (load(Config.SCENE_LAUNDRY_ITEM) as PackedScene).instantiate() as LaundryItem
 	item.setup(&"rocky", &"red", &"solid", false)
