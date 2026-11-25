@@ -42,6 +42,8 @@ var squelch_player: AudioStreamPlayer2D = get_node_or_null("SquelchPlayer") as A
 
 func _ready() -> void:
 	add_to_group(Config.GROUP_ITEMS)
+	if squelch_player != null and AudioServer.get_bus_index("SFX") >= 0:
+		squelch_player.bus = "SFX"
 	_rng.randomize()
 	if visual != null:
 		visual.top_level = true
@@ -49,6 +51,7 @@ func _ready() -> void:
 	if data == null:
 		data = _lookup(item_id)
 	_apply_data()
+	_ensure_squelch_stream()
 	_sync_visual()
 
 
@@ -63,6 +66,7 @@ func setup(
 	data = _lookup(p_id)
 	if is_node_ready():
 		_apply_data()
+		_ensure_squelch_stream()
 		_sync_visual()
 
 
@@ -75,6 +79,9 @@ func begin_hold(holder: Node) -> void:
 	_sock_slide_timer = 0.0
 	_boomerang_time = 0.0
 	collision_mask = Config.CollisionLayer.WORLD
+	# A carried item is not a physical obstacle for other laundry: the core's gravity
+	# field must pull socks in, not shove them away. It still collides with walls via mask.
+	collision_layer = 0
 	sleeping = false
 	gravity_scale = 0.0
 	if data != null and data.special == ItemData.Special.SQUELCH:
@@ -86,6 +93,7 @@ func end_hold() -> void:
 		return
 	is_held = false
 	_holder = null
+	collision_layer = Config.CollisionLayer.ITEMS
 	collision_mask = Config.CollisionLayer.WORLD | Config.CollisionLayer.ITEMS
 	_throw_armed = true
 	if data != null and data.special == ItemData.Special.SQUELCH:
@@ -209,6 +217,17 @@ func _attract_socks() -> void:
 		)
 
 
+## The sock is the only item with a grab sound (GDD §6). A2 ships the SFX; wire it once.
+func _ensure_squelch_stream() -> void:
+	if data == null or data.special != ItemData.Special.SQUELCH:
+		return
+	if squelch_player == null or squelch_player.stream != null:
+		return
+	var path := "res://assets/audio/sfx/squelch_grab.ogg"
+	if ResourceLoader.exists(path):
+		squelch_player.stream = load(path) as AudioStream
+
+
 func _play_squelch() -> void:
 	squelched.emit()
 	if squelch_player != null and squelch_player.stream != null:
@@ -240,7 +259,7 @@ func _apply_data() -> void:
 	if not _shape_owned:
 		own = source.duplicate() as CircleShape2D
 		_shape_owned = true
-	own.radius = data.radius
+	own.radius = data.radius * float(Config.ART_SCALE)
 	collision_shape.shape = own
 
 

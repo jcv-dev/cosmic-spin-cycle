@@ -7,7 +7,6 @@ extends Node2D
 ## fresh clone) it falls back to a distinct flat silhouette per item id. The owner keeps
 ## this node unrotated: pixel art must never spin with the RigidBody2D.
 
-const VISUAL_SCALE := 2.2
 const OUTLINE_WIDTH := 2.0
 const OUTLINE_MIX := 0.55
 const PATTERN_SHIFT := 0.3
@@ -22,7 +21,7 @@ var _color_id: StringName = &"red"
 var _pattern_id: StringName = &"solid"
 var _clean := false
 var _has_sprite := false
-var _sprite: Sprite2D = null
+var _sprite: AnimatedSprite2D = null
 
 
 ## Rebinds the visual to a data row and a world variant. Safe before the node enters the tree.
@@ -87,25 +86,22 @@ static func _read_sheet(sprite_id: String) -> Dictionary:
 
 
 func _setup_sprite() -> void:
-	if _data == null:
+	if _data == null or _data.sprite_id == "":
 		return
+	if not SpriteSheet.has_sheet(_data.sprite_id):
+		_has_sprite = false
+		if _sprite != null:
+			_sprite.visible = false
+		return
+	if _sprite == null:
+		_sprite = AnimatedSprite2D.new()
+		_sprite.name = "Sheet"
+		add_child(_sprite)
 	var animation: StringName = &"idle"
 	if _data.special != ItemData.Special.GRAVITY_FIELD:
 		animation = StringName("%s_%s" % [_color_id, _pattern_id])
-	var texture := frame_texture(_data.sprite_id, animation)
-	if texture == null:
-		return
-	if _sprite == null:
-		_sprite = Sprite2D.new()
-		_sprite.name = "Sheet"
-		add_child(_sprite)
-	_sprite.texture = texture
-	var frame_size := texture.get_size()
-	var diameter := _data.radius * 2.0 * VISUAL_SCALE
-	if frame_size.y > 0.0:
-		var factor := diameter / frame_size.y
-		_sprite.scale = Vector2.ONE * factor
-	_has_sprite = true
+	_has_sprite = SpriteSheet.configure(_sprite, _data.sprite_id, animation)
+	_sprite.visible = _has_sprite
 
 
 func _draw() -> void:
@@ -140,8 +136,8 @@ func _outline_color() -> Color:
 
 func _radius() -> float:
 	if _data == null:
-		return 8.0
-	return maxf(_data.radius, 6.0) * VISUAL_SCALE
+		return 8.0 * float(Config.ART_SCALE)
+	return maxf(_data.radius, 6.0) * float(Config.ART_SCALE)
 
 
 func _draw_rocky() -> void:

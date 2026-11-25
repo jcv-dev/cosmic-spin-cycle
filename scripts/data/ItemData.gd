@@ -3,8 +3,8 @@ extends Resource
 ## One laundry-item definition (GDD §6, AGENTS §A5). Pure data, no scene dependencies.
 ##
 ## Instances live in `res://data/items.tres`; gameplay reads them through `ItemDatabase`.
-## Physics fields are in world pixels and SI-ish units: `mass_kg` maps to RigidBody2D.mass
-## and `radius` is the collision-circle radius in world px.
+## `radius` is in **art pixels** (16 px items use ~8); runtime collision/physics multiply it
+## by `Config.ART_SCALE`. `mass_kg` maps directly to RigidBody2D.mass.
 
 enum Special {
 	NONE,

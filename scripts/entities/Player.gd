@@ -15,7 +15,6 @@ const AIM_EPSILON := 0.0001
 const AIM_TURN_DOT := 0.9999
 const STICK_DEADZONE := 0.2
 const STRIKE_CONE_DOT := 0.5
-const ART_TARGET_HEIGHT_PX := 34.0
 const ART_SPRITE_ID := "char_pip"
 
 ## A cooldown keeps dash from being spammed while a strike is already the beat action.
@@ -43,7 +42,11 @@ var _has_aim_override := false
 @onready var visual: Node2D = $Visual
 @onready var grabber: MagneticGrabber = $Grabber
 @onready var aim_indicator: Node2D = $AimIndicator
-@onready var art_sprite: Sprite2D = $Visual/Art
+
+var _pip: AnimatedSprite2D
+var _art_action := ""
+var _art_time := 0.0
+var _art_dir := "down"
 
 
 func _ready() -> void:
@@ -66,6 +69,7 @@ func _physics_process(delta: float) -> void:
 	dash_cooldown_left = maxf(dash_cooldown_left - delta, 0.0)
 	_prune_held_item()
 	_update_aim()
+	_update_art(delta)
 
 	if is_dashing:
 		_dash_time += delta
@@ -113,6 +117,7 @@ func do_strike() -> void:
 	var grade := get_throw_grade()
 	GameState.register_grade(grade)
 	last_grade = grade
+	_play_action_art("strike")
 	dash(aim_direction)
 	for node in get_tree().get_nodes_in_group(Config.GROUP_WASHERS):
 		var washer := node as Node2D
@@ -153,9 +158,14 @@ func get_aim_direction() -> Vector2:
 	return aim_direction
 
 
-## Hold point for the grabbed item: `pos + aim * HOLD_DISTANCE` (AGENTS §A7).
+## Hold point: `pos + aim * (HOLD_DISTANCE + item radius)`, so large items clear Pip.
 func get_hold_position() -> Vector2:
-	return global_position + aim_direction * Config.HOLD_DISTANCE
+	var distance := Config.HOLD_DISTANCE
+	if held_item != null and is_instance_valid(held_item):
+		var data: Variant = held_item.get(&"data")
+		if data != null:
+			distance += float(data.radius) * float(Config.ART_SCALE)
+	return global_position + aim_direction * distance
 
 
 ## Deterministic aim for tests/tools. Mouse and stick input keep priority when cleared.
@@ -207,6 +217,7 @@ func _throw_held_item() -> void:
 		return
 	GameState.register_grade(grade)
 	last_grade = grade
+	_play_action_art("throw")
 	held_item = null
 	grabber.drop()
 	thrown.emit(item, grade)
@@ -225,15 +236,71 @@ func _prune_held_item() -> void:
 
 
 func _setup_art() -> void:
-	var texture := ItemVisual.frame_texture(ART_SPRITE_ID, &"idle_down")
-	if texture == null or art_sprite == null:
+	if not SpriteSheet.has_sheet(ART_SPRITE_ID):
 		return
-	art_sprite.texture = texture
-	var size := texture.get_size()
-	if size.y > 0.0:
-		art_sprite.scale = Vector2.ONE * (ART_TARGET_HEIGHT_PX / size.y)
-	art_sprite.visible = true
+	_pip = AnimatedSprite2D.new()
+	_pip.name = "Pip"
+	visual.add_child(_pip)
+	if not SpriteSheet.configure(_pip, ART_SPRITE_ID, &"idle_down"):
+		_pip.queue_free()
+		_pip = null
+		return
+	_pip.animation_finished.connect(_on_pip_animation_finished)
 	for child in visual.get_children():
+		if child == _pip:
+			continue
 		var polygon := child as Polygon2D
-		if polygon != null:
-			polygon.visible = false
+		if polygon == null:
+			continue
+		polygon.visible = polygon.name == "Shadow"
+		if polygon.name == "Shadow":
+			polygon.scale = Vector2(2.0, 1.5)
+
+
+func _play_action_art(action: String) -> void:
+	if _pip == null:
+		return
+	_art_action = action
+	_art_time = 0.35
+	_apply_art_animation()
+
+
+func _update_art(delta: float) -> void:
+	if _pip == null:
+		return
+	if _art_time > 0.0:
+		_art_time = maxf(_art_time - delta, 0.0)
+		if _art_time <= 0.0:
+			_art_action = ""
+	_apply_art_animation()
+
+
+func _apply_art_animation() -> void:
+	if _pip == null or _pip.sprite_frames == null:
+		return
+	var dir := _facing_suffix()
+	var animation: StringName
+	if _art_action != "":
+		animation = StringName("%s_%s" % [_art_action, dir])
+	elif velocity.length() > 12.0:
+		animation = StringName("run_%s" % dir)
+	else:
+		animation = StringName("idle_%s" % dir)
+	if not _pip.sprite_frames.has_animation(animation):
+		return
+	if _pip.animation != animation:
+		_pip.play(animation)
+	_pip.flip_h = dir == "side" and aim_direction.x < 0.0
+
+
+func _facing_suffix() -> String:
+	if absf(aim_direction.x) > absf(aim_direction.y):
+		return "side"
+	return "up" if aim_direction.y < 0.0 else "down"
+
+
+func _on_pip_animation_finished() -> void:
+	if _art_action != "":
+		_art_action = ""
+		_art_time = 0.0
+		_apply_art_animation()

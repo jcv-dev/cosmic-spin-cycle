@@ -7,11 +7,15 @@ var _washer: Node2D = null
 func before_each() -> void:
 	GameState.reset(1234)
 	BeatConductor.stop()
+	BeatConductor.set_stream(null, 0.0)
 	BeatConductor.start(120)
+	# Freeze the free-run clock so a long GUT frame cannot drift the grade off PERFECT.
+	BeatConductor.set_process(false)
 
 
 func after_each() -> void:
 	BeatConductor.stop()
+	BeatConductor.set_process(true)
 
 
 func _add_player(position_hint: Vector2) -> Player:
@@ -138,8 +142,9 @@ func test_grabbed_item_follows_the_hold_point() -> void:
 		item.global_position.distance_to(player.get_hold_position()),
 		1.0,
 		6.0,
-		"held item settles at player + aim * HOLD_DISTANCE"
+		"held item settles at player + aim * hold clearance"
 	)
+	var expected_distance := Config.HOLD_DISTANCE + item.data.radius * float(Config.ART_SCALE)
 	assert_almost_eq(
-		item.global_position.distance_to(player.global_position), Config.HOLD_DISTANCE, 6.0
+		item.global_position.distance_to(player.global_position), expected_distance, 6.0
 	)

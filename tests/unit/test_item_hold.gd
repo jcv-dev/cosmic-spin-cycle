@@ -39,7 +39,7 @@ func test_setup_applies_item_data() -> void:
 	assert_almost_eq(item.physics_material_override.bounce, item.data.bounce, 0.0001)
 	assert_almost_eq(item.physics_material_override.friction, item.data.friction, 0.0001)
 	var shape := item.get_node("CollisionShape2D").shape as CircleShape2D
-	assert_almost_eq(shape.radius, item.data.radius, 0.0001)
+	assert_almost_eq(shape.radius, item.data.radius * float(Config.ART_SCALE), 0.0001)
 	assert_true(item.is_in_group(Config.GROUP_ITEMS))
 
 
@@ -47,7 +47,12 @@ func test_every_item_id_receives_its_own_collision_radius() -> void:
 	for item_id in Config.ITEM_IDS:
 		var item := _add_item(item_id, Vector2(300.0, 300.0))
 		var shape := item.get_node("CollisionShape2D").shape as CircleShape2D
-		assert_almost_eq(shape.radius, item.data.radius, 0.0001, "radius for %s" % item_id)
+		assert_almost_eq(
+			shape.radius,
+			item.data.radius * float(Config.ART_SCALE),
+			0.0001,
+			"radius for %s" % item_id
+		)
 
 
 func test_grab_radius_includes_63_9_and_excludes_64_1() -> void:
