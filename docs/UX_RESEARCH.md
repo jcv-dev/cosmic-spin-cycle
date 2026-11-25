@@ -298,4 +298,127 @@ Note that `ESTABILIDAD DEL TEJIDO` at 24 px is **336 px** — wider than the 300
 - The **chute is at the exact screen centre** (640, 360) and the grade label currently occupies y 286–346 — 50 px of overlap with the chute's top edge. **Move all grade text to the event or to a 300 px band at y 600–680** (below the south belt, above nothing).
 - Time-critical prompts must be within ~200 px of the player or the target; the bottom strip at y = 688 is 176 px from the south belt and 300+ px from the washers — outside eye-line by GAG's definition.
 
+---
+
+## 10. The 20-second test
+
+A stranger who has never seen the build must be able to answer five questions in 20 s, in this order. Each row is a question, the moment it must be answerable, and the *single* affordance that guarantees it. If a second element competes for attention at that moment, the guarantee breaks — so M6 must suppress phase banners, score pop-ups and grade text for the first 20 s.
+
+| # | By | The stranger must perceive | Affordance that guarantees it |
+|---|---|---|---|
+| 1 | 0–3 s | "I am the small cyan guy in a room with four machines and a hole in the middle." | Fixed camera on the room; Pip idles at (640, 512) facing the chute; the four washer portholes pulse once at 1 Hz, offset by 250 ms each, so the eye sweeps the room. |
+| 2 | 3–6 s | "Things arrive on the belts and I can pick them up." | The **first** item spawns on the nearest active belt and is steered to land within `GRAB_RADIUS` of Pip; magnet dots connect item→Pip; prompt `AGARRA` (6 ch) at the item, not at the screen edge. |
+| 3 | 6–10 s | "Doing it on the beat is better." | `PulseRing` contracts over 2 beats; the first throw is graded and the grade appears **at the item**; the ring's inner disc flashes 1 frame on the beat. |
+| 4 | 10–15 s | "That machine wants this thing — and the wrong one costs me." | Compatible washer: 12 px hologram at the mouth + 1 px `funk_cyan` rim + a 400 ms beam. Incompatible: no rim, porthole dimmed 20 %. On a wrong insert, the −12 % stability chip animates *at the washer*, and the bar in the corner flashes once. |
+| 5 | 15–20 s | "Clean things go to the middle, and that's the point." | Chute iris opens 3 frames, emits a `clean_green` beacon column (4 px wide, 96 px tall) for 600 ms; prompt `Lleva el limpio al ducto` (24 ch) anchored 40 px above the chute, once. |
+
+**What must not be true in the first 20 s:** no phase banner; no turbulence; no belt reversal; no more than two text strings ever on screen at once; no shift clock urgency (start at 00:00 with 480 s ahead); no item type other than `rocky` + `solid` (the Phase 1 palette per §A6 #10).
+
+**Test protocol (5 strangers, 20 s each):** ask only "¿qué tienes que hacer?" and "¿dónde lo llevas?". Pass = 4/5 name "lavar/meter en la lavadora" and 4/5 name "el centro/el ducto". Anything less means an affordance in the table above is not doing its job — fix the affordance, not the copy.
+
+---
+
+## 11. Feedback matrix
+
+Intensity scale: **L** = local (≤ 16×16 art px at the event), **M** = object-scale (the machine), **H** = screen-scale (used twice per shift, maximum). All durations obey `≤ 0.45 × T_beat` (257/229/208/190 ms at 105/118/130/142 BPM). Reduced-motion column is what replaces the effect when `Reduce motion = on`.
+
+| Event | Visual | Audio | Text (ES) | Intensity / duration | Reduced motion |
+|---|---|---|---|---|---|
+| **Grab** | Item snaps to hold point in 60 ms, 1 px `funk_cyan` tether to glove; sock only: 2-frame squelch squash | short squelch (sock) / soft clank (rocky) / low thud (gas) | none | L / 60 ms | tether only, no squash |
+| **Throw — PERFECT** | `fx_burst_perfect` 16×16 @18 fps; item 1-frame white; ring flares ×1.2 | bright "tick" + music duck −2 dB for 80 ms | `PERFECTO` 32 px at the item, 380 ms | L / 190–257 ms | static magenta icon, 250 ms |
+| **Throw — GOOD** | `fx_burst_good` 12×12 @18 fps; no white flash | softer tick | `BIEN` 24 px, 300 ms | L / 190–257 ms | static cyan icon, 250 ms |
+| **Throw — MISS** | `fx_miss_puff` 12×12, item desaturated 90 ms; **no screen shake** | dull thud, pitch −2 semitones | `FUERA DE RITMO` 20 px **at the item**, 300 ms | L / 190–257 ms | same (already minimal) |
+| **Wrong washer** | −12 %: stability chip at the washer shakes 4 px × 2; washer porthole flashes `red_1` 1 frame; ejected item spins | buzz 120 ms, 180 Hz | `Lavadora equivocada` 16 px, 600 ms | M / 250 ms | no shake; rim flashes twice at 2 Hz |
+| **Correct insert** | Mouth rim `clean_green` 1 frame; drum spin starts on the next beat | soft chime, on the beat | none | L / 100 ms | same |
+| **Turbulence start** | Porthole → `hazard_orange`; 3-segment meter appears; machine vibrates 1 art px at 2 Hz | alarm loop, 2 beats, then silent | `TURBULENTO` 14 px, persistent until resolved | M / until resolved | no vibration; meter + colour only |
+| **Explosion (−25 %)** | `fx_explosion` 32×32, 6 frames @12 fps = 500 ms; 2-frame hitstop; shake 8 px in 4 px steps | boom + 400 ms noise tail | `¡EXPLOSIÓN!` 24 px at the machine | H / 500 ms | 0 hitstop, 0 shake, 1 px orange frame flash |
+| **Clean done** | Item gains `fx_bubbles` 8×8 loop + `clean_green` 1 px rim; washer `done` 2 frames | microwave bell, 2 notes | none | L / 150 ms | bubbles static |
+| **Chute delivery (+3 %)** | Chute `accept` 3 frames; item shrinks into the iris over 200 ms; score flies 200 px to the corner counter | cash-register "ding" + 60 ms shimmer | `+3` at the chute, and the item name once | M / 250 ms | no fly-to-corner; counter pulses once |
+| **Shredder loss (−8 %)** | Shredder `idle` 3 frames + 6 px sparks; item erased with a 2-frame shrink | vacuum whoosh, 200 ms | `−8` at the shredder | M / 250 ms | sparks off; shredder rim flashes |
+
+**Cross-cutting rules.** (1) Text is always *at the event*, never centre-screen, except the tutorial's first three throws. (2) No two events may use the same colour for opposite meanings: `clean_green` is always gain, `hazard_orange` always threat, `funk_magenta` always precision. (3) The stability bar is the only feedback allowed to change *global* state, and it must animate over ≥ 300 ms so a −25 % reads as a slide, not a teleport. (4) Sounds are mixed so the beat stem is never ducked for more than 80 ms.
+
+---
+
+## 12. Contrarian findings
+
+**1. "Diegetic HUD is better" is false as a general rule — and Dead Space's own designer says so.** The talk that made diegetic UI famous ends with its author abandoning it for the workbench because testers preferred the debug menu. World-anchored UI is better *for object state the player is looking at* and worse *for global state the player must monitor peripherally*. We should be diegetic for "which washer wants what" and stubbornly non-diegetic for clock, stability and combo. The industry lesson is not "more diegetic", it is "put information where the eye already is".
+
+**2. "Teach by level design, never by text" does not survive contact with a rhythm mechanic.** *Half-Life 2* can stage "sawblades cut zombies" because physics is self-evident. Nothing in a laundromat demonstrates that a throw must land within ±130 ms of a beat; there is no diegetic object that can show a timing window. Every shipped rhythm game in the corpus therefore ships an explicit visualiser (Hi-Fi Rush's beat bar, Patapon's frame pulse, NecroDancer's beat bar). The correct position is: **stage the verbs, state the beat**. Six words at the right moment beat an elegant level that teaches nothing about tempo.
+
+**3. "Screen shake is free juice" is wrong at 320×180, and the canonical numbers are illegal for us.** Vlambeer's 6 px camera kick and 4 px shake come from a 320×240 game drawn 1:1. At ×4, 6 px is 1.5 art pixels: the sprite lands between texels and the whole screen shimmers, which is precisely the artefact the pixel-art literature warns about. Every shake amplitude must be a multiple of 4 world px, which means the effective granularity is coarse (1 art px = 4 screen px) and the budget is *smaller*, not larger, than a native-resolution game's.
+
+**4. "The HUD is too busy, so remove HUD" misdiagnoses the problem.** The owner's failure was not too much information; it was information in the wrong place at the wrong size. Our screen has 7 persistent text labels, 4 of them at 9–11 px, and *none* at the objects they describe. Removing labels would make it worse. The fix is relocation (world-anchored), consolidation (3 global numbers, not 7) and magnification (20 px floor) — a *net addition* of diegetic elements alongside a net removal of screen-space text.
+
+**5. "One item at a time is the skill" may be structurally unfair in phases 3–4.** From `layout.json`: spawn (640, 512) → nearest washer mouth (240, 576) = 405 px = 1.19 s at 340 px/s; mouth → chute (640, 360) = 455 px = 1.34 s; a full loop is **2.5–2.9 s = 5.1–6.9 beats**. Phase-3 spawns arrive every 1.7 s = **3.7–4.0 beats**. So the loop costs more beats than the spawn interval grants, and the deficit can only be absorbed by the 3-slot washer buffer and by wash time overlapping travel. That is a legitimate design (it manufactures the chaos) but it means the HUD must show the *queue depth*, because no amount of skill closes a 1.5× throughput gap with one pair of hands **[inference from `AGENTS.md` §A5 constants and `layout.json`; verify with `tools/balance_sim.gd`]**.
+
+---
+
+## 13. Menu and screen-flow spec
+
+**Screens (6):** Title → Options / Calibration → Shift (with tutorial modifier) → Pause (overlay) → End → Retry.
+
+| Screen | Must contain | Focus order & default | Transition |
+|---|---|---|---|
+| **Title** | `ui_logo` 160×48 art px centred at y 200; three buttons stacked at y 380/440/500, each 320×48; room background at 40 % brightness, Pip idle loop, one washer spinning; version + seed in the corner at 12 px | `EMPEZAR TURNO` (default, focused) → `AJUSTES` → `SALIR`. D-pad/arrows; `Enter`/`A`; `Esc`/`B` quits only with a confirm | 180 ms: logo drops 8 px + fades in, buttons stagger 60 ms |
+| **Options** | 6 rows, single column, label left / value right: `Volumen` (3), `Calibrar audio`, `Ritmo visible`, `Sacudida`, `Tamaño de texto`, `Pantalla completa`. Footer: `B: volver` | First row focused; left/right changes value; `Esc`/`B` returns to Title | 120 ms cross-fade, no slide |
+| **Calibration** | Existing 10 s wizard; big tap target, live offset readout, `Repetir` / `Listo` | `Listo` focused when offset is valid | reuse existing modal |
+| **Pause** | Frozen play field at 30 % dim; `REANUDAR` (default), `VER TUTORIAL`, `AJUSTES`, `SALIR AL TÍTULO`; below: controls legend (4 lines, 14 px) + current objective (1 line, 20 px) | `REANUDAR`; `Esc`/`Start` also resumes | 100 ms dim, audio low-pass |
+| **End** | Result word (`TURNO COMPLETO` / `COLAPSO`), rank `S/A/B/C` at 48 px, 4 stats (washed, accuracy %, max combo, score), seed, `REINICIAR` (default) / `TÍTULO` | `REINICIAR`; `R` is a shortcut | 250 ms fade from gameplay |
+| **Restart** | — | must complete in **< 500 ms** (`RESTART_MAX_S`) | hard cut |
+
+**Rules.** No screen has more than 6 focusable items. No screen requires the mouse. `Esc` never quits from Pause without a confirm. Every transition is ≤ 250 ms and skippable by any input except during the 100 ms dim. The End screen's `REINICIAR` is always focused so a keyboard player can retry with `Enter` alone.
+
+**First-run prompt copy pattern** (the only strings a stranger reads before playing): `VERBO + OBJETO`, ≤ 24 chars, no articles where avoidable, no exclamation marks except on success. Canonical set: `AGARRA` · `LANZA AL RITMO` · `SUELTA AQUÍ` · `GOLPE AL RITMO` · `LLEVA EL LIMPIO AL DUCTO` · `EMPIEZA EL TURNO`.
+
+---
+
+## 14. Tutorial beat sheet
+
+Seven gates, ~150 s total at average pace, hard-capped at 240 s. The shift clock runs but stability loss is disabled until gate 7 (fail-forward). Each gate: one verb, one success condition, one prompt, max 3 s of text.
+
+| # | Gate | Prompt (ES, ≤ 24 ch) | Success condition | Fail-forward | Max on-screen words |
+|---|---|---|---|---|---|
+| 1 | Move | `MUEVETE` | 200 px travelled in any direction | after 4 s, a 1 px dotted circle at 120 px radius | 1 |
+| 2 | Grab | `AGARRA` | 1 successful grab | item is steered into `GRAB_RADIUS` | 1 |
+| 3 | Throw | `LANZA` | 1 throw that leaves the hold radius | auto-aim assist ×1.5 until first success | 1 |
+| 4 | Beat | `LANZA AL RITMO` | 2 throws ≥ GOOD | window widens to ±195 ms after 2 misses; gate granted after 3 | 3 |
+| 5 | Match | `SUELTA AQUÍ` | 1 correct-colour insert | the only active washer is the compatible one | 3 |
+| 6 | Strike | `GOLPE AL RITMO` | 1 strike ≥ GOOD on a `TURBULENT` washer | turbulence is scripted once, at 50 % progress, and cannot explode during the gate | 3 |
+| 7 | Deliver | `LLEVA EL LIMPIO AL DUCTO` | 1 clean item delivered to the chute | chute beacon pulses every 2 s until first delivery | 5 |
+
+**Skip rules.** Hold `Esc` 1 s or press `Start` at any time → immediate skip, `tutorial_done = true`, stability loss re-enabled. Replay from Pause → `VER TUTORIAL` (replays gates 1–7 with all timers and hints, no stability). The tutorial never auto-triggers again, including after a crash (`Settings.cfg`).
+
+**Why seven and not three:** gates 1–3 are motor (a player who cannot move cannot be taught anything), gate 4 is the only genuinely novel concept, gates 5–7 are the *loop*. Collapsing 5–7 into one gate would re-create the owner's experience: three rules at once with no success signal between them.
+
+---
+
+## 15. Source table
+
+Full citations, quotes and applicability are in [the appendix](UX_RESEARCH_SOURCES.md).
+
+| Id | Title | Author / publisher | Year | Supports | Confidence |
+|---|---|---|---|---|---|
+| S01 | Finding the beat in Crypt of the NecroDancer | Ryan Clark / Game Developer | 2014 | §1 leeway, auto-calibration, world-on-beat | verified-read |
+| S02 | How to make a rhythm game for people who have no rhythm | A. Diaz / Polygon | 2023 | §1 sync-instead-of-punish, beat visualiser, cut mechanics | verified-read |
+| S03 | Please redesign your UI for beat timing | Steam community / Metal: Hellsinger | 2023 | §1 miss-indicator overlap failure | verified-read |
+| S04 | Hands on with Patapon | T. Erickson / Pocket Gamer | 2008 | §1 peripheral frame metronome, combo reset | verified-read |
+| S05 | Overcooked: How Design Creates Teamwork | A. Iyer / SUPERJUMP | 2022 | §2 tickets-as-recipe, visible timers, layout | verified-read |
+| S06 | Deliberately diegetic (GDC 2013) | D. Tach / Polygon | 2013 | §3 diegetic limits, colour language | verified-read |
+| S07 | Full list | Game Accessibility Guidelines | n.d. | §8 all obligations | verified-read |
+| S08 | Understanding SC 1.4.3 Contrast | W3C WAI | 2026 | 4.5:1 / 3:1 thresholds | verified-read |
+| S09 | Understanding SC 2.3.1 Three Flashes | W3C WAI | n.d. | 3 Hz flash ceiling | verified-read |
+| S10 | A quick guide to readable game text | K. Stevens via GamesIndustry.biz | 2020 | 28 px @1080p floor, 4.5:1 | verified-read |
+| S11 | Diseñar la interfaz (string growth) | Microsoft | n.d. | Spanish expansion by length | verified-read |
+| S12 | Onboarding techniques | Roblox Creator Docs | 2026 | contextual/timed hints, 11 s rule | verified-read |
+| S13 | Vlambeer/Nuclear Throne feel numbers | T. Armitage quoting RPS | 2013 | §7 magnitudes | verified-read |
+| S14 | Pixel Art Filtering | G. Sassone | 2021 | shimmer, integer scale | verified-read |
+| S15 | Pixel Art (engine docs) | Excalibur | n.d. | shimmer/jaggies statement | verified-read |
+| S16 | Remaking Celeste's Lighting | N. Berry | 2017 | 320×180, cutout lights | verified-read |
+| S17 | Dead Cells art workflow | IWSE / GameRes | 2021 | 3D→2D normals, palette swap | verified-read |
+| S18 | Half-Life 2's Invisible Tutorial | M. Brown / GMTK | 2016 | staging vs text | transcript-read |
+| S19 | Ink Tank | Splatoon Wiki | n.d. | diegetic gauge design | skimmed |
+| S20 | Game UI Database | E. Coates | 2024 | screen-pattern reference | search-only |
+| S21 | Visual metronome request (Steam) | Steam community | 2025 | optional beat bar demand | search-only |
+
 <!-- END -->
