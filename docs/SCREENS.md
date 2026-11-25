@@ -46,7 +46,18 @@ calls.
 
 ## Screenshots
 
-All captured at 1280×720 with `tools/screenshot.gd` (see `docs/PROGRESS.md` for the command):
+All captured at 1280×720 with `tools/screenshot.gd`:
+
+```bash
+godot --headless --path . --import
+godot --path . -s tools/screenshot.gd --audio-driver Dummy --display-driver wayland \
+  --rendering-method gl_compatibility -- \
+  --scene=res://scenes/ui/TitleScreen.tscn --out=res://docs/media/menu_title.png --frames=20
+```
+
+The title is captured from `res://scenes/main/Main.tscn` instead (frames=40) so the real boot
+flow fills `Settings`: the standalone harness boots autoloads late, and a screen that reads
+`Settings` in `_ready` would otherwise show the "no record yet" state.
 
 - `docs/media/menu_title.png` — captured from `res://scenes/main/Main.tscn` so the real boot
   flow, `Settings` and the menu ambience are in play. The MEJOR TURNO plaque only appears
@@ -56,6 +67,19 @@ All captured at 1280×720 with `tools/screenshot.gd` (see `docs/PROGRESS.md` for
   void when instanced alone; in game they dim the title or the paused room. The end screen
   falls back to `@export var preview_result` demo data when `setup()` was not called, which
   is what makes its capture reproducible without playing a shift.
+
+## Verified inside `App`
+
+An ad-hoc probe (dev-only, not committed) instanced `res://scenes/main/Main.tscn` headlessly
+and confirmed the integration contract end to end:
+
+- boot → `current_screen == &"title"`, `TitleScreen` instanced, focus on `StartButton`;
+- `_on_title_start()` on a fresh install → `FirstRunPrompt`, focus on `TutorialButton`,
+  `tutorial_selected` → `current_screen == &"tutorial"`;
+- `start_shift(false)` → `pause_game()` → `PauseOverlay`, focus on `ResumeButton`,
+  `options_requested` → `OptionsScreen` over the paused tree, `closed` → `resume_game()`
+  returns to `&"shift"`;
+- `_show_end(result)` → `EndScreen` with the given rank/seed and focus on `RetryButton`.
 
 ## Notes and deviations
 
@@ -71,6 +95,10 @@ All captured at 1280×720 with `tools/screenshot.gd` (see `docs/PROGRESS.md` for
 - The title's mission chip (`OBJETIVO · LAVA Y ENTREGA HASTA LAS 06:00`) is the one addition
   to §12.1: the owner's complaint was that the goal was invisible, and the title is the first
   place it can be stated.
+- `App` never calls `OptionsScreen.open(from_pause)`: it instances the screen and calls
+  `focus_first()`. The screen therefore also derives "opened from pause" from
+  `get_tree().paused`, so the caption is right either way. If `App` later calls `open()`, the
+  flag wins.
 - The title's diorama is a static composition built from `data/layout.json` and the shipped
   sprites (no `Diorama.tscn` exists yet); it instances only the machinery on the right half
   of the room so nothing is cut in half by the menu plate. When `Diorama.tscn` lands, that
