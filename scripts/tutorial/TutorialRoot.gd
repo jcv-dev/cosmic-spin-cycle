@@ -158,6 +158,10 @@ func is_complete() -> bool:
 	return _complete
 
 
+func current_scene_mode() -> StringName:
+	return mode
+
+
 func _is_any_input(event: InputEvent) -> bool:
 	if event is InputEventKey:
 		return (event as InputEventKey).pressed and not (event as InputEventKey).echo

@@ -26,6 +26,8 @@ const WASHER_FORCE_FINISH_S := 4.0
 
 ## Debug/evidence hook: walk the gates on a timer so a screenshot can be deterministic.
 @export var autoplay := false
+## Test/evidence hook: pin Δt instead of sampling the song clock (negative = sample it).
+var debug_delta_t := -1.0
 
 var level: Node
 var overlay: TutorialOverlay
@@ -371,7 +373,7 @@ func _update_strike() -> void:
 		if _target_washer.has_method("force_turbulent"):
 			_target_washer.call("force_turbulent")
 		GameState.emit_feedback(tr("SIGUE EL PULSO"), &"info")
-	elif _strike_stage == 1 and _gate_time >= TutorialSteps.STRIKE_ASSIST_AFTER_S:
+	if _strike_stage == 1 and _gate_time >= TutorialSteps.STRIKE_ASSIST_AFTER_S:
 		_strike_stage = 2
 		# Fail-forward, not a lie: the director lands a GOOD strike on the same washer so
 		# the turbulence resolves and the loop continues. That hit grants the gate.
@@ -477,13 +479,16 @@ func _on_player_grabbed(item: Node) -> void:
 	_feed({"kind": &"grab"})
 
 
-func _on_player_thrown(item: Node, _grade: int) -> void:
+func _on_player_thrown(item: Node, player_grade: int) -> void:
 	var left_hold := true
-	if item != null and is_instance_valid(item) and item is Node2D:
-		left_hold = (
-			(item as Node2D).global_position.distance_to(_player_anchor()) > Config.GRAB_RADIUS
-		)
-	_feed({"kind": &"throw", "left_hold": left_hold, "delta_t": _beat_delta()})
+	if item != null and is_instance_valid(item) and item is Node2D and _player is Node2D:
+		var body := (_player as Node2D).global_position
+		left_hold = (item as Node2D).global_position.distance_to(body) > Config.GRAB_RADIUS
+	var delta_t := _beat_delta()
+	# The gate is never stricter than the grade the player already saw: the tutorial window
+	# may rescue a borderline throw, never downgrade a GOOD one.
+	var tuned := mini(player_grade, TutorialSteps.grade_throw(delta_t, int(state.get("misses", 0))))
+	_feed({"kind": &"throw", "left_hold": left_hold, "delta_t": delta_t, "grade": tuned})
 	match TutorialSteps.kind_for(_step_index):
 		&"grade":
 			_gate_item = null
@@ -494,8 +499,8 @@ func _on_player_thrown(item: Node, _grade: int) -> void:
 			pass
 
 
-func _on_player_struck(washer: Node, _grade: int) -> void:
-	var grade := TutorialSteps.grade_strike(_beat_delta())
+func _on_player_struck(washer: Node, player_grade: int) -> void:
+	var grade := mini(player_grade, TutorialSteps.grade_strike(_beat_delta()))
 	if washer != null and washer == _target_washer:
 		overlay.pulse_at(_washer_anchor(washer), UITheme.SUCCESS)
 	_feed({"kind": &"strike", "grade": grade})
@@ -798,6 +803,8 @@ func show_gate_prompt(anchor: Vector2) -> void:
 
 
 func _beat_delta() -> float:
+	if debug_delta_t >= 0.0:
+		return debug_delta_t
 	if not BeatConductor.has_method("delta_to_nearest_beat"):
 		return 0.0
 	var song_time := float(BeatConductor.call("get_song_time"))
