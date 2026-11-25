@@ -55,7 +55,10 @@ to the object it is about (above the item / washer mouth / chute), never a modal
 | Skip | ESC / START at any time | `¿SALTAR TUTORIAL?`, default focus **NO** |
 
 The guard is cleared on **every** exit path — complete, skip, or the node being freed
-(`TutorialRoot._exit_tree`).
+(`TutorialRoot._exit_tree`). While the tutorial runs, `pause` belongs to the skip plaque, so
+the pause menu is intentionally unreachable: ESC/START is the tutorial's own escape hatch.
+Re-issued every frame, the fail-forward rings stay glued to their target (Pip keeps walking,
+the gate-2 item keeps being steered) instead of marking where the player *was*.
 
 ---
 
@@ -155,7 +158,7 @@ API hooks on the director: `debug_advance()`, `debug_goto(index)`, `debug_set_el
 | `tests/unit/test_tutorial_steps.gd` | table order/copy/widths, 200 px travel, travel only on gate 1, grab, throw leaving hold, 2 GOOD throws, widening + grant after 3 misses, wrong-washer rejection, strike grading, clean-only delivery, TAB soft-skip, immutability of a granted gate |
 | `tests/unit/test_tutorial_director.gd` | start on gate 1, no auto-advance, staging per gate, wrong mouth ignored, washer locking/restoring, gate 7 drops the guard, exit always clears it, assisted strike, autoplay to the end — with a fake level so the M4 merge cannot break it |
 | `tests/unit/test_tutorial_overlay.gd` | chip/underline, prompt anchoring above the anchor, 24-char budget, plaques and their signals, reduce-motion, TAB footer bounds, world→screen mapping |
-| `tests/integration/test_tutorial_flow.gd` | `Tutorial.tscn` boots the real level in tutorial mode, chip + prompt at gate 1, guard on/off, pause → skip plaque, skip and completion persistence and re-emission, replay never blocked |
+| `tests/integration/test_tutorial_flow.gd` | `Tutorial.tscn` boots the real level in tutorial mode, chip + prompt at gate 1, guard on/off, pause → skip plaque (and never the pause menu), skip and completion persistence and re-emission, replay never blocked, autoplay walks the real scene to the plaque, input routing (completion grace window, TAB only when stuck) |
 
 The real-washer end-to-end test is marked **pending** in this worktree: `CosmicWasher.tscn`
 and `DeliveryChute.tscn` are owned by the `core-loop` workstream and are absent here. The
@@ -176,9 +179,14 @@ merge should light the pending test up without code changes.
 | [`tutorial_skip.png`](media/tutorial_skip.png) | skip | dimmed field, `¿SALTAR TUTORIAL?`, default focus **NO** |
 
 Rendered with `--display-driver wayland --rendering-method gl_compatibility` (software GL is
-fine) at exactly 1280×720. Three review passes were made: (1) chip/anchors, (2) plaques and
-beacon legibility, (3) beat ring, reticle brackets and the TAB footer. Current self-score:
+fine) at exactly 1280×720. Four review passes were made: (1) chip geometry, prompt anchoring
+above the object and off Pip, (2) plaque proportions and beacon legibility, (3) beat ring,
+reticle brackets, TAB footer, (4) prompt avoidance and footer bounds. Current self-score:
 hierarchy 4–5, clarity 4–5, readability 5, *would a stranger know what to do* 4–5.
+
+Measured weak spots kept honest: the gate-7 reticle points at a spot the placeholder room only
+marks with a dashed pad (the real `DeliveryChute` will fill it), and the top chip still shares
+its band with the north belt, so it is only readable because of its 2 px `metal_1` border.
 
 ---
 
