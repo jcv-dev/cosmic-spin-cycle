@@ -401,11 +401,17 @@ func _finish(victory: bool, reason: String) -> void:
 
 
 func _on_shift_ended(result: Dictionary) -> void:
+	_ended = true
+	BeatConductor.stop()
+	if _spawner != null and _spawner.has_method("stop"):
+		_spawner.call("stop")
 	if _end_label == null:
 		return
 	_end_label.visible = true
 	if _end_label.text == "":
-		_end_label.text = "FIN DEL TURNO\nsemilla %d" % int(result.get("seed", 0))
+		var reason := String(result.get("reason", ""))
+		var title := "FIN DEL TURNO" if bool(result.get("victory", false)) else "DESGARRO UNIVERSAL"
+		_end_label.text = "%s\n%s · semilla %d" % [title, reason, int(result.get("seed", 0))]
 
 
 ## Debug/QA hook: jump the shift clock and immediately consume spawns/phase changes.
@@ -427,6 +433,10 @@ func warp_to(t: float) -> void:
 		print("WARP seek items=%d time=%s" % [_items.get_child_count(), str(_spawner.get("time"))])
 	if _hud != null:
 		_hud.set_shift_time(shift_time)
+
+
+func is_ended() -> bool:
+	return _ended
 
 
 func get_shift_time() -> float:

@@ -118,3 +118,14 @@ func test_warp_skips_past_spawns() -> void:
 	assert_eq(level.get_node("Items").get_child_count(), 1, "one interval after the warp")
 	spawner.call("stop")
 	BeatConductor.stop()
+
+
+func test_stability_zero_stops_the_shift() -> void:
+	var level := _spawn_level()
+	assert_false(level.is_ended())
+	GameState.add_stability(-500.0, "test")
+	assert_true(level.is_ended())
+	assert_false(BeatConductor.is_playing)
+	var label := level.get_node("UI/EndLabel") as Label
+	assert_true(label.visible)
+	assert_string_contains(label.text, "DESGARRO")
