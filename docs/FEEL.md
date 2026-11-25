@@ -202,7 +202,8 @@ godot --path . --write-movie .work/movie/frame.png --fixed-fps 60 --resolution 1
   of the body (light top-left), the core's shadow is no longer an all-around halo, and the
   aim reticle remains the sandbox's cyan line.
 - Tests: `godot --headless --path . -s addons/gut/gut_cmdln.gd -gdir=res://tests
-  -ginclude_subdirs -gexit` → 360 passing.
+  -ginclude_subdirs -gexit` → 360 passing. The suite was also run with the `Juice` autoload
+  temporarily added to `project.godot`: 360/360, so the integration step is verified.
 
 ## 7. Known gaps / deliberate non-goals
 
@@ -221,3 +222,7 @@ godot --path . --write-movie .work/movie/frame.png --fixed-fps 60 --resolution 1
   burst frees itself after 0.8 s).
 - No screen-space shader was added: all effects are nodes, so the GL Compatibility budget is
   untouched.
+- Hitstop is only clock-safe while music is playing: `BeatConductor` reads the audio position,
+  which `Engine.time_scale` does not affect. The free-run fallback (no stream, headless/dev)
+  accumulates scaled `delta`, so a freeze stretches beat timing there. Gameplay always has a
+  stream from M8; a future fix would let BeatConductor use an unscaled delta.
