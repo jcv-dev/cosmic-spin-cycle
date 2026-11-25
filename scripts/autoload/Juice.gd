@@ -173,7 +173,9 @@ func _tick_flash() -> void:
 	# draw, so it can never cover the play field for two frames.
 	if _flash_layer == null or not _flash_layer.visible:
 		return
-	if Engine.get_process_frames() > _flash_stamp:
+	# Hide on the next process pass: the overlay is drawn for exactly the frame it was
+	# requested on. `>=` because the frame counter may not advance during the same tick.
+	if Engine.get_process_frames() >= _flash_stamp:
 		_hide_flash()
 
 

@@ -37,7 +37,6 @@ static var _dust_texture: ImageTexture = null
 
 var _specs: Array[Dictionary] = []
 
-
 # --- builders ---------------------------------------------------------------
 
 
@@ -182,10 +181,7 @@ func _draw_spec(spec: Dictionary) -> void:
 			draw_colored_polygon(spec["points"] as PackedVector2Array, tinted)
 		&"line":
 			draw_polyline(
-				spec["points"] as PackedVector2Array,
-				tinted,
-				float(spec.get("width", 4.0)),
-				false
+				spec["points"] as PackedVector2Array, tinted, float(spec.get("width", 4.0)), false
 			)
 		&"arc":
 			draw_arc(
@@ -257,13 +253,16 @@ static func _floor_grime(specs: Array[Dictionary], rng: RandomNumberGenerator) -
 			var reach := radius * rng.randf_range(0.55, 1.0)
 			var point := center + Vector2(cos(angle), sin(angle)) * reach
 			points.append(_snap(point))
-		specs.append(
-			{
-				"kind": &"poly",
-				"points": points,
-				"color": colors[index % colors.size()],
-				"alpha": 0.20 if index % 2 == 0 else 0.16,
-			}
+		(
+			specs
+			. append(
+				{
+					"kind": &"poly",
+					"points": points,
+					"color": colors[index % colors.size()],
+					"alpha": 0.20 if index % 2 == 0 else 0.16,
+				}
+			)
 		)
 
 
@@ -281,14 +280,17 @@ static func _floor_puddles(specs: Array[Dictionary]) -> void:
 		for step in range(9):
 			var angle := PI * (1.05 + 0.5 * float(step) / 8.0)
 			gloss.append(_snap(center + Vector2(cos(angle) * radius.x, sin(angle) * radius.y)))
-		specs.append(
-			{
-				"kind": &"line",
-				"points": gloss,
-				"color": Palette.METAL_3,
-				"alpha": 0.75,
-				"width": 4.0,
-			}
+		(
+			specs
+			. append(
+				{
+					"kind": &"line",
+					"points": gloss,
+					"color": Palette.METAL_3,
+					"alpha": 0.75,
+					"width": 4.0,
+				}
+			)
 		)
 
 
@@ -305,9 +307,7 @@ static func _floor_streaks(specs: Array[Dictionary]) -> void:
 		var points := PackedVector2Array(
 			[from, to, to + Vector2(2.0, 8.0), from + Vector2(2.0, 8.0)]
 		)
-		specs.append(
-			{"kind": &"poly", "points": points, "color": Palette.METAL_2, "alpha": 0.10}
-		)
+		specs.append({"kind": &"poly", "points": points, "color": Palette.METAL_2, "alpha": 0.10})
 
 
 static func _floor_hazard(specs: Array[Dictionary]) -> void:
@@ -328,13 +328,16 @@ static func _floor_hazard(specs: Array[Dictionary]) -> void:
 					Vector2(x + stripe * 0.5, rect.end.y),
 				]
 			)
-			specs.append(
-				{
-					"kind": &"poly",
-					"points": points,
-					"color": Palette.HAZARD_ORANGE,
-					"alpha": 0.20,
-				}
+			(
+				specs
+				. append(
+					{
+						"kind": &"poly",
+						"points": points,
+						"color": Palette.HAZARD_ORANGE,
+						"alpha": 0.20,
+					}
+				)
 			)
 
 
@@ -343,12 +346,14 @@ static func _floor_routes(specs: Array[Dictionary]) -> void:
 	var mouths := {
 		"washer_nw": [Vector2(60, 80), Vector2(chute.position.x, 80.0)],
 		"washer_ne": [Vector2(260, 80), Vector2(chute.end.x, 80.0)],
-		"washer_sw": [
+		"washer_sw":
+		[
 			Vector2(60, 144),
 			Vector2(chute.position.x - 8.0, 144.0),
 			Vector2(chute.position.x - 8.0, chute.end.y),
 		],
-		"washer_se": [
+		"washer_se":
+		[
 			Vector2(260, 144),
 			Vector2(chute.end.x + 8.0, 144.0),
 			Vector2(chute.end.x + 8.0, chute.end.y),
@@ -404,13 +409,16 @@ static func _floor_scuffs(specs: Array[Dictionary]) -> void:
 		Rect2(250, 58, 8, 3),
 	]
 	for spot: Rect2 in spots:
-		specs.append(
-			{
-				"kind": &"rect",
-				"rect": _rect_world(spot),
-				"color": Palette.METAL_1,
-				"alpha": 0.16,
-			}
+		(
+			specs
+			. append(
+				{
+					"kind": &"rect",
+					"rect": _rect_world(spot),
+					"color": Palette.METAL_1,
+					"alpha": 0.16,
+				}
+			)
 		)
 
 
@@ -418,45 +426,54 @@ static func _floor_scuffs(specs: Array[Dictionary]) -> void:
 static func _floor_chute_zone(specs: Array[Dictionary]) -> void:
 	var chute := RoomBuilder.layout_rect("chute")
 	var center := chute.get_center()
-	specs.append(
-		{
-			"kind": &"arc",
-			"center": center,
-			"radius": 88.0,
-			"from": 0.0,
-			"to": TAU,
-			"segments": 48,
-			"color": Palette.CLEAN_GREEN,
-			"alpha": 0.20,
-			"width": 4.0,
-		}
+	(
+		specs
+		. append(
+			{
+				"kind": &"arc",
+				"center": center,
+				"radius": 88.0,
+				"from": 0.0,
+				"to": TAU,
+				"segments": 48,
+				"color": Palette.CLEAN_GREEN,
+				"alpha": 0.20,
+				"width": 4.0,
+			}
+		)
 	)
-	specs.append(
-		{
-			"kind": &"arc",
-			"center": center,
-			"radius": 104.0,
-			"from": 0.0,
-			"to": TAU,
-			"segments": 48,
-			"color": Palette.METAL_1,
-			"alpha": 0.14,
-			"width": 4.0,
-		}
+	(
+		specs
+		. append(
+			{
+				"kind": &"arc",
+				"center": center,
+				"radius": 104.0,
+				"from": 0.0,
+				"to": TAU,
+				"segments": 48,
+				"color": Palette.METAL_1,
+				"alpha": 0.14,
+				"width": 4.0,
+			}
+		)
 	)
 	for index in range(8):
 		var angle := TAU * float(index) / 8.0 + PI / 8.0
 		var direction := Vector2(cos(angle), sin(angle))
 		var from := center + direction * 88.0
 		var to := center + direction * 108.0
-		specs.append(
-			{
-				"kind": &"line",
-				"points": PackedVector2Array([from, to]),
-				"color": Palette.CLEAN_GREEN,
-				"alpha": 0.22,
-				"width": 4.0,
-			}
+		(
+			specs
+			. append(
+				{
+					"kind": &"line",
+					"points": PackedVector2Array([from, to]),
+					"color": Palette.CLEAN_GREEN,
+					"alpha": 0.22,
+					"width": 4.0,
+				}
+			)
 		)
 
 
@@ -465,36 +482,47 @@ static func _floor_contact_shadows(specs: Array[Dictionary]) -> void:
 	for washer: Dictionary in RoomBuilder.layout().get("washers", []):
 		var rect := RoomBuilder.rect_world(washer)
 		# Cast shadow: light comes from the top-left, so the shadow falls bottom-right.
-		specs.append(
-			{
-				"kind": &"rect",
-				"rect": Rect2(rect.position.x + 12.0, rect.end.y - 8.0, rect.size.x, 16.0),
-				"color": Palette.SPACE_VOID,
-				"alpha": 0.30,
-			}
+		(
+			specs
+			. append(
+				{
+					"kind": &"rect",
+					"rect": Rect2(rect.position.x + 12.0, rect.end.y - 8.0, rect.size.x, 16.0),
+					"color": Palette.SPACE_VOID,
+					"alpha": 0.30,
+				}
+			)
 		)
-		specs.append(_shadow_ellipse(Vector2(rect.get_center().x, rect.end.y - 4.0), rect.size.x * 0.46, 4.0))
+		specs.append(
+			_shadow_ellipse(Vector2(rect.get_center().x, rect.end.y - 4.0), rect.size.x * 0.46, 4.0)
+		)
 	var chute := RoomBuilder.layout_rect("chute")
 	specs.append(_shadow_ellipse(Vector2(chute.get_center().x, chute.end.y - 4.0), 26.0, 4.0))
 	for belt: Dictionary in RoomBuilder.layout().get("belts", []):
 		var rect := RoomBuilder.rect_world(belt)
 		if rect.size.x >= rect.size.y:
-			specs.append(
-				{
-					"kind": &"rect",
-					"rect": Rect2(rect.position.x, rect.end.y, rect.size.x, 8.0),
-					"color": Palette.SPACE_VOID,
-					"alpha": 0.35,
-				}
+			(
+				specs
+				. append(
+					{
+						"kind": &"rect",
+						"rect": Rect2(rect.position.x, rect.end.y, rect.size.x, 8.0),
+						"color": Palette.SPACE_VOID,
+						"alpha": 0.35,
+					}
+				)
 			)
 		else:
-			specs.append(
-				{
-					"kind": &"rect",
-					"rect": Rect2(rect.end.x, rect.position.y, 8.0, rect.size.y),
-					"color": Palette.SPACE_VOID,
-					"alpha": 0.35,
-				}
+			(
+				specs
+				. append(
+					{
+						"kind": &"rect",
+						"rect": Rect2(rect.end.x, rect.position.y, 8.0, rect.size.y),
+						"color": Palette.SPACE_VOID,
+						"alpha": 0.35,
+					}
+				)
 			)
 
 
@@ -514,37 +542,49 @@ static func _floor_wall_shadow(specs: Array[Dictionary]) -> void:
 		var inset := 32.0 + float(step) * 8.0
 		var alpha: float = band[step]
 		var color := Palette.SPACE_VOID
-		specs.append(
-			{
-				"kind": &"rect",
-				"rect": Rect2(32.0, inset, 1216.0, 8.0),
-				"color": color,
-				"alpha": alpha,
-			}
+		(
+			specs
+			. append(
+				{
+					"kind": &"rect",
+					"rect": Rect2(32.0, inset, 1216.0, 8.0),
+					"color": color,
+					"alpha": alpha,
+				}
+			)
 		)
-		specs.append(
-			{
-				"kind": &"rect",
-				"rect": Rect2(32.0, 688.0 - inset, 1216.0, 8.0),
-				"color": color,
-				"alpha": alpha,
-			}
+		(
+			specs
+			. append(
+				{
+					"kind": &"rect",
+					"rect": Rect2(32.0, 688.0 - inset, 1216.0, 8.0),
+					"color": color,
+					"alpha": alpha,
+				}
+			)
 		)
-		specs.append(
-			{
-				"kind": &"rect",
-				"rect": Rect2(inset, 32.0, 8.0, 656.0),
-				"color": color,
-				"alpha": alpha,
-			}
+		(
+			specs
+			. append(
+				{
+					"kind": &"rect",
+					"rect": Rect2(inset, 32.0, 8.0, 656.0),
+					"color": color,
+					"alpha": alpha,
+				}
+			)
 		)
-		specs.append(
-			{
-				"kind": &"rect",
-				"rect": Rect2(1248.0 - inset, 32.0, 8.0, 656.0),
-				"color": color,
-				"alpha": alpha,
-			}
+		(
+			specs
+			. append(
+				{
+					"kind": &"rect",
+					"rect": Rect2(1248.0 - inset, 32.0, 8.0, 656.0),
+					"color": color,
+					"alpha": alpha,
+				}
+			)
 		)
 
 
@@ -565,13 +605,16 @@ static func dressing_specs(seed_value: int = SEED) -> Array[Dictionary]:
 	_dressing_walls(specs)
 	# One grease smear changes with the seed so the layer is provably seed-driven.
 	var smear_center := Vector2(150, 100) + Vector2(rng.randi_range(-8, 8), rng.randi_range(-6, 6))
-	specs.append(
-		{
-			"kind": &"rect",
-			"rect": _rect_world(Rect2(smear_center, Vector2(rng.randi_range(6, 12), 2))),
-			"color": Palette.METAL_0,
-			"alpha": 0.12,
-		}
+	(
+		specs
+		. append(
+			{
+				"kind": &"rect",
+				"rect": _rect_world(Rect2(smear_center, Vector2(rng.randi_range(6, 12), 2))),
+				"color": Palette.METAL_0,
+				"alpha": 0.12,
+			}
+		)
 	)
 	return specs
 
@@ -588,16 +631,25 @@ static func _dressing_cables(specs: Array[Dictionary]) -> void:
 		for point: Vector2 in run:
 			points.append(_snap(point * float(Config.ART_SCALE)))
 		specs.append(
-			{"kind": &"line", "points": points, "color": Palette.METAL_0, "alpha": 0.75, "width": 4.0}
+			{
+				"kind": &"line",
+				"points": points,
+				"color": Palette.METAL_0,
+				"alpha": 0.75,
+				"width": 4.0
+			}
 		)
 		var plug := points[points.size() - 1]
-		specs.append(
-			{
-				"kind": &"rect",
-				"rect": Rect2(plug.x - 8.0, plug.y - 8.0, 16.0, 16.0),
-				"color": Palette.METAL_2,
-				"alpha": 0.85,
-			}
+		(
+			specs
+			. append(
+				{
+					"kind": &"rect",
+					"rect": Rect2(plug.x - 8.0, plug.y - 8.0, 16.0, 16.0),
+					"color": Palette.METAL_2,
+					"alpha": 0.85,
+				}
+			)
 		)
 
 
@@ -619,51 +671,66 @@ static func _dressing_sign(specs: Array[Dictionary]) -> void:
 static func _dressing_valves(specs: Array[Dictionary]) -> void:
 	var valves := [Vector2(20, 30), Vector2(300, 30)]
 	for center: Vector2 in valves:
-		specs.append(
-			{
-				"kind": &"valve",
-				"center": _snap(center * float(Config.ART_SCALE)),
-				"radius": 9.0 * float(Config.ART_SCALE),
-				"color": Palette.METAL_2,
-			}
+		(
+			specs
+			. append(
+				{
+					"kind": &"valve",
+					"center": _snap(center * float(Config.ART_SCALE)),
+					"radius": 9.0 * float(Config.ART_SCALE),
+					"color": Palette.METAL_2,
+				}
+			)
 		)
 
 
 ## Panel seams and bolts along the two side walls: density at the edges, calm in the lane.
 static func _dressing_walls(specs: Array[Dictionary]) -> void:
 	for y in range(48, 700, 96):
-		specs.append(
-			{
-				"kind": &"rect",
-				"rect": Rect2(2.0, float(y), 28.0, 2.0),
-				"color": Palette.METAL_0,
-				"alpha": 0.45,
-			}
+		(
+			specs
+			. append(
+				{
+					"kind": &"rect",
+					"rect": Rect2(2.0, float(y), 28.0, 2.0),
+					"color": Palette.METAL_0,
+					"alpha": 0.45,
+				}
+			)
 		)
-		specs.append(
-			{
-				"kind": &"rect",
-				"rect": Rect2(1250.0, float(y), 28.0, 2.0),
-				"color": Palette.METAL_0,
-				"alpha": 0.45,
-			}
+		(
+			specs
+			. append(
+				{
+					"kind": &"rect",
+					"rect": Rect2(1250.0, float(y), 28.0, 2.0),
+					"color": Palette.METAL_0,
+					"alpha": 0.45,
+				}
+			)
 		)
 	for y in range(88, 700, 192):
-		specs.append(
-			{
-				"kind": &"rect",
-				"rect": Rect2(8.0, float(y), 4.0, 4.0),
-				"color": Palette.METAL_1,
-				"alpha": 0.5,
-			}
+		(
+			specs
+			. append(
+				{
+					"kind": &"rect",
+					"rect": Rect2(8.0, float(y), 4.0, 4.0),
+					"color": Palette.METAL_1,
+					"alpha": 0.5,
+				}
+			)
 		)
-		specs.append(
-			{
-				"kind": &"rect",
-				"rect": Rect2(1268.0, float(y), 4.0, 4.0),
-				"color": Palette.METAL_1,
-				"alpha": 0.5,
-			}
+		(
+			specs
+			. append(
+				{
+					"kind": &"rect",
+					"rect": Rect2(1268.0, float(y), 4.0, 4.0),
+					"color": Palette.METAL_1,
+					"alpha": 0.5,
+				}
+			)
 		)
 
 
@@ -684,7 +751,11 @@ func _draw_vent(rect: Rect2, color: Color) -> void:
 
 
 func _draw_valve(center: Vector2, radius: float, color: Color) -> void:
-	draw_circle(center, radius, Color(Palette.SPACE_DEEP.r, Palette.SPACE_DEEP.g, Palette.SPACE_DEEP.b, 0.95))
+	draw_circle(
+		center,
+		radius,
+		Color(Palette.SPACE_DEEP.r, Palette.SPACE_DEEP.g, Palette.SPACE_DEEP.b, 0.95)
+	)
 	draw_arc(center, radius, 0.0, TAU, 24, color, 4.0, false)
 	var hub := Color(Palette.METAL_1.r, Palette.METAL_1.g, Palette.METAL_1.b, 0.95)
 	for index in range(3):
@@ -712,7 +783,12 @@ func _draw_sign(rect: Rect2, text: String) -> void:
 					continue
 				draw_rect(
 					Rect2(
-						origin + Vector2(float(column) * pixel + float(index) * pitch, float(row) * pixel),
+						(
+							origin
+							+ Vector2(
+								float(column) * pixel + float(index) * pitch, float(row) * pixel
+							)
+						),
 						Vector2(pixel, pixel)
 					),
 					ink
@@ -740,7 +816,9 @@ func _draw_bucket(rect: Rect2) -> void:
 			Vector2(body.position.x + 6.0, body.end.y),
 		]
 	)
-	draw_colored_polygon(points, Color(Palette.METAL_1.r, Palette.METAL_1.g, Palette.METAL_1.b, 0.95))
+	draw_colored_polygon(
+		points, Color(Palette.METAL_1.r, Palette.METAL_1.g, Palette.METAL_1.b, 0.95)
+	)
 	draw_rect(
 		Rect2(body.position + Vector2(2.0, 0.0), Vector2(body.size.x - 4.0, 4.0)),
 		Color(Palette.METAL_2.r, Palette.METAL_2.g, Palette.METAL_2.b, 0.95)
@@ -786,82 +864,106 @@ static func foreground_specs() -> Array[Dictionary]:
 
 
 static func _foreground_pipes(specs: Array[Dictionary]) -> void:
-	specs.append(
-		{
-			"kind": &"rect",
-			"rect": Rect2(0.0, 2.0, 1280.0, 8.0),
-			"color": Palette.SPACE_MID,
-			"alpha": 1.0,
-		}
-	)
-	specs.append(
-		{
-			"kind": &"rect",
-			"rect": Rect2(0.0, 2.0, 1280.0, 2.0),
-			"color": Palette.METAL_0,
-			"alpha": 0.9,
-		}
-	)
-	specs.append(
-		{
-			"kind": &"rect",
-			"rect": Rect2(0.0, 14.0, 1280.0, 6.0),
-			"color": Palette.SPACE_MID,
-			"alpha": 1.0,
-		}
-	)
-	specs.append(
-		{
-			"kind": &"rect",
-			"rect": Rect2(0.0, 14.0, 1280.0, 2.0),
-			"color": Palette.METAL_0,
-			"alpha": 0.7,
-		}
-	)
-	for x in [180.0, 520.0, 860.0, 1180.0]:
-		specs.append(
+	(
+		specs
+		. append(
 			{
 				"kind": &"rect",
-				"rect": Rect2(x, 0.0, 12.0, 22.0),
-				"color": Palette.METAL_0,
-				"alpha": 0.95,
+				"rect": Rect2(0.0, 2.0, 1280.0, 8.0),
+				"color": Palette.SPACE_MID,
+				"alpha": 1.0,
 			}
+		)
+	)
+	(
+		specs
+		. append(
+			{
+				"kind": &"rect",
+				"rect": Rect2(0.0, 2.0, 1280.0, 2.0),
+				"color": Palette.METAL_0,
+				"alpha": 0.9,
+			}
+		)
+	)
+	(
+		specs
+		. append(
+			{
+				"kind": &"rect",
+				"rect": Rect2(0.0, 14.0, 1280.0, 6.0),
+				"color": Palette.SPACE_MID,
+				"alpha": 1.0,
+			}
+		)
+	)
+	(
+		specs
+		. append(
+			{
+				"kind": &"rect",
+				"rect": Rect2(0.0, 14.0, 1280.0, 2.0),
+				"color": Palette.METAL_0,
+				"alpha": 0.7,
+			}
+		)
+	)
+	for x in [180.0, 520.0, 860.0, 1180.0]:
+		(
+			specs
+			. append(
+				{
+					"kind": &"rect",
+					"rect": Rect2(x, 0.0, 12.0, 22.0),
+					"color": Palette.METAL_0,
+					"alpha": 0.95,
+				}
+			)
 		)
 
 
 static func _foreground_lamps(specs: Array[Dictionary]) -> void:
 	for x in [320.0, 980.0]:
-		specs.append(
-			{
-				"kind": &"rect",
-				"rect": Rect2(x - 2.0, 24.0, 4.0, 62.0),
-				"color": Palette.SPACE_VOID,
-				"alpha": 0.85,
-			}
+		(
+			specs
+			. append(
+				{
+					"kind": &"rect",
+					"rect": Rect2(x - 2.0, 24.0, 4.0, 62.0),
+					"color": Palette.SPACE_VOID,
+					"alpha": 0.85,
+				}
+			)
 		)
-		specs.append(
-			{
-				"kind": &"rect",
-				"rect": Rect2(x - 12.0, 82.0, 24.0, 8.0),
-				"color": Palette.METAL_1,
-				"alpha": 0.95,
-			}
+		(
+			specs
+			. append(
+				{
+					"kind": &"rect",
+					"rect": Rect2(x - 12.0, 82.0, 24.0, 8.0),
+					"color": Palette.METAL_1,
+					"alpha": 0.95,
+				}
+			)
 		)
 		# Three flat rings stand in for a soft glow without a shader or a big quad.
 		var rings := [[40.0, 0.07], [26.0, 0.09], [12.0, 0.14]]
 		for ring: Array in rings:
-			specs.append(
-				{
-					"kind": &"arc",
-					"center": Vector2(x, 92.0),
-					"radius": float(ring[0]),
-					"from": 0.0,
-					"to": TAU,
-					"segments": 20,
-					"color": Palette.YEL_3,
-					"alpha": float(ring[1]),
-					"width": 8.0,
-				}
+			(
+				specs
+				. append(
+					{
+						"kind": &"arc",
+						"center": Vector2(x, 92.0),
+						"radius": float(ring[0]),
+						"from": 0.0,
+						"to": TAU,
+						"segments": 20,
+						"color": Palette.YEL_3,
+						"alpha": float(ring[1]),
+						"width": 8.0,
+					}
+				)
 			)
 
 

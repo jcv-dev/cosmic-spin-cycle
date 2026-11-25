@@ -28,6 +28,10 @@ const SHAKE_PHASE_Y := 41.77
 const SHAKE_FREQ_X := 37.7
 const SHAKE_FREQ_Y := 29.3
 
+## The room is exactly one 1280x720 screen, so the camera must never leave CENTER: a
+## follow offset would expose the void beyond the room edges. Follow is opt-in for larger
+## levels; shake, kicks and zoom punches still apply in fixed mode.
+@export var follow_enabled := false
 @export var zoom_out_enabled := true
 @export var zoom_out_amount := 0.03
 
@@ -60,12 +64,15 @@ func _ready() -> void:
 	refresh_flight_count()
 
 
-## Binds the followed node and snaps the rig to it so the first frame does not pan.
+## Binds the target. In follow mode the rig snaps to it so the first frame does not pan; in
+## the shipped fixed-camera mode it stays on the room centre and only shake/kick move it.
 func setup(follow_target: Node) -> void:
 	target = follow_target as Node2D
-	if target != null:
+	if follow_enabled and target != null:
 		_smooth_position = target.global_position
-		global_position = _pixel(_smooth_position)
+	elif not follow_enabled:
+		_smooth_position = CENTER
+	global_position = _pixel(_smooth_position)
 	refresh_flight_count()
 
 
@@ -165,7 +172,9 @@ func _acquire_target() -> void:
 
 
 func _update_follow(delta: float) -> void:
-	var desired := target.global_position + _compute_lead()
+	var desired := CENTER
+	if follow_enabled and target != null:
+		desired = target.global_position + _compute_lead()
 	var offset := desired - _smooth_position
 	if offset.length() <= DEADZONE_PX:
 		return

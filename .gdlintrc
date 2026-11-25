@@ -1,5 +1,8 @@
 # gdtoolkit 4.5 lint policy for Cosmic Spin Cycle. Values not listed use gdtoolkit defaults.
 max-line-length: 100
+# RoomDressing is one cohesive authored room (decal/dressing builders); splitting it would
+# scatter tightly coupled layout constants. Bumped from the default 1000 with the reason above.
+max-file-lines: 1200
 class-definitions-order:
   - tools
   - classnames

@@ -128,20 +128,10 @@ func _setup() -> void:
 		var x := 240.0 if index == 0 else 1040.0
 		_cold.append(
 			_add_light(
-				"ColdLamp%d" % index,
-				Vector2(x, 104.0),
-				COLD_RADIUS,
-				COLD_ENERGY,
-				&"funk_cyan"
+				"ColdLamp%d" % index, Vector2(x, 104.0), COLD_RADIUS, COLD_ENERGY, &"funk_cyan"
 			)
 		)
-	_warm = _add_light(
-		"SpawnWarm",
-		RoomBuilder.player_spawn(),
-		WARM_RADIUS,
-		WARM_ENERGY,
-		&"yel_3"
-	)
+	_warm = _add_light("SpawnWarm", RoomBuilder.player_spawn(), WARM_RADIUS, WARM_ENERGY, &"yel_3")
 	_update_energy()
 
 
@@ -184,11 +174,7 @@ func _build_floor_pools(palette: Array[StringName]) -> void:
 
 
 func _add_light(
-	light_name: String,
-	at: Vector2,
-	radius: float,
-	energy: float,
-	tint: StringName
+	light_name: String, at: Vector2, radius: float, energy: float, tint: StringName
 ) -> PointLight2D:
 	var light := PointLight2D.new()
 	light.name = light_name

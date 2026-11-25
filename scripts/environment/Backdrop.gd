@@ -140,6 +140,7 @@ func _process(delta: float) -> void:
 
 # --- nebula bands ------------------------------------------------------------
 
+
 func _make_band(points: Array, color: Color, alpha: float) -> Node2D:
 	var band := BandLayer.new()
 	band.name = "Nebula"
@@ -148,6 +149,7 @@ func _make_band(points: Array, color: Color, alpha: float) -> Node2D:
 
 
 # --- planet limb -------------------------------------------------------------
+
 
 func _make_limb() -> Node2D:
 	var limb := PlanetLimb.new()
@@ -182,7 +184,9 @@ class PlanetLimb:
 	const RADIUS := 720.0
 
 	func _draw() -> void:
-		draw_circle(CENTER, RADIUS, Color(Palette.BLUE_1.r, Palette.BLUE_1.g, Palette.BLUE_1.b, 0.07))
+		draw_circle(
+			CENTER, RADIUS, Color(Palette.BLUE_1.r, Palette.BLUE_1.g, Palette.BLUE_1.b, 0.07)
+		)
 		var rims := [
 			[0.0, 0.30, 6.0],
 			[-12.0, 0.16, 8.0],

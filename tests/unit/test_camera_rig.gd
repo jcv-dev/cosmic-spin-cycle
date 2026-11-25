@@ -53,6 +53,8 @@ func test_deadzone_ignores_small_target_motion() -> void:
 
 
 func test_follow_smooths_toward_a_distant_target() -> void:
+	# The shipped room is one screen, so follow is opt-in (fixed camera by default).
+	_rig.follow_enabled = true
 	_target.global_position = Vector2(1000.0, 360.0)
 	_step(1)
 	assert_gt(_rig.global_position.x, 640.0, "camera starts moving on the first frame")
@@ -128,7 +130,11 @@ func test_rig_auto_binds_the_player_group() -> void:
 	player.global_position = Vector2(500.0, 300.0)
 	rig.call("_process", 1.0 / 60.0)
 	assert_eq(rig.target, player, "the rig adopts the player without an explicit setup call")
-	assert_eq(rig.global_position, Vector2(500.0, 300.0))
+	assert_eq(
+		rig.global_position,
+		CameraRig.CENTER,
+		"the fixed camera stays on the room centre even after binding a target"
+	)
 
 
 func test_scan_ignores_held_items() -> void:

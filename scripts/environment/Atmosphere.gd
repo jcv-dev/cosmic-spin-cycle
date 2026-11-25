@@ -253,19 +253,24 @@ class BeltGlow:
 			var rect := RoomBuilder.rect_world(belt)
 			if rect.size.x >= rect.size.y:
 				_rails.append(
-					Rect2(rect.position.x, rect.position.y - Atmosphere.RAIL_THICKNESS, rect.size.x, Atmosphere.RAIL_THICKNESS)
-				)
-				_rails.append(
 					Rect2(
 						rect.position.x,
-						rect.end.y,
+						rect.position.y - Atmosphere.RAIL_THICKNESS,
 						rect.size.x,
 						Atmosphere.RAIL_THICKNESS
 					)
 				)
+				_rails.append(
+					Rect2(rect.position.x, rect.end.y, rect.size.x, Atmosphere.RAIL_THICKNESS)
+				)
 			else:
 				_rails.append(
-					Rect2(rect.position.x - Atmosphere.RAIL_THICKNESS, rect.position.y, Atmosphere.RAIL_THICKNESS, rect.size.y)
+					Rect2(
+						rect.position.x - Atmosphere.RAIL_THICKNESS,
+						rect.position.y,
+						Atmosphere.RAIL_THICKNESS,
+						rect.size.y
+					)
 				)
 				_rails.append(
 					Rect2(rect.end.x, rect.position.y, Atmosphere.RAIL_THICKNESS, rect.size.y)
@@ -275,7 +280,9 @@ class BeltGlow:
 			var washer_rect := RoomBuilder.rect_world(washer)
 			var center := Vector2(washer_rect.get_center().x, washer_rect.position.y + 88.0)
 			_drums.append(Rect2(center - DRUM_SIZE * 0.5, DRUM_SIZE))
-			var requirement: StringName = Atmosphere.DEFAULT_PALETTE[index % Atmosphere.DEFAULT_PALETTE.size()]
+			var requirement: StringName = Atmosphere.DEFAULT_PALETTE[
+				index % Atmosphere.DEFAULT_PALETTE.size()
+			]
 			_colors.append(Atmosphere.requirement_color(requirement))
 			index += 1
 		set_process(true)
@@ -296,7 +303,10 @@ class BeltGlow:
 			Palette.FUNK_CYAN.r,
 			Palette.FUNK_CYAN.g,
 			Palette.FUNK_CYAN.b,
-			Atmosphere.RAIL_ALPHA_MIN + (Atmosphere.RAIL_ALPHA_MAX - Atmosphere.RAIL_ALPHA_MIN) * envelope
+			(
+				Atmosphere.RAIL_ALPHA_MIN
+				+ (Atmosphere.RAIL_ALPHA_MAX - Atmosphere.RAIL_ALPHA_MIN) * envelope
+			)
 		)
 		for rect: Rect2 in _rails:
 			draw_rect(rect, rail, true)
@@ -306,11 +316,7 @@ class BeltGlow:
 		)
 		for index in range(_drums.size()):
 			var color: Color = _colors[index]
-			draw_rect(
-				_drums[index],
-				Color(color.r, color.g, color.b, drum_alpha),
-				true
-			)
+			draw_rect(_drums[index], Color(color.r, color.g, color.b, drum_alpha), true)
 
 	func beat_envelope() -> float:
 		if Settings.reduce_motion:
@@ -327,9 +333,7 @@ class BeltGlow:
 		if requirements.is_empty():
 			return
 		for index in range(_colors.size()):
-			_colors[index] = Atmosphere.requirement_color(
-				requirements[index % requirements.size()]
-			)
+			_colors[index] = Atmosphere.requirement_color(requirements[index % requirements.size()])
 		queue_redraw()
 
 
@@ -375,14 +379,17 @@ class LightShafts:
 		additive.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
 		material = additive
 		for x in [320.0, 980.0]:
-			_quads.append(
-				PackedVector2Array(
-					[
-						Vector2(x - 16.0, 96.0),
-						Vector2(x + 16.0, 96.0),
-						Vector2(x + 84.0, 320.0),
-						Vector2(x - 84.0, 320.0),
-					]
+			(
+				_quads
+				. append(
+					PackedVector2Array(
+						[
+							Vector2(x - 16.0, 96.0),
+							Vector2(x + 16.0, 96.0),
+							Vector2(x + 84.0, 320.0),
+							Vector2(x - 84.0, 320.0),
+						]
+					)
 				)
 			)
 		queue_redraw()

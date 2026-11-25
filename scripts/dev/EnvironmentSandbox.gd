@@ -148,7 +148,9 @@ func _build_items() -> void:
 	for entry: Dictionary in BELT_ITEMS:
 		var sprite := AnimatedSprite2D.new()
 		sprite.name = String(entry.get("id", "item"))
-		sprite.position = RoomBuilder.layout_rect("belt_north").position + (entry.get("offset") as Vector2)
+		sprite.position = (
+			RoomBuilder.layout_rect("belt_north").position + (entry.get("offset") as Vector2)
+		)
 		layer.add_child(sprite)
 		if SpriteSheet.configure(sprite, String(entry.get("id", "")), entry.get("variant", &"")):
 			_items.append(sprite)
