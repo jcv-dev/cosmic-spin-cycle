@@ -546,3 +546,72 @@ If a rich effect costs > 1.5 ms/frame on llvmpipe, it is cut or reduced-motion-g
 - No new palette colours. No new raster sprites unless CC0/OFL + provenance.
 - No bottom instruction strip, no persistent control legend in the HUD, no tooltips on hover.
 - No "juice" that obscures the play field: shake ≤ 8 px, hitstop ≤ 90 ms, flashes ≤ 1 frame.
+
+---
+
+## 16. Research addendum — measured refinements (supersedes §7 where they differ)
+
+`docs/UX_RESEARCH.md` (21 sources, measured against this repo's own files) produced numbers that
+override the first draft of §7 and parts of §3.8/§5. The binding changes:
+
+1. **Pulse ring contracts over two beats, not one.** A single 423 ms beat at 142 BPM is not enough
+   time to plan a move and aim. Contract 140 %→100 % over 2 beats (≈846 ms at 142 BPM), snap back in
+   80 ms, extend the flash on the downbeat; add a small per-beat alpha accent so it still ticks at
+   105 BPM. It is information, so it survives Reduce motion (only the scale snap is removed).
+2. **Transient budget.** Every action-tied popup/burst lasts **≤ 0.45 × T_beat**:
+   257 / 229 / 208 / 190 ms at 105 / 118 / 130 / 142 BPM. Grade words: 200 ms, not 380.
+3. **Type floor.** No player-facing text below **12 px**; captions **14 px**; clock 40 px; ribbon 14 px.
+   Silkscreen cap height is 0.70 em, so 9–11 px captions were the single worst readability defect.
+4. **First 20 s:** no phase banner, no turbulence, no grade word, ≤ 2 text strings on screen, clock at
+   00:00, only `rocky`+`solid` items. The starter item is placed within grab range (we place it 96 px
+   from Pip instead of steering a belt item).
+5. **Grades appear at the event**, never at screen centre — the chute occupies 576–704 × 296–424 and a
+   centred 44 px label covers it.
+6. **Shake is quantised to whole art pixels**, amplitude ∈ {4, 8} world px, decaying in 4 px steps.
+   Vlambeer's 6 px kick is 1.5 art px here and would shimmer. No shake on the beat, no shake on a miss.
+7. **No hitstop on graded actions** (it desyncs the player's internal clock); hitstop is reserved for
+   explosions (33 ms) and gated by Reduce motion.
+8. **Flash budget:** ≤ 25 % of screen area, at or below beat rate (142 BPM = 2.37 Hz).
+9. **Contrast:** panel borders that carry meaning use `metal_1` (3.9:1), not `metal_0` (2.34:1).
+   Captions use `metal_2` (4.9:1).
+10. **Copy widths (Silkscreen):** 12/16/20/24 px fit ≈ 33/25/20/16 caps in 300 px. Persistent labels
+    ≤ 12 chars @20 px (`ESTABILIDAD` = 166 px); contextual prompts ≤ 24 chars; buttons ≤ 14 chars.
+    Spanish runs +20–60 % over English for short strings — size the zone, assert the string fits.
+
+### 16.1 Tutorial — final seven-gate beat sheet (replaces §7's table)
+
+The order is motor → concept → loop: a player who cannot move cannot be taught anything, and the
+beat is the only novel concept. Stability loss is disabled until gate 7, so failure teaches without
+punishing. Total ≈150 s at average pace, hard cap 240 s.
+
+| # | Gate | Prompt (≤ 24 ch) | Success | Fail-forward |
+|---|---|---|---|---|
+| 1 | Move | `MUÉVETE` | 200 px travelled | after 4 s, dotted circle at 120 px |
+| 2 | Grab | `AGARRA` | one grab | item steered inside `GRAB_RADIUS` |
+| 3 | Throw | `LANZA` | one throw leaves the hold radius | aim assist ×1.5 until first success |
+| 4 | Beat | `LANZA AL RITMO` | two throws ≥ GOOD | window widens to ±195 ms after 2 misses; granted after 3 |
+| 5 | Match | `SUELTA AQUÍ` | one correct-colour insert (only the compatible washer is lit) | the wrong mouth bounces with `NO`, no penalty |
+| 6 | Strike | `GOLPE AL RITMO` | one strike ≥ GOOD on a scripted turbulent washer | turbulence cannot explode in the tutorial |
+| 7 | Deliver | `LLEVA EL LIMPIO AL DUCTO` | one clean delivery to the chute | beacon pulses every 2 s |
+
+Skip: hold `ESC` 1 s or `START` → immediate skip, `tutorial_skipped = true`. Replay: title → Tutorial,
+always available. Completion persists in `Settings.tutorial_completed`; nothing is gated behind it.
+
+### 16.2 Evidence adopted for the screens
+
+- The title keeps the owner's five entries but earns hierarchy through type size, not omission:
+  `INICIAR TURNO` 28 px primary, `TUTORIAL`/`CALIBRACIÓN` 20 px, `OPCIONES`/`SALIR` 16 px dim.
+- Every transition ≤ 250 ms and cancellable after 100 ms; no "press any key" gate; first frame
+  interactive with the first item focused.
+- Pause shows objective + controls (GAG: "remind controls and objectives"); End defaults to REPETIR.
+- Options keeps one focus order across two columns (≤ 6 rows per column) so it is never more than
+  one level deep.
+
+### 16.3 What the research says we should NOT do (kept as guardrails)
+
+- Do not widen the PERFECT/GOOD windows to "be kind": the 45.5 %–61.5 % random on-beat rate is our
+  only skill axis. Kindness goes into the tutorial window (×2) and fail-forward, not into scoring.
+- Do not make everything diegetic: object state in the world, global state in the corners.
+- Do not add a second typeface, gradients, glows, or a per-light normal-map pipeline.
+- Do not add a HUD queue/stack of every item: one body, four fixed machines; show the next deadline,
+  not a spreadsheet.
