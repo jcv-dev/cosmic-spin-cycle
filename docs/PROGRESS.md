@@ -84,7 +84,8 @@ Updated after every milestone/workstream. Times are local (America/Bogota).
 | Sprite contract | 29/29 sheets, 176 frames, 22 colour-budget warnings | `tools/lint_sprites.py` |
 | Audio contract | 16/16 checks (BPM drift ≤0.01 ms, peaks −1.3…−2.2 dBFS, Spanish glyphs) | `tools/verify_audio.py` |
 | Spawns / 480 s | 66 (11/18/24/13), seed 1234 | `tools/sim_run.gd` |
-| E2E playtest bot | 6 washes, 4 deliveries, 0 losses, 100 % throws, stability 94 (93 s) | `tools/playtest_bot.gd` |
+| E2E playtest bot | 4 washes, 2 deliveries, 0 losses, 100 % throws, stability 94 (47 s gate) | `tools/playtest_bot.gd` |
+| Spawns / 480 s (v2) | 83 (17/24/29/13) after the second owner playtest | `tools/sim_run.gd` |
 | Belt reversal | warnings 60/124/188, flips 64/128/192 (130 BPM) | `test_belt_reversal*` |
 | Physics | 0.544 ms/tick for 40 bodies | `docs/M2_PHYSICS.md` |
 | Reported PulseAudio latency | 52.84 ms (headless Dummy = 0) | `docs/CALIBRATION.md` |

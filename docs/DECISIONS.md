@@ -260,3 +260,21 @@ assert the new numbers.
 3. The chute is now a funnel: a 110 px hatch plus a 240 px suction field pulls clean items
    in, and thrown items home for 0.55 s toward the nearest valid destination (washers or
    chute) so the player aims the machine, not a pixel.
+
+## D038 — Owner playtest #2: causal copy, silent-stem fix, friendly volumes
+2026-11-25 · Evidence and reasoning in `docs/UX_RESEARCH_ADDENDUM.md`. Changes:
+1. **Tutorial copy is causal** ("Muévete para alcanzar la ropa", "Golpea para lavar y calmar").
+   No riddle nouns; every prompt names the object it affects and its purpose. Gates 3 and 6
+   now stage the machine they talk about, so the sentence is literally true.
+2. **Music was silent from the first frame.** `AudioStreamPlayer.stream` stops playback when
+   assigned (engine contract), and phase setup re-assigned the stream after `start()`.
+   `BeatConductor.set_stream()` now restarts a live player. A headless check asserts
+   `playing=true` after `LEVEL_READY`.
+3. **Friendly volumes never push bodies.** The chute no longer bounces dirty items; it shows
+   `LAVA PRIMERO`. Washers reject `clean` items (`REJECT_CLEAN`), which stops a washed item
+   ejected from an upper machine being re-inserted into the lower one.
+4. **Strike feedback:** a 160 ms cyan arc, a pitched whoosh (hit vs whiff), the same graded
+   action, and a tutorial gate that explains the verb's two uses.
+5. **Cadence:** 7/6/5 s (83 spawns/shift) after the owner asked for more pressure; the E2E
+   bot remains the gate that proves it stays survivable.
+6. **Conveyor audio:** a −24 dB belt hum loop plus a pitched-down arrival click on each spawn.
