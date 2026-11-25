@@ -384,3 +384,56 @@ Change: `ScoreRules` + `DeliveryChute` + `HUD._on_combo`.
    right; the cue was not. The ring now **brightens as it closes** and fires a white-hot
    **120 ms beat flash**, so the instant is unmistakable rather than inferred from the
    contraction.
+
+## D045 — Amenazas rítmicas: el vacío muerde
+2026-11-25 · El turno no tenía ninguna fuente de presión ajena al jugador: la victoria era
+"llegar a 480 s con estabilidad > 0" y todo el daño dependía de decisiones propias, así que
+un jugador competente no podía perder y el único reto era su propio récord.
+
+1. **Una amenaza por compás como máximo**, anunciada en el compás (`measure_hit`) y resuelta
+   en un beat (`beat_hit`). Aviso de 3/2/2 beats según dificultad; nunca menos de 2, porque a
+   142 BPM un beat son 423 ms.
+2. **Cuatro tipos** que se desbloquean por fase: fuga de vacío (fase 1), micrometeorito
+   (2), arco de pelusa (3), bolsillo de gravedad (4). El bolsillo no hace daño: invierte los
+   ejes un compás.
+3. **El daño va a la estabilidad**, no a una vida aparte: −4/−6/−8 según dificultad, con
+   i-frames de 1.2/1.0/0.8 s. El tejido cósmico ya era la única barra mortal; no añadimos
+   una segunda.
+4. **La esquiva se califica**: salir de la zona dentro de ±`WINDOW_PERFECT_S` del golpe paga
+   +25 puntos (se compara el instante de salida con el beat, no la posición final).
+5. **Justicia**: sin amenazas los primeros 30 s ni en el tutorial; el ducto queda libre en un
+   radio de 90 px; dos amenazas consecutivas nunca a menos de 120 px; la agenda es pura
+   (`HazardPlanner`) y reproducible por semilla.
+6. **Colapso**: durante el colapso de vacío se planifica una segunda amenaza a mitad de
+   compás. Es la única excepción a la regla 1 y dura lo que dura el colapso.
+
+## D046 — Índice de Vacío: presión que no mata
+2026-11-25 · Segunda barra (`VoidIndex`), 0–100. Sube sola a 0.30/0.45/0.60/0.75 por segundo
+según la fase, escala con la dificultad y salta +8 por MISS y +6 por lavadora equivocada.
+Baja −10 por entrega limpia y −4 por esquiva perfecta. Al llegar a 100 hay **colapso**
+(amenazas al doble durante 8/10/12 s) y el índice vuelve a **55**, no a 0: la deuda sigue
+visible. Nunca termina el turno. Se dibuja como una tira de 4 px en el borde inferior de la
+cinta de objetivo, para no añadir otra placa.
+
+## D047 — Dificultad: tres presets persistentes
+2026-11-25 · `Config.Difficulty` (TRANQUILO/ESTÁNDAR/CAÓTICO) escala densidad de amenazas,
+beats de aviso, daño, i-frames, intervalo de spawn, índice de vacío, ventanas rítmicas y
+duración del colapso. ESTÁNDAR es ×1.0 en spawn y ventanas, así que la simulación de 480 s
+sigue dando exactamente 98 apariciones y todas las medidas del repo siguen siendo válidas.
+Se elige en Opciones → "Dificultad" y se guarda en `user://settings.cfg`.
+
+## D048 — Récords: top 10 por dificultad, en su propio archivo
+2026-11-25 · Las tres tablas viven en `user://records.cfg` y no en `settings.cfg`, porque
+"Restablecer" borra los ajustes y no debe borrar los récords. Entrada:
+puntos, rango, precisión, combo máximo, entregadas, semilla, fecha y dificultad. Orden:
+puntos desc, luego precisión desc, luego el turno más antiguo primero. `best_score` y
+`best_rank` se conservan por compatibilidad con el título.
+
+## D049 — Escala tipográfica: un escalón arriba
+2026-11-25 · La escala era 56/40/28/20/16/14/12/10 con 14 px por defecto, y el HUD usaba
+12 px para seis elementos y 10 px para los nombres de objeto. En 720p eso está por debajo de
+una lectura cómoda. Nueva escala: 56/40/28/**22**/**18**/**16**/**14**/**12**. Además la
+jerarquía se corrigió: el reloj deja de ser lo más grande y el número de estabilidad sube a
+22 px junto a la barra. Los tests que fijaban literales (14 px) ahora comparan contra
+`UITheme.FONT_*`, y el presupuesto del chip del tutorial sube de 320 a 380 px con el motivo
+escrito en el test.

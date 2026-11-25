@@ -16,6 +16,14 @@ enum CollisionLayer {
 	WASHER = 64,
 }
 
+## Shift difficulty (D047). The three tables on the end screen and the records screen are
+## keyed by this enum, so order matters: append, never insert.
+enum Difficulty { CALM, STANDARD, CHAOS }
+
+## Hazard kinds (D045). Also ordered by when they unlock: the first phase only leaks
+## void, the last one throws the whole catalogue at the player.
+enum HazardKind { VOID_VENT, METEOR, LINT_ARC, GRAVITY_POCKET }
+
 # --- Shift & clock (GDD §2.2, §2.5) -----------------------------------------
 const SHIFT_DURATION_S := 480.0
 const GAME_HOURS := 6.0
@@ -133,6 +141,65 @@ const RANK_S_ACCURACY := 0.90
 const RANK_A_THRESHOLD := 0.65
 const RANK_B_THRESHOLD := 0.40
 
+# --- Difficulty presets (D047) ---------------------------------------------
+## Every axis is indexed by [enum Difficulty]: CALM, STANDARD, CHAOS. STANDARD is the
+## shipped baseline, so `sim_run.gd` and the 98-spawn expectation keep working unchanged.
+const DIFFICULTY_DEFAULT := Difficulty.STANDARD
+const DIFFICULTY_KEYS: Array[StringName] = [&"calm", &"standard", &"chaos"]
+const DIFFICULTY_LABEL_KEYS: Array[StringName] = [&"TRANQUILO", &"ESTÁNDAR", &"CAÓTICO"]
+## Hazard events per measure (4 beats): 0.25 = one every four measures.
+const DIFFICULTY_HAZARD_PER_MEASURE: Array[float] = [0.25, 0.5, 1.0]
+## Telegraph in beats before a hazard strikes. Never below 2: at 142 BPM one beat is 423 ms.
+const DIFFICULTY_WARNING_BEATS: Array[int] = [3, 2, 2]
+const DIFFICULTY_HIT_DAMAGE: Array[float] = [-4.0, -6.0, -8.0]
+const DIFFICULTY_IFRAME_S: Array[float] = [1.2, 1.0, 0.8]
+const DIFFICULTY_SPAWN_SCALE: Array[float] = [1.15, 1.0, 0.9]
+const DIFFICULTY_VOID_SCALE: Array[float] = [0.7, 1.0, 1.35]
+const DIFFICULTY_WINDOW_SCALE: Array[float] = [1.15, 1.0, 0.95]
+const DIFFICULTY_COLLAPSE_S: Array[float] = [8.0, 10.0, 12.0]
+
+# --- Hazards (D045) ---------------------------------------------------------
+## One announced hazard per measure at most; announced on a measure, resolved on a beat.
+const HAZARD_MAX_PER_MEASURE := 1
+## No hazards during the first seconds or during the tutorial (onboarding).
+const HAZARD_FIRST_S := 30.0
+const HAZARD_MIN_SEPARATION_PX := 120.0
+## The chute mouth stays clear so a dodge never forces a miss on the delivery.
+const HAZARD_CHUTE_CLEARANCE_PX := 90.0
+const HAZARD_DODGE_POINTS := 25
+const HAZARD_VENT_RADIUS_PX := 56.0
+const HAZARD_VENT_PULL := 220.0
+const HAZARD_VENT_SLOW_S := 0.5
+const HAZARD_VENT_SLOW_SCALE := 0.55
+const HAZARD_METEOR_RADIUS_PX := 40.0
+const HAZARD_METEOR_HITSTOP_S := 0.09
+const HAZARD_ARC_HALF_WIDTH_PX := 20.0
+const HAZARD_POCKET_RADIUS_PX := 36.0
+const HAZARD_MAX_EVENTS := 4096
+## The last phase is where the void shows its teeth (hazard density bonus).
+const HAZARD_LATE_PHASE := 3
+
+# --- Void index (D046) ------------------------------------------------------
+## Second meter. It is pressure, never a second fail state: at 100 % it collapses and
+## resets, it does not end the shift.
+const VOID_START := 0.0
+const VOID_MAX := 100.0
+const VOID_DANGER_AT := 70.0
+const VOID_COLLAPSE_AT := 100.0
+const VOID_COLLAPSE_RESET := 55.0
+const VOID_COLLAPSE_HAZARD_SCALE := 2.0
+## Base gain per second, by phase index.
+const VOID_RATE_BY_PHASE: Array[float] = [0.30, 0.45, 0.60, 0.75]
+const VOID_DELIVERY_RELIEF := -10.0
+const VOID_PERFECT_DODGE_RELIEF := -4.0
+const VOID_MISS_GAIN := 8.0
+const VOID_WRONG_WASHER_GAIN := 6.0
+
+# --- Records (D048) ---------------------------------------------------------
+const LEADERBOARD_SIZE := 10
+const RECORDS_PATH := "user://records.cfg"
+const RECORDS_VERSION := 1
+
 # --- Misc -------------------------------------------------------------------
 const ART_SCALE := 4
 const ART_CANVAS := Vector2i(320, 180)
@@ -215,3 +282,19 @@ static func is_known_color(value: StringName) -> bool:
 
 static func is_known_pattern(value: StringName) -> bool:
 	return PATTERNS.has(value)
+
+
+## Clamped [enum Difficulty] index; out-of-range values fall back to the nearest preset.
+static func difficulty_index(value: int) -> int:
+	return clampi(value, 0, DIFFICULTY_KEYS.size() - 1)
+
+
+## Persistence key for a difficulty: "calm" / "standard" / "chaos".
+static func difficulty_key(value: int) -> StringName:
+	return DIFFICULTY_KEYS[difficulty_index(value)]
+
+
+## Inverse of [method difficulty_key]; unknown keys fall back to [constant DIFFICULTY_DEFAULT].
+static func difficulty_from_key(key: StringName) -> int:
+	var found := DIFFICULTY_KEYS.find(StringName(key))
+	return DIFFICULTY_DEFAULT if found < 0 else found

@@ -116,10 +116,23 @@ func test_four_primary_stats_are_bigger_than_the_secondary_pair() -> void:
 	var plaque := _screen.get_node("Plaque")
 	for index in [0, 2, 3, 4]:
 		var label := plaque.get_node("Stat%dValue" % index) as Label
-		assert_eq(label.get_theme_font_size("font_size"), 28, "primary stat %d size" % index)
+		assert_eq(
+			label.get_theme_font_size("font_size"),
+			UITheme.FONT_H1,
+			"primary stat %d uses the headline size" % index
+		)
 	for index in [1, 5]:
 		var label := plaque.get_node("Stat%dValue" % index) as Label
-		assert_eq(label.get_theme_font_size("font_size"), 14, "secondary stat %d size" % index)
+		assert_eq(
+			label.get_theme_font_size("font_size"),
+			UITheme.FONT_LABEL,
+			"secondary stat %d uses the label size" % index
+		)
+		assert_lt(
+			label.get_theme_font_size("font_size"),
+			UITheme.FONT_H1,
+			"secondary stat %d is never as loud as a primary one" % index
+		)
 
 
 func test_secondary_stats_sit_inline_with_their_caption() -> void:

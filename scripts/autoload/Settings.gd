@@ -17,6 +17,7 @@ var locale := "es"
 var db_seed := 0
 var haptics := true
 var ui_scale := 1.0
+var difficulty := Config.DIFFICULTY_DEFAULT
 var tutorial_completed := false
 var tutorial_skipped := false
 var first_run_done := false
@@ -67,6 +68,9 @@ func load_settings() -> void:
 	db_seed = int(cfg.get_value("debug", "seed", 0))
 	haptics = bool(cfg.get_value("input", "haptics", true))
 	ui_scale = float(cfg.get_value("video", "ui_scale", Config.HUD_SCALE_DEFAULT))
+	difficulty = Config.difficulty_from_key(
+		StringName(cfg.get_value("game", "difficulty", "standard"))
+	)
 	tutorial_completed = bool(cfg.get_value("game", "tutorial_completed", false))
 	tutorial_skipped = bool(cfg.get_value("game", "tutorial_skipped", false))
 	first_run_done = bool(cfg.get_value("game", "first_run_done", false))
@@ -91,6 +95,7 @@ func save_settings() -> Error:
 	cfg.set_value("debug", "seed", db_seed)
 	cfg.set_value("input", "haptics", haptics)
 	cfg.set_value("video", "ui_scale", ui_scale)
+	cfg.set_value("game", "difficulty", Config.difficulty_key(difficulty))
 	cfg.set_value("game", "tutorial_completed", tutorial_completed)
 	cfg.set_value("game", "tutorial_skipped", tutorial_skipped)
 	cfg.set_value("game", "first_run_done", first_run_done)
@@ -190,6 +195,21 @@ func set_ui_scale(value: float) -> void:
 	settings_changed.emit()
 
 
+## Selects a shift preset (D047) and persists it; the next shift starts with it.
+func set_difficulty(value: int) -> void:
+	var clamped := Config.difficulty_index(value)
+	if clamped == difficulty:
+		return
+	difficulty = clamped
+	save_settings()
+	settings_changed.emit()
+
+
+## Multiplier applied to the rhythm windows: CALM is wider, CHAOS is tighter.
+func window_scale() -> float:
+	return Config.DIFFICULTY_WINDOW_SCALE[Config.difficulty_index(difficulty)]
+
+
 func reset_to_defaults() -> void:
 	user_calibration_offset = 0.0
 	calibration_samples.clear()
@@ -202,6 +222,7 @@ func reset_to_defaults() -> void:
 	locale = "es"
 	haptics = true
 	ui_scale = Config.HUD_SCALE_DEFAULT
+	difficulty = Config.DIFFICULTY_DEFAULT
 	tutorial_completed = false
 	tutorial_skipped = false
 	first_run_done = false

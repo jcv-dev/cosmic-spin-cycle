@@ -14,7 +14,7 @@ signal calibration_requested
 
 enum AudioParam { MASTER, MUSIC, SFX }
 
-enum Toggle { FULLSCREEN, REDUCE_MOTION, HUD_SCALE, HAPTICS }
+enum Toggle { FULLSCREEN, REDUCE_MOTION, HUD_SCALE, HAPTICS, DIFFICULTY }
 
 const TITLE_TEXT := "OPCIONES"
 const HINT_TEXT := "← → CAMBIA VALORES · ESC CIERRA"
@@ -39,6 +39,8 @@ const HEADER_Y := 196.0
 const ROW_1 := 218.0
 const ROW_2 := 270.0
 const ROW_3 := 322.0
+const ROW_4 := 374.0
+const ROW_5 := 426.0
 const ROW_STEP := 52.0
 const CALIBRATE_Y := 366.0
 const MANUAL_HEADER_Y := 386.0
@@ -128,7 +130,7 @@ func _build() -> void:
 	plaque.add_child(_caption)
 
 	_section(plaque, "AUDIO", CONTENT_X, HEADER_Y, LEFT_W)
-	_section(plaque, "VÍDEO", RIGHT_X, HEADER_Y, RIGHT_W)
+	_section(plaque, "VÍDEO · MANDO · TURNO", RIGHT_X, HEADER_Y, RIGHT_W)
 
 	_audio_row(plaque, ROW_1, "MAESTRO", AudioParam.MASTER)
 	_audio_row(plaque, ROW_2, "MÚSICA", AudioParam.MUSIC)
@@ -148,9 +150,8 @@ func _build() -> void:
 	_toggle_row(plaque, ROW_1, "PANTALLA COMPLETA", Toggle.FULLSCREEN)
 	_toggle_row(plaque, ROW_2, "REDUCIR MOVIMIENTO", Toggle.REDUCE_MOTION)
 	_toggle_row(plaque, ROW_3, "ESCALA DEL HUD", Toggle.HUD_SCALE)
-
-	_section(plaque, "MANDO", RIGHT_X, MANUAL_HEADER_Y, RIGHT_W)
-	_toggle_row(plaque, MANUAL_ROW_Y, "VIBRACIÓN", Toggle.HAPTICS)
+	_toggle_row(plaque, ROW_4, "VIBRACIÓN", Toggle.HAPTICS)
+	_toggle_row(plaque, ROW_5, "DIFICULTAD", Toggle.DIFFICULTY)
 
 	var rule := ColorRect.new()
 	rule.name = "Rule"
@@ -428,6 +429,8 @@ func _toggle_text(index: int) -> String:
 			return "SÍ" if Settings.reduce_motion else "NO"
 		Toggle.HUD_SCALE:
 			return "%d" % int(round(Settings.ui_scale * 100.0))
+		Toggle.DIFFICULTY:
+			return tr(Config.DIFFICULTY_LABEL_KEYS[Config.difficulty_index(Settings.difficulty)])
 		_:
 			return "SÍ" if Settings.haptics else "NO"
 
@@ -450,6 +453,10 @@ func _cycle_toggle(toggle: Toggle, direction: int) -> void:
 				current = 0
 			var next_index := posmod(current + direction, options.size())
 			Settings.set_ui_scale(options[next_index])
+		Toggle.DIFFICULTY:
+			Settings.set_difficulty(
+				posmod(Settings.difficulty + direction, Config.DIFFICULTY_KEYS.size())
+			)
 		_:
 			Settings.set_haptics(not Settings.haptics)
 	_refresh()

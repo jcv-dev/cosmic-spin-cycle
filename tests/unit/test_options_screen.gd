@@ -143,7 +143,7 @@ func test_no_column_shows_more_than_five_rows() -> void:
 		else:
 			right += 1
 	assert_eq(left, 4, "audio column: three sliders + calibrate")
-	assert_eq(right, 4, "video/gamepad column: three toggles + haptics")
+	assert_eq(right, 5, "video/gamepad/shift column: four toggles + difficulty (D047)")
 	assert_eq(footer, 2, "footer: reset + back")
 	assert_lte(maxi(left, right), 5, "GAG menu depth rule: at most five rows per column")
 

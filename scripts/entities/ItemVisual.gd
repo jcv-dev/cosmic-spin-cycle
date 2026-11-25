@@ -87,7 +87,7 @@ func set_caption(text: String) -> void:
 		_caption = Label.new()
 		_caption.name = "CelestialName"
 		_caption.add_theme_font_override("font", Fonts.pixel_font())
-		_caption.add_theme_font_size_override("font_size", 10)
+		_caption.add_theme_font_size_override("font_size", UITheme.FONT_MICRO)
 		_caption.add_theme_color_override("font_color", Palette.METAL_2)
 		_caption.add_theme_color_override("font_shadow_color", Palette.SPACE_VOID)
 		_caption.add_theme_constant_override("shadow_offset_x", 1)

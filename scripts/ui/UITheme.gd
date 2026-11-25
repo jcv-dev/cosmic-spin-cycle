@@ -12,14 +12,17 @@ extends RefCounted
 ## screen root so every Control inherits the same type scale and focus language.
 
 # --- Type scale (px) ---------------------------------------------------------
+## One step up from the original scale (D049): at 720p the 12/10 px tiers were below a
+## comfortable reading size while the clock occupied the largest slot. Body copy is now 14+
+## and the actionable numbers (stability, combo) outrank the clock.
 const FONT_DISPLAY := 56
 const FONT_TITLE := 40
 const FONT_H1 := 28
-const FONT_H2 := 20
-const FONT_BODY := 16
-const FONT_LABEL := 14
-const FONT_SMALL := 12
-const FONT_MICRO := 10
+const FONT_H2 := 22
+const FONT_BODY := 18
+const FONT_LABEL := 16
+const FONT_SMALL := 14
+const FONT_MICRO := 12
 
 # --- Ink --------------------------------------------------------------------
 const INK := Palette.METAL_4

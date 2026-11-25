@@ -64,6 +64,7 @@ var _belt_hint_shown := false
 var _belt_hum: AudioStreamPlayer
 var _spawn_sfx: AudioStreamPlayer
 var _shredder_hint_shown := false
+var _hazards: HazardDirector
 
 
 func _ready() -> void:
@@ -89,6 +90,7 @@ func _ready() -> void:
 	_build_player()
 	_build_diegetic()
 	_build_spawner()
+	_build_hazards()
 	_build_ui()
 	_build_warning_audio()
 	_build_ambience()
@@ -135,6 +137,8 @@ func _process(delta: float) -> void:
 		shift_time += delta
 	if _hud != null:
 		_hud.set_shift_time(shift_time)
+	if _hazards != null:
+		_hazards.advance_shift_time(shift_time)
 	if clock_running and mode != &"tutorial":
 		var next_phase := Config.phase_index_at(shift_time)
 		if next_phase != phase_index:
@@ -593,6 +597,24 @@ func _belt_active_in_phase(belt: Dictionary, index: int) -> bool:
 # --- UI ---------------------------------------------------------------------
 
 
+## Hazards and the void meter (D045/D046). Tutorial shifts run without them: the onboarding
+## teaches the wash loop before the floor starts leaking.
+func _build_hazards() -> void:
+	if _player == null or _entities == null:
+		return
+	_hazards = HazardDirector.new()
+	_hazards.name = "HazardDirector"
+	add_child(_hazards)
+	_hazards.setup(_player, _entities, run_seed, Settings.difficulty)
+	_hazards.set_enabled(mode == &"shift")
+	_hazards.void_changed.connect(_on_void_changed)
+
+
+func _on_void_changed(value: float, collapsing: bool) -> void:
+	if _hud != null and _hud.has_method("set_void"):
+		_hud.call("set_void", value, collapsing)
+
+
 func _build_ui() -> void:
 	_ui_layer = CanvasLayer.new()
 	_ui_layer.name = "UI"
@@ -631,6 +653,8 @@ func _apply_phase(index: int, initial: bool) -> void:
 		BeatConductor.set_bpm(Config.PHASE_BPM[phase_index])
 	_activate_belts(phase_index)
 	_apply_washer_requirements()
+	if _hazards != null:
+		_hazards.set_phase(phase_index)
 	if _hud != null:
 		_hud.set_phase(phase_index, Config.PHASE_BPM[phase_index])
 	if _spawner != null and _spawner.has_method("on_phase_changed"):
@@ -815,6 +839,8 @@ func _apply_stem(index: int) -> void:
 func _finish(victory: bool, reason: String) -> void:
 	if _ended:
 		return
+	if _hazards != null:
+		_hazards.set_enabled(false)
 	GameState.end_shift(victory, reason)
 	_on_shift_ended(GameState.get_end_result())
 

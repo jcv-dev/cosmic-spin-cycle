@@ -74,6 +74,8 @@ var is_dashing := false
 var dash_cooldown_left := 0.0
 var last_dash_distance := 0.0
 var last_grade := -1
+## Gravity-pocket effect (D045): movement axes are flipped while true.
+var input_inverted := false
 ## Active A/B profile; `set_feel_preset()` lets a debug menu swap it live.
 var feel_preset := FEEL_PRESET
 
@@ -151,6 +153,8 @@ func _physics_process(delta: float) -> void:
 		return
 
 	var input := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	if input_inverted:
+		input = -input
 	if input == Vector2.ZERO:
 		_brake(delta)
 	else:
@@ -161,9 +165,15 @@ func _physics_process(delta: float) -> void:
 
 
 ## Grades the current action. Kept as the single grading path so tests and gameplay agree.
+## The window scale comes from the shift difficulty (D047): CALM widens, CHAOS tightens.
 func get_throw_grade() -> int:
 	var delta_t: float = BeatConductor.delta_to_nearest_beat(BeatConductor.get_song_time())
-	return RhythmEvaluator.evaluate(delta_t)
+	return RhythmEvaluator.evaluate(delta_t, Settings.window_scale())
+
+
+## Gravity pocket: flipping the axes is disorientation, never damage (D045).
+func set_input_inverted(on: bool) -> void:
+	input_inverted = on
 
 
 func grab_or_throw() -> void:

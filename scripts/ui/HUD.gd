@@ -36,6 +36,11 @@ const RIBBON_RECT := Rect2(400, 6, 480, 28)
 ## level draws inside the wall band.
 const TOAST_RECT := Rect2(400, 104, 480, 18)
 const REWARD_RECT := Rect2(1156, 104, 100, 18)
+## Void meter strip (D046): the ribbon's bottom edge, 4 px, full ribbon width.
+const VOID_BAR_X := 8.0
+const VOID_BAR_Y := 23.0
+const VOID_BAR_W := 464.0
+const VOID_BAR_H := 4.0
 const DIEGETIC_SCENE := "res://scenes/ui/DiegeticLayer.tscn"
 const GROUP_DIEGETIC := &"diegetic"
 
@@ -99,6 +104,8 @@ var _toast_label: Label
 var _grade_label: Label
 var _objective_age := 0.0
 var _objective_alpha := 1.0
+var _void_value := 0.0
+var _void_collapsing := false
 var _toast_left := 0.0
 var _reward_left := 0.0
 var _step_index := 0
@@ -215,7 +222,7 @@ func _build_plaque_b() -> void:
 		UITheme.label("100", UITheme.FONT_H2, Palette.CLEAN_GREEN, true),
 		_plaque_b,
 		"StabilityValue",
-		Rect2(238, 20, 50, 26)
+		Rect2(228, 18, 60, 28)
 	)
 	_stability_value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_combo_caption = _place(
@@ -420,6 +427,25 @@ func _draw_ribbon(target: CanvasItem) -> void:
 		false,
 		1.0
 	)
+	_draw_void_bar(target)
+
+
+## The void index (D046) rides the ribbon's bottom edge: 4 px, always visible, never a
+## second plaque. Colour and length both carry the information.
+func _draw_void_bar(target: CanvasItem) -> void:
+	var fraction := VoidIndex.fraction(_void_value)
+	if fraction <= 0.0 and not _void_collapsing:
+		return
+	var color := Palette.METAL_2
+	if _void_collapsing:
+		color = Palette.HAZARD_ORANGE
+	elif VoidIndex.is_danger(_void_value):
+		color = Palette.YEL_3
+	if _void_collapsing and not Settings.reduce_motion:
+		color.a = 0.55 + 0.45 * absf(sin(_pulse * DANGER_PULSE_HZ))
+	var full := Rect2(VOID_BAR_X, VOID_BAR_Y, VOID_BAR_W, VOID_BAR_H)
+	target.draw_rect(full, Color(Palette.SPACE_MID, 0.65))
+	target.draw_rect(Rect2(full.position, Vector2(VOID_BAR_W * fraction, VOID_BAR_H)), color)
 
 
 ## The toast chip is as wide as its text so it never reads as a second bar.
@@ -650,6 +676,14 @@ func set_danger(on: bool) -> void:
 	danger = on
 	if _slot_b != null:
 		_slot_b.queue_redraw()
+
+
+## Void index (D046): 0..100 plus the collapse flag, drawn on the ribbon's bottom edge.
+func set_void(value: float, collapsing: bool = false) -> void:
+	_void_value = clampf(value, 0.0, Config.VOID_MAX)
+	_void_collapsing = collapsing
+	if _slot_ribbon != null:
+		_slot_ribbon.queue_redraw()
 
 
 ## HUD scale (100 % / 125 %) scales only the two plaques, from the screen-edge corner, and

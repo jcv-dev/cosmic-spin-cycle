@@ -163,6 +163,7 @@ func try_deliver(item: Node) -> bool:
 	var points := ScoreRules.delivery_points(_item_points(item), GameState.combo)
 	GameState.add_stability(Config.STABILITY_CHUTE_DELIVERY, "chute")
 	GameState.delivered_count += 1
+	GameState.notify_delivery()
 	GameState.add_score(points)
 	_accept_left = ACCEPT_ANIM_S
 	_play_animation(&"accept")

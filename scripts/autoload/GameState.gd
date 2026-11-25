@@ -10,6 +10,10 @@ signal phase_changed(idx: int)
 signal shift_ended(result: Dictionary)
 ## Short contextual message for the HUD/overlay layer (never a wall of text).
 signal feedback(text: String, kind: StringName)
+## Challenge bookkeeping (D045/D046): the void meter reacts to these, nothing else listens.
+signal delivery_made
+signal wrong_washer_made
+signal rhythm_missed
 
 var stability := Config.STABILITY_START
 var combo := Config.COMBO_MIN
@@ -103,6 +107,7 @@ func register_grade(grade: int) -> void:
 	else:
 		miss_count += 1
 		combo = Config.COMBO_MIN
+		rhythm_missed.emit()
 	max_combo = maxi(max_combo, combo)
 	combo_changed.emit(combo)
 
@@ -113,6 +118,20 @@ func emit_feedback(text: String, kind: StringName = &"info") -> void:
 		return
 	feedback_count += 1
 	feedback.emit(text, kind)
+
+
+## A clean item reached the chute. Only the void meter listens (D046).
+func notify_delivery() -> void:
+	if is_ended:
+		return
+	delivery_made.emit()
+
+
+## An item was jammed into the wrong machine.
+func notify_wrong_washer() -> void:
+	if is_ended:
+		return
+	wrong_washer_made.emit()
 
 
 func add_score(points: int) -> void:

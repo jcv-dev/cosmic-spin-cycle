@@ -353,6 +353,7 @@ func _jam_with(item: Node) -> bool:
 		_eject(ejected[index], false, index)
 	GameState.add_stability(Config.STABILITY_WRONG_WASHER, "wrong_washer")
 	GameState.wrong_washer_count += 1
+	GameState.notify_wrong_washer()
 	_play_oneshot("explode", JAM_DB)
 	_play_buzz()
 	_flash_porthole(Palette.HAZARD_ORANGE)

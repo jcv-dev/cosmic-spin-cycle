@@ -74,7 +74,9 @@ func test_prompt_copy_never_exceeds_the_24_char_budget() -> void:
 		overlay.show_prompt(prompt, Vector2(640, 360))
 		assert_lte(prompt.length(), 34)
 		var chip := overlay.get_node("Root/WorldPrompts/PromptChip") as Control
-		assert_lte(chip.size.x, 320.0, "the prompt must stay compact: %s" % prompt)
+		# Budget raised from 320 after the D049 type scale (+2 px per tier): the copy did not
+		# change, the glyphs did. Anything wider than this is new copy, not a bigger font.
+		assert_lte(chip.size.x, 380.0, "the prompt must stay compact: %s" % prompt)
 
 
 func test_reduce_motion_keeps_the_prompt_instant() -> void:
