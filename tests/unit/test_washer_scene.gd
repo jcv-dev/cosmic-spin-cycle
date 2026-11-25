@@ -103,6 +103,9 @@ func test_configure_positions_the_mouth_and_requirement() -> void:
 	assert_eq(washer.get_requirement(), &"red")
 	assert_false(washer.is_locked())
 	assert_eq(washer.get_mouth_world(), washer.global_position)
+	var holo := washer.get_node(^"Holo") as Node2D
+	assert_almost_eq(holo.global_position.x, 240.0, 0.001, "centred on the machine")
+	assert_almost_eq(holo.global_position.y, 128.0, 0.001, "bottom edge on the machine top")
 
 
 func test_configure_before_ready_is_applied() -> void:

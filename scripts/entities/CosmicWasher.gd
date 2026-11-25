@@ -36,12 +36,13 @@ const BOUNCE_IMPULSE := 320.0
 const REJECT_COOLDOWN_S := 0.6
 const RELEASE_COOLDOWN_S := 0.4
 
-## Holo panel anchor: 40 world px above the machine (below it for the south row, because the
-## frozen layout leaves only 64 world px between rows).
-const HOLO_GAP := 40.0
+## The hologram sits on the machine's layout top: a 128x56 panel whose bottom edge is the
+## `art_rect` top, horizontally centred on the machine (all four are on screen at 1280x720).
 const MACHINE_TOP := -184.0
-const HOLO_ORIGIN := Vector2(0.0, MACHINE_TOP - HOLO_GAP)
-const HOLO_ORIGIN_BELOW := Vector2(0.0, 8.0 + HOLO_GAP + 84.0)
+const HOLO_ORIGIN := Vector2(0.0, -192.0)
+## Steel cabinets are the brightest thing on screen; pull them back 12-15 % so the holo,
+## items and chute win the eye.
+const BODY_TINT := Color(0.86, 0.88, 0.95)
 
 ## Every action feedback must stay under `0.45 x T_beat`; 190 ms is the tightest phase.
 const FEEDBACK_S := 0.18
@@ -170,8 +171,9 @@ func configure(
 	if mouth == Vector2.ZERO:
 		mouth = art_rect.position + Vector2(art_rect.size.x * 0.5, art_rect.size.y)
 	position = mouth * float(Config.ART_SCALE)
-	var below := art_rect.get_center().y > float(Config.ART_CANVAS.y) * 0.5
-	_holo_origin = HOLO_ORIGIN_BELOW if below else HOLO_ORIGIN
+	var center_x := (art_rect.position.x + art_rect.size.x * 0.5) * float(Config.ART_SCALE)
+	var top_y := art_rect.position.y * float(Config.ART_SCALE)
+	_holo_origin = Vector2(center_x - position.x, top_y - position.y)
 	if _holo != null:
 		_holo.position = _holo_origin
 	_configured = true
@@ -599,7 +601,6 @@ func _refresh_holo() -> void:
 	var alpha := 0.6
 	var text := _requirement_text(_fsm.get_requirement())
 	var tint := get_glow_color()
-	var size := 12
 	holo_state = HoloState.IDLE
 	if _fsm.is_locked():
 		holo_state = HoloState.LOCKED
@@ -623,7 +624,6 @@ func _refresh_holo() -> void:
 				alpha = 1.0
 				tint = Palette.HAZARD_ORANGE
 				text = tr("TURBULENTO")
-				size = 14
 			WasherFSM.State.WASHING:
 				holo_state = HoloState.WASHING
 				alpha = 1.0
@@ -643,12 +643,11 @@ func _refresh_holo() -> void:
 	_holo.modulate = Color(1.0, 1.0, 1.0, alpha)
 	_holo.set(&"requirement", _fsm.get_requirement())
 	_holo.set(&"label_text", text)
-	_holo.set(&"label_size", size)
 	_holo.set(&"tint", tint)
 	_holo.set(&"flash", _holo_flash)
 	_holo.set(&"matched", holo_state == HoloState.MATCH)
 	var bob := 0.0 if Settings.reduce_motion else roundf(sin(_animate_time * 1.7) * 2.0)
-	_holo.position.y = _holo_origin.y + bob
+	_holo.position = _holo_origin + Vector2(0.0, bob)
 	_holo.queue_redraw()
 
 
@@ -808,17 +807,19 @@ func _ensure_visual() -> void:
 		add_child(_visual)
 	_visual.z_index = 0
 	_visual.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_visual.self_modulate = BODY_TINT
 	if SpriteSheet.configure(_visual, ART_ID, &"idle"):
 		return
 	_fallback = WasherFX.FallbackBody.new()
 	_fallback.name = "FallbackBody"
 	_fallback.position = Vector2(-96.0, MACHINE_TOP)
 	_fallback.z_index = 0
+	_fallback.self_modulate = BODY_TINT
 	add_child(_fallback)
 
 
 func _ensure_procedural() -> void:
-	_holo = WasherFX.make_holo(self, HOLO_ORIGIN)
+	_holo = WasherFX.make_holo(self, _holo_origin)
 	_ring = WasherFX.make_ring(self)
 	_glow = WasherFX.make_glow(self)
 

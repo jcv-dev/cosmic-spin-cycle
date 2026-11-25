@@ -12,68 +12,114 @@ const CHIP_BACKGROUND_ALPHA := 0.85
 const CHIP_FONT_SIZE := 12
 
 
-## Hologram: 128x84 plaque + two requirement glyphs + one text line, all procedural.
+## Hologram: 128x56 plaque above the machine with one unambiguous requirement glyph.
+##
+## The sheet's `solid` icon is a cloud and its `spotted` icon is three plus signs (players
+## read "+" as add/positive), so those two are drawn procedurally as a filled square and a
+## dotted square. `ringed` keeps the shipped ring and the colours keep their triangle /
+## circle / square glyphs; `wild` is a cyan diamond.
 class HoloPanel:
 	extends Node2D
 
+	const PANEL := Rect2(-64.0, -56.0, 128.0, 56.0)
+	const GLYPH := 36.0
+
 	var requirement: StringName = &"wild"
 	var label_text := ""
-	## 12 by default; the washer asks for 14 on the persistent TURBULENTO state.
-	var label_size := 12
 	var tint: Color = Palette.METAL_3
 	var flash := 0.0
 	var matched := false
 
 	func _draw() -> void:
-		var rect := Rect2(-64.0, -84.0, 128.0, 84.0)
-		draw_rect(rect, Color(Palette.SPACE_DEEP, 0.84), true)
-		draw_rect(Rect2(-62.0, -82.0, 124.0, 80.0), Color(Palette.SPACE_HAZE, 0.35), true)
-		draw_rect(rect, Color(tint, 0.95), false, 2.0)
+		draw_rect(PANEL, Color(Palette.SPACE_DEEP, 0.86), true)
+		draw_rect(Rect2(-62.0, -54.0, 124.0, 52.0), Color(Palette.SPACE_HAZE, 0.35), true)
+		var border := Palette.FUNK_CYAN if matched else tint
+		draw_rect(PANEL, Color(border, 0.95), false, 3.0 if matched else 2.0)
 		var tick := Color(Palette.METAL_4, 0.9)
-		draw_rect(Rect2(-64.0, -84.0, 10.0, 2.0), tick, true)
-		draw_rect(Rect2(-64.0, -84.0, 2.0, 10.0), tick, true)
-		draw_rect(Rect2(54.0, -2.0, 10.0, 2.0), tick, true)
-		draw_rect(Rect2(62.0, -10.0, 2.0, 10.0), tick, true)
-		_draw_icon(_icon_a(), Vector2(-52.0, -76.0))
-		_draw_icon(_icon_b(), Vector2(4.0, -76.0))
+		draw_rect(Rect2(-64.0, -56.0, 8.0, 2.0), tick, true)
+		draw_rect(Rect2(-64.0, -56.0, 2.0, 8.0), tick, true)
+		draw_rect(Rect2(56.0, -2.0, 8.0, 2.0), tick, true)
+		draw_rect(Rect2(62.0, -10.0, 2.0, 8.0), tick, true)
+		_draw_glyph()
 		var font := Fonts.pixel_font()
-		var size := label_size
-		if label_text.length() > 13 and size > 9:
+		var size := 14
+		if font.get_string_size(label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x > 120.0:
 			size = 9
 		var width := font.get_string_size(label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
-		var color := Palette.FUNK_CYAN if matched else Palette.METAL_4
 		draw_string(
 			font,
-			Vector2(-width * 0.5, -10.0),
+			Vector2(-width * 0.5, -5.0),
 			label_text,
 			HORIZONTAL_ALIGNMENT_LEFT,
 			-1,
 			size,
-			color
+			Palette.METAL_4
 		)
-		if matched:
-			draw_rect(Rect2(-34.0, -5.0, 68.0, 3.0), Palette.FUNK_CYAN, true)
 
-	func _draw_icon(icon_name: StringName, at: Vector2) -> void:
-		var texture := SpriteSheet.frame_texture("ui_holo_icons", icon_name, 0)
-		if texture == null:
-			draw_rect(Rect2(at, Vector2(48.0, 48.0)), Color(tint, 0.5), false, 2.0)
-			return
-		draw_texture_rect(texture, Rect2(at, Vector2(48.0, 48.0)), false)
+	func _draw_glyph() -> void:
+		var at := Vector2(-GLYPH * 0.5, -54.0)
+		if _is_colour(requirement):
+			var texture := SpriteSheet.frame_texture("ui_holo_icons", requirement, 0)
+			if texture != null:
+				draw_texture_rect(texture, Rect2(at, Vector2(GLYPH, GLYPH)), false)
+				return
+			_draw_square(at)
+		elif requirement == &"solid":
+			_draw_square(at)
+		elif requirement == &"ringed":
+			var ring := SpriteSheet.frame_texture("ui_holo_icons", &"ringed", 0)
+			if ring != null:
+				draw_texture_rect(ring, Rect2(at, Vector2(GLYPH, GLYPH)), false)
+			else:
+				_draw_ring(at)
+		elif requirement == &"spotted":
+			_draw_spotted(at)
+		else:
+			_draw_wild(at)
 
-	func _icon_a() -> StringName:
-		return requirement if _is_colour(requirement) else &"wild"
+	func _draw_square(at: Vector2) -> void:
+		draw_rect(Rect2(at, Vector2(GLYPH, GLYPH)), tint, true)
+		draw_rect(Rect2(at, Vector2(GLYPH, GLYPH)), Palette.METAL_0, false, 2.0)
 
-	func _icon_b() -> StringName:
-		return &"wild" if _is_colour(requirement) else requirement
+	func _draw_ring(at: Vector2) -> void:
+		var center := at + Vector2(GLYPH * 0.5, GLYPH * 0.5)
+		draw_circle(center, GLYPH * 0.5, tint)
+		draw_circle(center, GLYPH * 0.28, Palette.SPACE_DEEP)
+
+	func _draw_spotted(at: Vector2) -> void:
+		_draw_square(at)
+		for offset in [Vector2(9.0, 9.0), Vector2(22.0, 15.0), Vector2(13.0, 26.0)]:
+			draw_rect(Rect2(at + offset, Vector2(6.0, 6.0)), Palette.SPACE_DEEP, true)
+
+	func _draw_wild(at: Vector2) -> void:
+		var center := at + Vector2(GLYPH * 0.5, GLYPH * 0.5)
+		var radius := GLYPH * 0.5 - 2.0
+		var diamond := PackedVector2Array(
+			[
+				center + Vector2(0.0, -radius),
+				center + Vector2(radius, 0.0),
+				center + Vector2(0.0, radius),
+				center + Vector2(-radius, 0.0),
+			]
+		)
+		draw_colored_polygon(diamond, Color(Palette.FUNK_CYAN, 0.25))
+		for index in range(4):
+			draw_line(diamond[index], diamond[(index + 1) % 4], Palette.FUNK_CYAN, 3.0, true)
 
 	func _is_colour(value: StringName) -> bool:
 		return value == &"red" or value == &"blue" or value == &"yellow"
 
 
-## Progress arc around the drum, plus the 3-segment turbulence gauge and its deadline timer.
+## Gauge ring at the drum radius (54 px, 3 px thick) + the turbulence gauge.
+##
+## The ring is a gauge around the porthole, not a halo: it never crosses the cabinet.
 class ProgressRing:
 	extends Node2D
+
+	## Porthole centre measured from the sheet: 30 art px below the frame top, pivot at 46.
+	const DRUM_CENTER := Vector2(0.0, -64.0)
+	## Just outside the 40 px glass, on the bezel: a gauge, not a halo.
+	const DRUM_RADIUS := 52.0
 
 	## 0 hidden, 1 wash/turbulent, 2 done, 3 repair.
 	var mode := 0
@@ -88,22 +134,22 @@ class ProgressRing:
 	var flash_left := 0.0
 
 	func _draw() -> void:
-		var center := Vector2(0.0, -96.0)
+		var center := DRUM_CENTER
 		if flash_left > 0.0:
-			draw_circle(center, 56.0, Color(flash_color, 0.85))
+			draw_circle(center, 38.0, Color(flash_color, 0.85))
 		if turbulent:
-			draw_circle(center, 54.0, Color(Palette.HAZARD_ORANGE, 0.18))
+			draw_circle(center, 38.0, Color(Palette.HAZARD_ORANGE, 0.16))
 		if mode == 0 and not turbulent and flash_left <= 0.0:
 			return
-		draw_arc(center, 66.0, 0.0, TAU, 64, Color(Palette.SPACE_VOID, 0.65), 6.0, true)
+		draw_arc(center, DRUM_RADIUS, 0.0, TAU, 48, Color(Palette.SPACE_VOID, 0.7), 3.0, true)
 		var start := -PI * 0.5
 		var sweep := TAU * clampf(progress, 0.0, 1.0)
 		if sweep > 0.001 and mode != 0:
-			draw_arc(center, 66.0, start, start + sweep, 64, ring_color, 4.0, true)
-			var tip := center + Vector2(cos(start + sweep), sin(start + sweep)) * 66.0
-			draw_circle(tip, 4.0, ring_color)
+			draw_arc(center, DRUM_RADIUS, start, start + sweep, 48, ring_color, 3.0, true)
+			var tip := center + Vector2(cos(start + sweep), sin(start + sweep)) * DRUM_RADIUS
+			draw_circle(tip, 3.0, ring_color)
 		if mode == 2:
-			draw_arc(center, 62.0, 0.0, TAU, 64, Palette.CLEAN_GREEN, 1.0, true)
+			draw_arc(center, DRUM_RADIUS + 2.0, 0.0, TAU, 48, Palette.CLEAN_GREEN, 1.0, true)
 		if turbulent:
 			_draw_turbulence_gauge(center)
 
@@ -111,20 +157,30 @@ class ProgressRing:
 		var ratio := 0.0
 		if time_total > 0.0:
 			ratio = clampf(time_left / time_total, 0.0, 1.0)
+		draw_arc(
+			center,
+			34.0,
+			deg_to_rad(-150.0),
+			deg_to_rad(-30.0),
+			16,
+			Color(Palette.SPACE_VOID, 0.6),
+			8.0,
+			true
+		)
 		for index in range(3):
 			var threshold := 1.0 - float(index + 1) / 3.0
 			var lit := ratio > threshold
 			var color := Palette.HAZARD_ORANGE if lit else Palette.SPACE_HAZE
 			var from := deg_to_rad(-150.0 + float(index) * 40.0)
-			draw_arc(center, 76.0, from, from + deg_to_rad(34.0), 10, color, 6.0, true)
+			draw_arc(center, 34.0, from, from + deg_to_rad(34.0), 10, color, 4.0, true)
 		var font := Fonts.pixel_font()
 		var text := "%.1f" % time_left
-		var width := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x
-		var at := center + Vector2(-width * 0.5, 8.0)
+		var width := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x
+		var at := center + Vector2(-width * 0.5, 18.0)
 		draw_string_outline(
-			font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, 4, Palette.SPACE_VOID
+			font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, 4, Palette.SPACE_VOID
 		)
-		draw_string(font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Palette.HAZARD_ORANGE)
+		draw_string(font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Palette.HAZARD_ORANGE)
 
 
 ## Additive light pool on the floor; energy pulses on the beat.
@@ -301,7 +357,7 @@ static func make_bubbles(parent: Node2D) -> AnimatedSprite2D:
 		node.queue_free()
 		return null
 	node.z_index = 2
-	node.position = Vector2(0.0, -120.0)
+	node.position = Vector2(0.0, -72.0)
 	node.visible = false
 	parent.add_child(node)
 	return node
