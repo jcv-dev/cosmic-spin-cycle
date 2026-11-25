@@ -3,6 +3,11 @@ extends GutTest
 ## optional M2/M3 scenes land, and expose the shift spine.
 
 
+func after_each() -> void:
+	BeatConductor.stop()
+	BeatConductor.set_stream(null, 0.0)
+
+
 func _spawn_level() -> Node2D:
 	var packed := load("res://scenes/main/MainLevel.tscn") as PackedScene
 	var level := packed.instantiate() as Node2D
@@ -99,4 +104,17 @@ func test_spawned_item_rides_the_north_belt() -> void:
 	var spawner := level.get_node_or_null("SpawnDirector")
 	if spawner != null:
 		spawner.call("stop")
+	BeatConductor.stop()
+
+
+func test_warp_skips_past_spawns() -> void:
+	var level := _spawn_level()
+	level.warp_to(300.0)
+	assert_eq(level.get_node("Items").get_child_count(), 0, "history is not replayed")
+	assert_eq(level.get_phase_index(), 2)
+	var spawner := level.get_node("SpawnDirector")
+	assert_almost_eq(float(spawner.get("time")), 300.0, 0.01)
+	level._process(1.75)
+	assert_eq(level.get_node("Items").get_child_count(), 1, "one interval after the warp")
+	spawner.call("stop")
 	BeatConductor.stop()

@@ -31,6 +31,9 @@ var _items: Node2D
 var _environment: Node2D
 var _stems: Array = []
 var _spawn_turn := 0
+var _warning_sfx: AudioStreamPlayer
+var _ready_done := false
+var _pending_warp := -1.0
 
 
 func _ready() -> void:
@@ -52,10 +55,16 @@ func _ready() -> void:
 	_build_player()
 	_build_spawner()
 	_build_ui()
+	_build_warning_audio()
 	_setup_music()
 	BeatConductor.beat_hit.connect(_on_beat)
 	BeatConductor.start(Config.PHASE_BPM[0])
 	_apply_phase(0, true)
+	_ready_done = true
+	if _pending_warp >= 0.0:
+		var pending := _pending_warp
+		_pending_warp = -1.0
+		warp_to(pending)
 	print(
 		(
 			"LEVEL_READY seed=%d phase=%d belts=%d player=%s spawner=%s"
@@ -68,6 +77,13 @@ func _ready() -> void:
 			]
 		)
 	)
+
+
+func _exit_tree() -> void:
+	# The level owns the music it attached to the autoload; don't leak it into tests or a
+	# subsequent shift/reload.
+	BeatConductor.stop()
+	BeatConductor.set_stream(null, 0.0)
 
 
 func _process(delta: float) -> void:
@@ -124,6 +140,8 @@ func _build_environment() -> void:
 		node.set("active", false)
 		node.z_index = -5
 		_environment.add_child(node)
+		if node.has_signal("reverse_warning"):
+			node.connect("reverse_warning", _on_belt_warning)
 		_belts[belt_id] = node
 	for shredder in layout.get("shredders", []):
 		var node := _instantiate_scene(SHREDDER_SCENE)
@@ -294,6 +312,25 @@ func _belt_active_in_phase(belt: Dictionary, index: int) -> bool:
 	return false
 
 
+func _build_warning_audio() -> void:
+	var path := "res://assets/audio/sfx/turbulent_alarm.ogg"
+	if not ResourceLoader.exists(path):
+		return
+	_warning_sfx = AudioStreamPlayer.new()
+	_warning_sfx.name = "WarningSfx"
+	_warning_sfx.stream = load(path) as AudioStream
+	_warning_sfx.volume_db = -7.0
+	if AudioServer.get_bus_index("SFX") >= 0:
+		_warning_sfx.bus = "SFX"
+	add_child(_warning_sfx)
+
+
+func _on_belt_warning(beats_left: int) -> void:
+	if _warning_sfx == null or beats_left != Config.BELT_REVERSE_WARNING_BEATS:
+		return
+	_warning_sfx.play()
+
+
 func _on_beat(beat: int) -> void:
 	if _ended:
 		return
@@ -375,6 +412,21 @@ func _on_shift_ended(result: Dictionary) -> void:
 func set_shift_time(t: float) -> void:
 	shift_time = clampf(t, 0.0, Config.SHIFT_DURATION_S)
 	_process(0.0)
+
+
+## QA/cheat warp: jump to `t` without replaying every past spawn, then continue live.
+## Used by screenshots and the M5 debug F1 cheat; tests use set_shift_time for replay.
+func warp_to(t: float) -> void:
+	if not _ready_done:
+		_pending_warp = t
+		return
+	shift_time = clampf(t, 0.0, Config.SHIFT_DURATION_S)
+	_apply_phase(Config.phase_index_at(shift_time), false)
+	if _spawner != null and _spawner.has_method("seek"):
+		_spawner.call("seek", shift_time)
+		print("WARP seek items=%d time=%s" % [_items.get_child_count(), str(_spawner.get("time"))])
+	if _hud != null:
+		_hud.set_shift_time(shift_time)
 
 
 func get_shift_time() -> float:

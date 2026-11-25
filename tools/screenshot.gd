@@ -37,7 +37,10 @@ func _initialize() -> void:
 	if _time >= 0.0:
 		var level := _find_shift_level(instance)
 		if level != null:
-			level.call("set_shift_time", _time)
+			if level.has_method("warp_to"):
+				level.call("warp_to", _time)
+			else:
+				level.call("set_shift_time", _time)
 	print(
 		(
 			"SCREENSHOT_BOOT ok scene=%s time=%.1f frames=%d out=%s"
@@ -47,7 +50,7 @@ func _initialize() -> void:
 
 
 func _find_shift_level(node: Node) -> Node:
-	if node.has_method("set_shift_time"):
+	if node.has_method("set_shift_time") and node.has_method("warp_to"):
 		return node
 	for child in node.get_children():
 		var found := _find_shift_level(child)
@@ -60,6 +63,19 @@ func _process(_delta: float) -> bool:
 	_frames += 1
 	if _frames < _target:
 		return false
+	var items := root.find_child("Items", true, false)
+	var level := _find_shift_level(root)
+	var state := root.get_node_or_null("GameState")
+	print(
+		(
+			"SCREENSHOT_STATE items=%d stability=%.1f t=%.1f"
+			% [
+				items.get_child_count() if items != null else -1,
+				float(state.get("stability")) if state != null else -1.0,
+				float(level.call("get_shift_time")) if level != null else -1.0,
+			]
+		)
+	)
 	var img := root.get_texture().get_image()
 	if img == null:
 		push_error("no viewport image (headless?)")

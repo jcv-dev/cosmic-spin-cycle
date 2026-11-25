@@ -71,9 +71,9 @@ func _build_labels() -> void:
 	_turno_label.text = tr("TURNO")
 	_phase_label = _label("PhaseLabel", Rect2(128, 32, 300, 12), 9, Palette.FUNK_CYAN, font)
 	_stability_label = _label(
-		"StabilityLabel", Rect2(STABILITY_RECT.position.x, 4, 320, 14), 9, Palette.METAL_2, font
+		"StabilityLabel", Rect2(STABILITY_RECT.position.x, 4, 320, 14), 10, Palette.METAL_2, font
 	)
-	_stability_label.text = tr("ESTABILIDAD DEL TEJIDO CÓSMICO")
+	_stability_label.text = tr("ESTABILIDAD")
 	_stability_label.name = "StabilityLabel"
 	_combo_label = _label("ComboLabel", Rect2(880, 12, 130, 30), 24, Palette.FUNK_MAGENTA, font)
 	var combo_caption := _label("ComboCaption", Rect2(882, 2, 150, 12), 9, Palette.METAL_2, font)

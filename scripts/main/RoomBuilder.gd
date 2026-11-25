@@ -104,8 +104,13 @@ static func _build_floor(root: Node2D) -> void:
 		plate.size = size
 		plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		floor_layer.add_child(plate)
-	if SpriteSheet.has_sheet("env_floor"):
+	# A shipped room already includes its floor. Only fall back to tiles when there is no
+	# room art, otherwise the small tile motif repeats across the whole play area.
+	if not has_room_art and SpriteSheet.has_sheet("env_floor"):
 		_build_tiled_floor(floor_layer)
+
+	if has_room_art:
+		return
 
 	var x := 0.0
 	while x <= size.x:
