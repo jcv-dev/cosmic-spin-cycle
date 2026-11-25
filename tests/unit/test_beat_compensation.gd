@@ -91,3 +91,19 @@ func test_missing_audio_is_not_fatal() -> void:
 func after_each() -> void:
 	BeatConductor.stop()
 	BeatConductor.set_stream(null, 0.0)
+
+
+func test_click_track_paths_are_canonical_and_imported() -> void:
+	assert_eq(BeatConductor.click_track_path(105), "res://assets/audio/metronome/click_105.wav")
+	assert_eq(
+		BeatConductor.click_track_path(142, true), "res://assets/audio/metronome/countin_142.wav"
+	)
+	for tempo in Config.PHASE_BPM:
+		assert_true(
+			ResourceLoader.exists(BeatConductor.click_track_path(tempo)),
+			"click track for %d BPM" % tempo
+		)
+		assert_true(
+			ResourceLoader.exists(BeatConductor.click_track_path(tempo, true)),
+			"count-in for %d BPM" % tempo
+		)
