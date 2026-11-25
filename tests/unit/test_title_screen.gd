@@ -104,8 +104,38 @@ func test_focus_neighbours_wrap_vertically() -> void:
 	assert_eq(last.focus_neighbor_bottom, last.get_path_to(first), "↓ on SALIR wraps to the top")
 
 
+func test_type_tiers_descend_from_primary_to_tertiary() -> void:
+	var sizes: Array[int] = []
+	for path in ROW_PATHS:
+		sizes.append((_screen.get_node(path) as Button).get_theme_font_size("font_size"))
+	assert_eq(sizes, [28, 20, 20, 16, 16], "one primary, two secondary, two tertiary rows")
+
+
+func test_focused_row_draws_the_measured_ring() -> void:
+	_screen.focus_first()
+	await wait_process_frames(1)
+	var start := _screen.get_node(ROW_PATHS[0]) as Button
+	var ring := start.get_node_or_null("FocusRing") as Control
+	assert_not_null(ring, "every menu row owns a focus ring")
+	assert_eq(ring.size, Vector2(512, 52) + Vector2(6, 6), "2 px ring + 1 px gap on both sides")
+
+
+func test_no_text_below_the_type_floor() -> void:
+	assert_gte(_min_font_size(_screen), 12, "no player-facing text below 12 px")
+
+
 func test_score_grouping_handles_short_and_long_values() -> void:
 	assert_eq(_screen._format_score(0), "0")
 	assert_eq(_screen._format_score(350), "350")
 	assert_eq(_screen._format_score(12480), "12 480")
 	assert_eq(_screen._format_score(1234567), "1 234 567")
+
+
+## Walks the screen and returns the smallest font size in use (UX_RESEARCH §9: floor 12 px).
+func _min_font_size(node: Node) -> int:
+	var smallest := 999
+	if node is Label or node is Button:
+		smallest = mini(smallest, (node as Control).get_theme_font_size("font_size"))
+	for child in node.get_children():
+		smallest = mini(smallest, _min_font_size(child))
+	return smallest

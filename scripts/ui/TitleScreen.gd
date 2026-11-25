@@ -26,6 +26,17 @@ const LEGEND_LINES: Array[String] = [
 const MENU_ROWS: Array[String] = [
 	"INICIAR TURNO", "TUTORIAL", "CALIBRACIÓN DE AUDIO", "OPCIONES", "SALIR"
 ]
+## Typographic tiers (UX_RESEARCH §9, §13): one primary action, two secondary, two tertiary.
+const MENU_SIZES: Array[int] = [28, 20, 20, 16, 16]
+## Tier 3 is dimmed by ink alpha, not by a darker palette slot: 82 % `metal_2` still measures
+## ~5.2:1 on the plate, while `metal_1` would land at 3.9:1 and miss the 4.5:1 text floor.
+const MENU_INKS: Array[Color] = [
+	Palette.METAL_2,
+	Palette.METAL_2,
+	Palette.METAL_2,
+	Color(Palette.METAL_2, 0.82),
+	Color(Palette.METAL_2, 0.82),
+]
 const MENU_ACTIONS: Array[StringName] = [
 	&"start_requested",
 	&"tutorial_requested",
@@ -57,6 +68,9 @@ const FOOTER_BAND := Rect2(0, 636, 1280, 84)
 const PROP_MIN_ART_X := 80.0
 const SPRITE_DIR := "res://assets/sprites/"
 const LAYOUT_PATH := "res://data/layout.json"
+## Ring geometry: 2 px cyan, 1 px void gap (UX_RESEARCH §5, §8).
+const RING_WIDTH := 2.0
+const RING_GAP := 1.0
 const RANK_COLORS := {
 	"S": Palette.FUNK_MAGENTA,
 	"A": Palette.FUNK_CYAN,
@@ -287,14 +301,14 @@ func _build_brand() -> void:
 	tagline.position = TAGLINE_POS
 	add_child(tagline)
 
-	var mission := UITheme.label(MISSION, UITheme.FONT_SMALL, Palette.METAL_3)
+	var mission := UITheme.label(MISSION, UITheme.FONT_LABEL, Palette.METAL_3)
 	mission.name = "Mission"
 	mission.position = MISSION_CHIP.position + Vector2(12, 6)
 	var chip_width := (
 		(
 			mission
 			. get_theme_font("font")
-			. get_string_size(MISSION, HORIZONTAL_ALIGNMENT_LEFT, -1, UITheme.FONT_SMALL)
+			. get_string_size(MISSION, HORIZONTAL_ALIGNMENT_LEFT, -1, UITheme.FONT_LABEL)
 			. x
 		)
 		+ 28.0
@@ -321,7 +335,7 @@ func _build_brand() -> void:
 
 
 func _build_menu() -> void:
-	var plate := UITheme.panel(PLATE_RECT)
+	var plate := _panel(PLATE_RECT)
 	plate.name = "MenuPlate"
 	add_child(plate)
 	var column := VBoxContainer.new()
@@ -331,7 +345,7 @@ func _build_menu() -> void:
 	column.add_theme_constant_override("separation", 0)
 	plate.add_child(column)
 	for index in range(MENU_ROWS.size()):
-		var row := _menu_row(MENU_ROWS[index])
+		var row := _menu_row(MENU_ROWS[index], MENU_SIZES[index], MENU_INKS[index])
 		row.name = String(BUTTON_NAMES[index])
 		column.add_child(row)
 		_buttons.append(row)
@@ -349,26 +363,23 @@ func _wire_focus(row: Button, index: int) -> void:
 	row.focus_neighbor_right = row.get_path_to(row)
 
 
-func _menu_row(caption: String) -> Button:
-	var row := UITheme.button(caption, UITheme.FONT_H1)
+func _menu_row(caption: String, size: int, ink: Color) -> Button:
+	var row := UITheme.button(caption, size)
 	row.custom_minimum_size = Vector2(MENU_WIDTH, MENU_ROW_HEIGHT)
 	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_theme_stylebox_override("normal", _row_box(Palette.SPACE_MID, 0.0, 0))
 	row.add_theme_stylebox_override("hover", _row_box(Palette.SPACE_MID, 0.42, 0))
-	row.add_theme_stylebox_override("pressed", _row_box(Palette.SPACE_MID, 0.55, 2))
-	row.add_theme_stylebox_override("focus", _row_box(Palette.SPACE_MID, 0.0, 2))
-	row.add_theme_color_override("font_color", Palette.METAL_2)
+	row.add_theme_stylebox_override("pressed", _row_box(Palette.SPACE_MID, 0.55, 0))
+	row.add_theme_stylebox_override("focus", _row_box(Palette.SPACE_MID, 0.0, 0))
+	row.add_theme_color_override("font_color", ink)
 
 	var caret := row.get_node_or_null("Caret") as Control
 	if caret != null:
-		caret.position = Vector2(16, -UITheme.FONT_H1 * 0.5 - 2)
-		(caret as Label).add_theme_font_size_override("font_size", UITheme.FONT_H2)
+		caret.position = Vector2(16, -float(size) * 0.5)
+		(caret as Label).add_theme_font_size_override("font_size", size)
 
 	var label_width := (
-		row
-		. get_theme_font("font")
-		. get_string_size(caption, HORIZONTAL_ALIGNMENT_LEFT, -1, UITheme.FONT_H1)
-		. x
+		row.get_theme_font("font").get_string_size(caption, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
 	)
 	var underline := ColorRect.new()
 	underline.name = "FocusUnderline"
@@ -378,6 +389,7 @@ func _menu_row(caption: String) -> Button:
 	underline.visible = false
 	underline.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(underline)
+	_focus_ring(row, Vector2(MENU_WIDTH, MENU_ROW_HEIGHT))
 
 	var hairline := ColorRect.new()
 	hairline.name = "Hairline"
@@ -410,6 +422,52 @@ func _on_row_pressed(action: StringName) -> void:
 	emit_signal(action)
 
 
+# --- Shared chrome ----------------------------------------------------------
+
+
+## Panel border in `metal_1` (3.9:1 on `space_deep`): `metal_0` measures 2.34:1 and fails
+## the 3:1 non-text floor (UX_RESEARCH §8, §9).
+func _panel(rect: Rect2) -> Panel:
+	var panel := UITheme.panel(rect)
+	panel.add_theme_stylebox_override("panel", _panel_box())
+	return panel
+
+
+func _panel_box() -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(UITheme.PANEL_FILL, UITheme.PANEL_ALPHA)
+	box.border_color = Palette.METAL_1
+	box.set_border_width_all(UITheme.BORDER)
+	box.set_corner_radius_all(0)
+	box.content_margin_left = UITheme.CONTENT_MARGIN_X
+	box.content_margin_right = UITheme.CONTENT_MARGIN_X
+	box.content_margin_top = 14
+	box.content_margin_bottom = 14
+	return box
+
+
+## Focus indicator: 2 px `funk_cyan` ring with a 1 px `space_void` gap (10.9:1 on
+## `space_deep`). Drawn as a child so it can sit outside the control's own bounds.
+func _focus_ring(control: Control, size: Vector2) -> void:
+	var ring := Control.new()
+	ring.name = "FocusRing"
+	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ring.position = Vector2(-RING_GAP - RING_WIDTH, -RING_GAP - RING_WIDTH)
+	ring.size = size + Vector2(RING_GAP + RING_WIDTH, RING_GAP + RING_WIDTH) * 2.0
+	ring.draw.connect(_draw_focus_ring.bind(ring, control))
+	control.focus_entered.connect(ring.queue_redraw)
+	control.focus_exited.connect(ring.queue_redraw)
+	control.add_child(ring)
+
+
+func _draw_focus_ring(ring: Control, control: Control) -> void:
+	if not control.has_focus():
+		return
+	var full := Rect2(Vector2.ZERO, ring.size)
+	ring.draw_rect(full.grow(-(RING_WIDTH + RING_GAP)), Palette.SPACE_VOID, false, RING_GAP)
+	ring.draw_rect(full.grow(-1.0), UITheme.ACCENT, false, RING_WIDTH)
+
+
 # --- Record plaque ----------------------------------------------------------
 
 
@@ -421,12 +479,12 @@ func _refresh_record() -> void:
 		_record_plaque = null
 	if Settings.best_score <= 0:
 		return
-	var plaque := UITheme.panel(RECORD_RECT)
+	var plaque := _panel(RECORD_RECT)
 	_record_plaque = plaque
 	plaque.name = "RecordPlaque"
 	add_child(plaque)
 
-	var caption := UITheme.label("MEJOR TURNO", UITheme.FONT_MICRO, Palette.METAL_1)
+	var caption := UITheme.label("MEJOR TURNO", UITheme.FONT_SMALL, Palette.METAL_1)
 	caption.position = Vector2(22, 12)
 	plaque.add_child(caption)
 
@@ -461,12 +519,12 @@ static func _format_score(value: int) -> String:
 
 func _build_footer() -> void:
 	for index in range(LEGEND_LINES.size()):
-		var line := UITheme.label(LEGEND_LINES[index], UITheme.FONT_MICRO, Palette.METAL_2)
+		var line := UITheme.label(LEGEND_LINES[index], UITheme.FONT_SMALL, Palette.METAL_2)
 		line.name = "Legend%d" % index
 		line.position = Vector2(LEGEND_X, LEGEND_Y + float(index) * LEGEND_LINE_H)
 		add_child(line)
 
-	var footer := UITheme.label(VERSION_LINE, UITheme.FONT_MICRO, Palette.METAL_1)
+	var footer := UITheme.label(VERSION_LINE, UITheme.FONT_SMALL, Palette.METAL_1)
 	footer.name = "Footer"
 	footer.position = FOOTER_RECT.position
 	footer.size = FOOTER_RECT.size
