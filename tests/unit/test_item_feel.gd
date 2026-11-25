@@ -52,9 +52,7 @@ func test_follow_through_carries_capped_player_velocity() -> void:
 	var item: LaundryItem = await _add_item(&"rocky", Vector2(200.0, 400.0))
 	item.begin_hold(_holder)
 	assert_true(
-		item.throw_with_impulse(
-			Vector2.RIGHT, RhythmEvaluator.Grade.GOOD, Vector2(800.0, 0.0)
-		)
+		item.throw_with_impulse(Vector2.RIGHT, RhythmEvaluator.Grade.GOOD, Vector2(800.0, 0.0))
 	)
 	await wait_physics_frames(1)
 	assert_gt(item.linear_velocity.x, Config.THROW_SPEED, "carrier velocity is added")
@@ -72,7 +70,9 @@ func test_throw_is_independent_of_hold_spring_speed() -> void:
 	assert_true(item.throw_with_impulse(Vector2.RIGHT, RhythmEvaluator.Grade.GOOD))
 	await wait_physics_frames(1)
 	assert_almost_eq(
-		item.linear_velocity.length(), Config.THROW_SPEED, 45.0,
+		item.linear_velocity.length(),
+		Config.THROW_SPEED,
+		45.0,
 		"the launch speed does not depend on the hold spring"
 	)
 
