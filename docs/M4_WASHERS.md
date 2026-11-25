@@ -5,8 +5,8 @@ symbol below is the real API the lead wires into `MainLevel`.*
 
 ![Washer sandbox](media/m4_washers.png)
 
-*`scenes/dev/WasherSandbox.tscn` — NW idle + matching carry, NE washing, SW turbulent, SE
-locked, centre chute carrying a clean item.*
+*`scenes/dev/WasherSandbox.tscn` — NW broken (`AVERIADA`), NE washing, SW turbulent (gauge +
+deadline), SE done (`LISTO` + bubbles), centre chute carrying a clean item.*
 
 ---
 
@@ -180,11 +180,26 @@ never rotated), `Holo` (procedural plaque + two `ui_holo_icons` glyphs + one tex
 `ProgressRing` (procedural arc around the drum), `Mouth` (Area2D, layer 0, mask ITEMS,
 r = 60), `Audio` (`washer_drum` loop on SFX) plus three one-shot players, `SteamAnchor`.
 
-**Holo anchors adapt to the frozen layout.** The north machines carry the panel 40 px above
-them; the south row has only 64 world px between rows, so its panel is drawn 40 px **below**
-the machine (`HOLO_ORIGIN_BELOW`). Colour is never the only channel: every state has a glyph
-and Spanish text (`ROJO`, `NO COMPATIBLE`, `LAVANDO 64%`, `TURBULENTO`, `LISTO`, `AVERIADA`,
-`FUERA DE SERVICIO`). Locked machines dim the sprite to 55 % and drop their glow.
+**Holo anchoring is absolute, not relative to the mouth.** Every panel is 128x56 world px and
+sits on its machine's layout top: its top edge is `art_rect.position.y * 4 - 56`, its bottom
+edge is `art_rect.position.y * 4`, horizontally centred on the machine. That puts all four
+fully on screen at 1280x720 and exactly fills the 64 px band between the north and south
+rows (the node itself is positioned from the mouth, then offset to the machine top).
+
+**One unambiguous glyph per requirement.** The shipped sheet's `solid` icon is a cloud and
+its `spotted` icon is three plus signs (players read "+" as add/positive), so those are drawn
+procedurally: `solid` = a filled square, `spotted` = a filled square with three dark dots.
+Colours keep their triangle/circle/square glyph, `ringed` keeps the ring, and `wild` is a cyan
+diamond. Colour is never the only channel: the panel always carries a glyph and Spanish text
+(`ROJO`, `NO COMPATIBLE`, `LAVANDO 60%`, `TURBULENTO`, `LISTO`, `AVERIADA`,
+`FUERA DE SERVICIO`), and state labels are 14 px (auto-shrunk only for the 16-character
+out-of-service string). Locked machines dim the sprite to 55 % and drop their glow.
+
+**Rings are gauges, not halos.** The progress/turbulence ring is 3 px thick at radius 52 world
+px, centred on the measured porthole centre `(0, -64)` (30 art px below the frame top, pivot
+46). The turbulence gauge (3 segments + countdown) sits inside the 40 px glass at radius 34.
+The cabinet body is multiplied by `BODY_TINT = (0.86, 0.88, 0.95)` so the steel stops
+competing with the holo, items and chute.
 
 Side effects (the authority): wrong washer `-12` + `wrong_washer_count`; explosion `-25` +
 `exploded_count`; each clean item `+1 washed_count`, guarded per instance. A locked washer and
@@ -212,6 +227,8 @@ are procedural; the hatch is the shipped `env_chute` sheet, with palette rings a
 `EJECT_OFFSET`, `EJECT_IMPULSE`, `EXPLODE_IMPULSE`, `BOUNCE_IMPULSE`, `REJECT_COOLDOWN_S = 0.6`,
 `RELEASE_COOLDOWN_S = 0.4`, `HOLO_GAP = 40`, `HOLO_ORIGIN(_BELOW)`, `SHAKE_PX = 6`,
 `SHAKE_TIME_S = 0.26`, `LOAD_FLASH_S = 0.18`, `ALARM_MAX = 3`, audio dB values.
+`CosmicWasher` visuals: `BODY_TINT = (0.86, 0.88, 0.95)`, `DRUM_CENTER = (0, -64)`,
+`DRUM_RADIUS = 52`, `HOLO_ORIGIN = (0, -192)` (machine top for the standard 48 px rect).
 `CosmicWasher` feedback: `FEEDBACK_S = 0.18`, `RIM_FRAME_S = 0.02`, `BUZZ_S = 0.12`,
 `BELL_GAP_S = 0.15`, `EXPLOSION_SHAKE_PX = 8`, `SHAKE_STEP_PX = 4`,
 `TURBULENCE_VIBRATION_PX = 4` (1 art px @ 2 Hz), `ALARM_BEEPS = 2`.
