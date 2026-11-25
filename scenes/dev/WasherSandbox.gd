@@ -12,14 +12,12 @@ const SCENE_CHUTE := "res://scenes/environment/DeliveryChute.tscn"
 
 ## Phase used by the screenshot: P2 keeps the south-east machine locked, which shows the
 ## `FUERA DE SERVICIO` encoding next to a washing and a turbulent machine.
-const DEMO_PHASE := 1
-const CAPTION := "M4 · LEE EL HOLOGRAMA · LANZA AL RITMO · ENTREGA LIMPIO EN EL DUCTO"
+const DEMO_PHASE := 2
 
 var layout: Dictionary = {}
 var washers: Dictionary = {}
 var chute: DeliveryChute
 var phase := DEMO_PHASE
-var caption: Label
 
 var _items_parent: Node2D
 
@@ -33,7 +31,6 @@ func _ready() -> void:
 	_build_washers()
 	_build_chute()
 	_build_actor()
-	_build_caption()
 	_pose_demo()
 
 
@@ -65,8 +62,11 @@ func _pose_demo() -> void:
 	var north_west := washers.get(&"washer_nw") as CosmicWasher
 	var north_east := washers.get(&"washer_ne") as CosmicWasher
 	var south_west := washers.get(&"washer_sw") as CosmicWasher
+	var south_east := washers.get(&"washer_se") as CosmicWasher
 	if north_west != null:
-		north_west.set_carry_hint(_spawn_item(&"rocky", &"red", &"solid", false, Vector2(500, 426)))
+		north_west.try_accept(_spawn_item(&"rocky", &"red", &"solid", false, Vector2(420, 470)))
+		north_west.strike(RhythmEvaluator.Grade.PERFECT)
+		north_west.explode_now()
 	if north_east != null:
 		north_east.try_accept(_spawn_item(&"sock", &"blue", &"solid", false, Vector2(760, 470)))
 		north_east.strike(RhythmEvaluator.Grade.GOOD)
@@ -75,6 +75,14 @@ func _pose_demo() -> void:
 		south_west.try_accept(_spawn_item(&"moon", &"yellow", &"solid", false, Vector2(430, 560)))
 		south_west.strike(RhythmEvaluator.Grade.PERFECT)
 		south_west.force_turbulent()
+	if south_east != null:
+		south_east.try_accept(
+			_spawn_item(&"rocky", &"yellow", &"spotted", false, Vector2(980, 470))
+		)
+		south_east.try_accept(_spawn_item(&"sock", &"blue", &"spotted", false, Vector2(1000, 470)))
+		south_east.try_accept(_spawn_item(&"moon", &"red", &"spotted", false, Vector2(1020, 470)))
+		south_east.strike(RhythmEvaluator.Grade.PERFECT)
+		south_east.force_finish()
 	if chute != null:
 		var carried := _spawn_item(&"gas_giant", &"blue", &"ringed", true, Vector2(408, 470))
 		if carried != null:
@@ -83,6 +91,9 @@ func _pose_demo() -> void:
 	_spawn_item(&"moon", &"yellow", &"spotted", false, Vector2(470, 640))
 	_spawn_item(&"rocky", &"blue", &"solid", false, Vector2(790, 640))
 	_spawn_item(&"sock", &"red", &"solid", false, Vector2(360, 640))
+	# Settle the 1-frame flashes/shakes so a frozen capture shows the true state.
+	for washer: CosmicWasher in washers.values():
+		washer.tick(0.2)
 
 
 func _apply_phase() -> void:
@@ -124,6 +135,7 @@ func _build_washers() -> void:
 		var washer := scene.instantiate() as CosmicWasher
 		washer.name = String(row["id"])
 		layer.add_child(washer)
+		washer.set_process(false)
 		var rect := Rect2(float(row["x"]), float(row["y"]), float(row["w"]), float(row["h"]))
 		var mouth := Vector2(float(row["mouth"][0]), float(row["mouth"][1]))
 		washer.configure(StringName(str(row["id"])), rect, mouth, &"wild")
@@ -161,20 +173,6 @@ func _build_actor() -> void:
 		Vector2(float(spawn[0]), float(spawn[1])) * float(Config.ART_SCALE) + Vector2(-140.0, 48.0)
 	)
 	player.set_aim_direction(Vector2.UP)
-
-
-func _build_caption() -> void:
-	caption = Label.new()
-	caption.name = "Caption"
-	caption.text = CAPTION
-	caption.add_theme_font_override("font", Fonts.pixel_font())
-	caption.add_theme_font_size_override("font_size", 14)
-	caption.add_theme_color_override("font_color", Palette.METAL_3)
-	caption.add_theme_color_override("font_outline_color", Palette.SPACE_VOID)
-	caption.add_theme_constant_override("outline_size", 5)
-	caption.position = Vector2(360.0, 690.0)
-	caption.z_index = 20
-	add_child(caption)
 
 
 func _spawn_item(
