@@ -298,7 +298,8 @@ def coherence(env: np.ndarray, fps: float, bpm: float) -> float:
     return float((mid - side) / mid)
 
 
-def fit_beats(env: np.ndarray, fps: float, bpm: float, phase_s: float) -> dict:
+def fit_beats(env: np.ndarray, fps: float, bpm: float, phase_s: float,
+              half_beats: float = 0.25) -> dict:
     """Snap predicted beats to local onset maxima and regress time on beat index."""
     period = 60.0 / bpm
     period_f = period * fps
@@ -307,7 +308,7 @@ def fit_beats(env: np.ndarray, fps: float, bpm: float, phase_s: float) -> dict:
     if n_beats < 16:
         return {"ok": False, "n_beats": n_beats}
     phase_f = phase_s * fps
-    half = 0.25 * period_f
+    half = half_beats * period_f
     idx, times, strengths = [], [], []
     for k in range(n_beats):
         centre = phase_f + k * period_f
@@ -424,6 +425,96 @@ def attack_time(samples: np.ndarray, sr: int, t_guess: float, radius_s: float = 
     rise = np.diff(energy, prepend=energy[0])
     j = int(np.argmax(rise))
     return (lo + j * hop) / sr
+
+
+def energy_onsets(samples: np.ndarray, sr: int, win_s: float = 0.010,
+                  hop_s: float = 0.002) -> tuple[np.ndarray, float]:
+    """Sample-domain onset strength: positive change of short-time RMS.
+
+    Independent of the STFT flux (and therefore of its window smear), this is the
+    right envelope for asking *where in the file* the attacks actually are.
+    """
+    mono = samples if samples.ndim == 1 else samples.mean(axis=1)
+    win = max(4, int(win_s * sr))
+    hop = max(1, int(hop_s * sr))
+    if mono.size < win + hop:
+        return np.zeros(1, dtype=np.float64), sr / hop
+    n = 1 + (mono.size - win) // hop
+    squares = np.concatenate([[0.0], np.cumsum(mono.astype(np.float64) ** 2)])
+    idx = np.arange(n) * hop
+    energy = np.sqrt(np.maximum(squares[idx + win] - squares[idx], 0.0) / win)
+    log_e = np.log(energy + 1e-9)
+    strength = np.maximum(np.diff(log_e, prepend=log_e[0]), 0.0)
+    # Light 3-tap smoothing keeps a single attack from splitting in two.
+    strength = np.convolve(strength, np.array([0.25, 0.5, 0.25]), mode="same")
+    return strength, sr / hop
+
+
+def start_attack(samples: np.ndarray, sr: int) -> dict:
+    """Describe the attack at the very beginning of a file.
+
+    A loop trimmed on a downbeat must open with a transient: energy in the first
+    ~60 ms has to rise well above the level of the first couple of milliseconds
+    (the 5 ms fade-in intentionally mutes that first sliver).
+    """
+    mono = samples if samples.ndim == 1 else samples.mean(axis=1)
+    hop = max(1, int(0.001 * sr))
+    head = mono[: int(0.12 * sr)]
+    n = head.size // hop
+    if n < 8:
+        return {"attack_ms": -1.0, "rise_db": 0.0, "peak_ms": -1.0}
+    blocks = head[: n * hop].reshape(n, hop)
+    rms = np.sqrt(np.mean(blocks.astype(np.float64) ** 2, axis=1))
+    base = float(np.mean(rms[:2])) if n >= 2 else 1e-9
+    window = rms[: min(n, 60)]
+    peak = float(np.max(window))
+    return {
+        "attack_ms": round(float(np.argmax(np.diff(rms[:60], prepend=rms[0]))) * hop / sr * 1000.0, 2),
+        "peak_ms": round(float(np.argmax(window)) * hop / sr * 1000.0, 2),
+        "rise_db": round(20.0 * math.log10(max(1e-9, peak / max(1e-9, base))), 2),
+    }
+
+
+def verify_grid(samples: np.ndarray, sr: int, bpm: float) -> dict:
+    """Check that onsets land on a beat grid at a *known* tempo.
+
+    Blind tempo estimation is ambiguous on short loops (a groove repeats at
+    several metrical levels), so shipped stems are verified against their target
+    BPM instead: pick the best phase, snap every predicted beat to the local
+    envelope maximum and report how tightly they fit the straight line.
+    """
+    env_full, _low_env, _low_flux, fps = onset_envelopes(samples, sr)
+    env = highpass(env_full, fps)
+    period = 60.0 / bpm
+    expected = max(1, int((env.size - 1) / (period * fps)))
+
+    # Scan the whole period at fine resolution: the correct grid is the one whose
+    # snapped onsets fit a straight line, and a +-0.15 beat snap window cannot
+    # reach the neighbouring beat (so off-beats cannot win).
+    best = None
+    for k in range(64):
+        phase = (k / 64.0) * period
+        fit = fit_beats(env, fps, bpm, phase, half_beats=0.15)
+        if not fit.get("ok") or fit["n_beats"] < 0.5 * expected:
+            continue
+        key = (fit["residual_ms_p95"], -fit["n_beats"])
+        if best is None or key < best[0]:
+            best = (key, fit, phase)
+    if best is None:
+        grid_score, _ = grid_mean(env, fps, bpm)
+        return {"bpm": bpm, "ok": False, "n_beats": 0,
+                "grid_score": round(grid_score, 5)}
+    _, fit, phase = best
+    attack = start_attack(samples, sr)
+    return {
+        "bpm": bpm, "ok": True, "n_beats": fit["n_beats"],
+        "phase_s": round(fit["phase_s"], 4),   # beat-index ambiguous, info only
+        "residual_ms_median": fit["residual_ms_median"],
+        "residual_ms_p95": fit["residual_ms_p95"],
+        "attack_ms": attack["attack_ms"],
+        "attack_peak_ms": attack["peak_ms"],
+        "attack_rise_db": attack["rise_db"],
+    }
 
 
 def snap_bpm(bpm: float, tol: float = 0.06) -> tuple[float, bool]:
@@ -557,6 +648,8 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--duration", type=float, default=None, help="analyse only N seconds")
     parser.add_argument("--bars", action="store_true", help="print per-bar RMS")
     parser.add_argument("--selftest", action="store_true", help="run the synthetic click test")
+    parser.add_argument("--known-bpm", type=float, default=None,
+                        help="verify a known tempo instead of estimating it")
     args = parser.parse_args(argv)
 
     if args.selftest:
@@ -569,6 +662,22 @@ def main(argv: list[str]) -> int:
         if not os.path.isfile(path):
             sys.exit(f"error: no such file: {path}")
         samples, sr = decode_mono(path, args.start, args.duration)
+        if args.known_bpm is not None:
+            info = verify_grid(samples, sr, args.known_bpm)
+            info["file"] = path
+            info["analysed_s"] = round(samples.size / sr, 3)
+            results.append(info)
+            if not args.json:
+                if info["ok"]:
+                    print(f"{os.path.basename(path)}: {info['bpm']:.2f} BPM grid, "
+                          f"{info['n_beats']} beats, residual "
+                          f"{info['residual_ms_median']} ms median / "
+                          f"{info['residual_ms_p95']} ms p95, "
+                          f"attack peak {info['attack_peak_ms']:.0f} ms (+{info['attack_rise_db']:.1f} dB)")
+                else:
+                    print(f"{os.path.basename(path)}: no stable grid at "
+                          f"{info['bpm']:.2f} BPM ({info['n_beats']} beats)")
+            continue
         info = estimate(samples, sr)
         info["file"] = path
         info["analysed_s"] = round(samples.size / sr, 3)
