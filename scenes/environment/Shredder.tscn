@@ -1,0 +1,15 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/environment/Shredder.gd" id="1_shredder"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_shredder"]
+radius = 64.0
+
+[node name="Shredder" type="Area2D"]
+collision_layer = 16
+collision_mask = 4
+monitorable = false
+script = ExtResource("1_shredder")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_shredder")
