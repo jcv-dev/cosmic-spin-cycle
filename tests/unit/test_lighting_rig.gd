@@ -98,6 +98,36 @@ func test_intensity_scales_every_emitter() -> void:
 	assert_gt(full, LightingRig.WASHER_ENERGY, "the beat adds energy on top of the base")
 
 
+func test_reduce_motion_stops_the_atmosphere() -> void:
+	var root := Node2D.new()
+	add_child_autofree(root)
+	var atmosphere := Atmosphere.build(root, 90.0)
+	var glow := Atmosphere.build_belt_glow(root, 90.0)
+	Settings.reduce_motion = false
+	atmosphere._apply_reduce_motion()
+	assert_true(atmosphere.particles_active(), "particles run when motion is allowed")
+	assert_not_null(glow)
+	Settings.reduce_motion = true
+	atmosphere._apply_reduce_motion()
+	assert_false(atmosphere.particles_active(), "reduce motion stops the emitters")
+	assert_almost_eq(glow.call("beat_envelope"), 0.0, 0.001, "and pins the neon to its base")
+
+
+func test_light_budget_is_eight_emitters_and_zero_point_lights() -> void:
+	var root := Node2D.new()
+	add_child_autofree(root)
+	var rig := _make_rig(root)
+	assert_eq(rig.lights().size(), 8)
+	var point_lights := 0
+	for light: CanvasItem in rig.lights():
+		if light is PointLight2D:
+			point_lights += 1
+	if LightingRig.USE_POINT_LIGHTS:
+		assert_true(point_lights <= 8, "≤ 8 PointLight2D when the flag is on")
+	else:
+		assert_eq(point_lights, 0, "the default path uses no PointLight2D at all")
+
+
 func test_five_builds_do_not_leak_a_texture_each() -> void:
 	var texture := LightingRig.radial_texture()
 	for index in range(5):

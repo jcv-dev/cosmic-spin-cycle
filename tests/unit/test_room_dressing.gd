@@ -117,6 +117,27 @@ func test_overlay_texture_is_cached_and_lane_safe() -> void:
 	assert_gt(image.get_pixel(2, 90).a, 0.2, "the frame edge is vignetted")
 
 
+func test_overlay_never_covers_the_chute_ring_or_the_drums() -> void:
+	var image := RoomDressing.overlay_texture().get_image()
+	var chute := RoomBuilder.layout_rect("chute")
+	var centre := chute.get_center() / float(Config.ART_SCALE)
+	var radius := 108.0 / float(Config.ART_SCALE)
+	# Sample the beacon ring circle itself (world radius 108 → 27 art px).
+	for step in range(24):
+		var angle := TAU * float(step) / 24.0
+		var at := centre + Vector2(cos(angle), sin(angle)) * radius
+		var pixel := image.get_pixel(int(at.x), int(at.y))
+		assert_lt(pixel.a, 0.07, "chute ring sample %d is shaded" % step)
+	for washer: Dictionary in RoomBuilder.layout().get("washers", []):
+		var rect := RoomBuilder.rect_world(washer)
+		# Drum window: machine centre, 22 art px below the top edge.
+		var drum := Vector2(rect.get_center().x, rect.position.y + 88.0)
+		var art := drum / float(Config.ART_SCALE)
+		for offset in [Vector2.ZERO, Vector2(-8, 0), Vector2(8, 0), Vector2(0, -8), Vector2(0, 8)]:
+			var pixel := image.get_pixel(int(art.x + offset.x), int(art.y + offset.y))
+			assert_lt(pixel.a, 0.07, "drum sample of %s is shaded" % washer.get("id"))
+
+
 func test_room_layers_have_the_documented_z_order() -> void:
 	var root := Node2D.new()
 	add_child_autofree(root)

@@ -105,6 +105,54 @@ func test_play_intro_settles_the_camera() -> void:
 	assert_almost_eq(diorama._intro_offset.length(), 0.0, 0.5)
 
 
+func test_items_ride_the_belt_baseline() -> void:
+	var diorama := _spawn()
+	await wait_frames(2)
+	var belt := RoomBuilder.layout_rect("belt_north")
+	assert_gt(diorama._items.size(), 0)
+	for item: AnimatedSprite2D in diorama._items:
+		assert_almost_eq(
+			item.position.y,
+			belt.position.y + 40.0,
+			0.01,
+			"items stand on the belt deck, not above it",
+		)
+		assert_true(
+			item.position.y > belt.position.y and item.position.y < belt.end.y,
+			"item baseline inside the belt band",
+		)
+
+
+func test_scrim_stops_before_the_chute_ring() -> void:
+	var diorama := _spawn()
+	await wait_frames(2)
+	var scrim := diorama.camera_node().get_node_or_null("MenuScrim") as Node2D
+	assert_not_null(scrim, "the scrim is anchored to the camera")
+	var chute := RoomBuilder.layout_rect("chute")
+	var ring_radius := Diorama.CHUTE_RING_RADIUS
+	# Worst case: the camera pushed as far right as the pan allows moves the ring left.
+	var camera_x := Diorama.CAMERA_HOME.x + Diorama.PAN_X
+	var zoom := Diorama.CAMERA_ZOOM
+	# On-screen left edge of the outer beacon ring, in the same space as SCRIM_STEPS.
+	var ring_left := (chute.get_center().x - (ring_radius + 14.0) - camera_x) * zoom + 640.0
+	var last_edge: float = Diorama.SCRIM_STEPS[Diorama.SCRIM_STEPS.size() - 1]
+	assert_lt(last_edge, ring_left, "the scrim must not touch the chute ring")
+	assert_gt(last_edge, 320.0, "but it must cover the menu column")
+
+
+func test_diorama_keeps_the_washer_cabinets_secondary() -> void:
+	var diorama := _spawn()
+	await wait_frames(2)
+	var washers: Dictionary = diorama.machines.get("washers", {})
+	for key: StringName in washers.keys():
+		var sprite := washers[key] as AnimatedSprite2D
+		assert_almost_eq(sprite.self_modulate.r, RoomDressing.MACHINE_ALBEDO.r, 0.001)
+		assert_lt(sprite.self_modulate.r, 0.95, "cabinets are dimmed below full albedo")
+	var readouts := diorama.get_node_or_null(^"PanelReadouts") as RoomDressing
+	assert_not_null(readouts, "the bright LED square is replaced by a deliberate readout")
+	assert_eq(readouts.element_count(), 4)
+
+
 func test_diorama_never_starts_the_shift_clock() -> void:
 	var was_playing := BeatConductor.is_playing
 	var diorama := _spawn()
