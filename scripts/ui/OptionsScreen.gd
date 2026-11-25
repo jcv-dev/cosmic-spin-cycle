@@ -22,7 +22,12 @@ const CALIBRATE_TEXT := "CALIBRAR AUDIO"
 const RESET_TEXT := "RESTABLECER"
 const BACK_TEXT := "VOLVER"
 
+## Ten controls, grouped so no column shows more than five rows at once: AUDIO (4) |
+## VÍDEO+MANDO (4) | footer (2). One focus order walks them left-to-right, top-to-bottom.
 const PLAQUE := Rect2(250, 90, 780, 540)
+## Focus ring geometry: 2 px cyan + 1 px void gap (UX_RESEARCH §5, §8).
+const RING_WIDTH := 2.0
+const RING_GAP := 1.0
 const CONTENT_X := 282.0
 const CONTENT_RIGHT := 998.0
 const LEFT_W := 348.0
@@ -107,7 +112,7 @@ func close() -> void:
 func _build() -> void:
 	add_child(UITheme.dimmer(0.72))
 
-	var plaque := UITheme.panel(PLAQUE)
+	var plaque := _panel(PLAQUE)
 	plaque.name = "Plaque"
 	add_child(plaque)
 
@@ -116,7 +121,7 @@ func _build() -> void:
 	title.position = Vector2(CONTENT_X, TITLE_Y) - PLAQUE.position
 	plaque.add_child(title)
 
-	_caption = UITheme.label("", UITheme.FONT_MICRO, Palette.METAL_2)
+	_caption = UITheme.label("", UITheme.FONT_LABEL, Palette.METAL_2)
 	_caption.name = "Caption"
 	_caption.position = Vector2(CONTENT_X, CAPTION_Y) - PLAQUE.position
 	plaque.add_child(_caption)
@@ -134,7 +139,9 @@ func _build() -> void:
 	calibrate.custom_minimum_size = Vector2(LEFT_W, float(BUTTON_H))
 	calibrate.pressed.connect(_on_calibrate_pressed)
 	calibrate.mouse_entered.connect(calibrate.grab_focus)
+	calibrate.add_theme_stylebox_override("focus", _empty_box())
 	plaque.add_child(calibrate)
+	_focus_ring(calibrate, Vector2(LEFT_W, float(BUTTON_H)))
 	_focusables.append(calibrate)
 
 	_toggle_row(plaque, ROW_1, "PANTALLA COMPLETA", Toggle.FULLSCREEN)
@@ -152,7 +159,7 @@ func _build() -> void:
 	rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	plaque.add_child(rule)
 
-	var latency_caption := UITheme.label("LATENCIA CALIBRADA", UITheme.FONT_MICRO, Palette.METAL_1)
+	var latency_caption := UITheme.label("LATENCIA CALIBRADA", UITheme.FONT_SMALL, Palette.METAL_1)
 	latency_caption.name = "LatencyCaption"
 	latency_caption.position = Vector2(CONTENT_X, LATENCY_Y + 3) - PLAQUE.position
 	plaque.add_child(latency_caption)
@@ -168,7 +175,9 @@ func _build() -> void:
 	reset.custom_minimum_size = Vector2(float(BUTTON_W), float(BUTTON_H))
 	reset.pressed.connect(_on_reset_pressed)
 	reset.mouse_entered.connect(reset.grab_focus)
+	reset.add_theme_stylebox_override("focus", _empty_box())
 	plaque.add_child(reset)
+	_focus_ring(reset, Vector2(float(BUTTON_W), float(BUTTON_H)))
 	_focusables.append(reset)
 
 	var back := UITheme.action(BACK_TEXT, BUTTON_W, true)
@@ -177,10 +186,12 @@ func _build() -> void:
 	back.custom_minimum_size = Vector2(float(BUTTON_W), float(BUTTON_H))
 	back.pressed.connect(close)
 	back.mouse_entered.connect(back.grab_focus)
+	back.add_theme_stylebox_override("focus", _empty_box())
 	plaque.add_child(back)
+	_focus_ring(back, Vector2(float(BUTTON_W), float(BUTTON_H)))
 	_focusables.append(back)
 
-	var hint := UITheme.label(HINT_TEXT, UITheme.FONT_MICRO, Palette.METAL_1)
+	var hint := UITheme.label(HINT_TEXT, UITheme.FONT_SMALL, Palette.METAL_1)
 	hint.name = "Hint"
 	hint.position = Vector2(CONTENT_X, HINT_Y) - PLAQUE.position
 	plaque.add_child(hint)
@@ -189,7 +200,7 @@ func _build() -> void:
 
 
 func _section(parent: Control, caption: String, x: float, y: float, width: float) -> void:
-	var label := UITheme.label(caption, UITheme.FONT_SMALL, Palette.METAL_3, true)
+	var label := UITheme.label(caption, UITheme.FONT_LABEL, Palette.METAL_3, true)
 	label.position = Vector2(x, y) - PLAQUE.position
 	parent.add_child(label)
 	var line := ColorRect.new()
@@ -201,14 +212,14 @@ func _section(parent: Control, caption: String, x: float, y: float, width: float
 
 
 func _audio_row(parent: Control, y: float, caption: String, index: int) -> void:
-	var label := UITheme.label(caption, UITheme.FONT_SMALL, Palette.METAL_2)
+	var label := UITheme.label(caption, UITheme.FONT_LABEL, Palette.METAL_2)
 	label.position = Vector2(CONTENT_X, y) - PLAQUE.position
-	label.size = Vector2(AUDIO_LABEL_W, 18)
+	label.size = Vector2(AUDIO_LABEL_W, 20)
 	parent.add_child(label)
 
 	var slider := UITheme.slider()
 	slider.name = "Slider%d" % index
-	slider.position = Vector2(CONTENT_X, y + 20.0) - PLAQUE.position
+	slider.position = Vector2(CONTENT_X, y + 22.0) - PLAQUE.position
 	slider.size = Vector2(LEFT_W, TRACK_H)
 	_style_slider(slider)
 	slider.value_changed.connect(_on_audio_changed.bind(index))
@@ -217,12 +228,12 @@ func _audio_row(parent: Control, y: float, caption: String, index: int) -> void:
 	slider.mouse_entered.connect(slider.grab_focus)
 	parent.add_child(slider)
 	_sliders.append(slider)
-	_focus_frame(parent, slider, Vector2(CONTENT_X - 2.0, y + 18.0) - PLAQUE.position, LEFT_W + 4.0)
+	_focus_ring(slider, Vector2(LEFT_W, TRACK_H))
 
-	var readout := UITheme.label("", UITheme.FONT_SMALL, Palette.METAL_4, true)
+	var readout := UITheme.label("", UITheme.FONT_LABEL, Palette.METAL_4, true)
 	readout.name = "Readout%d" % index
 	readout.position = Vector2(CONTENT_X, y) - PLAQUE.position
-	readout.size = Vector2(LEFT_W, 18)
+	readout.size = Vector2(LEFT_W, 20)
 	readout.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	parent.add_child(readout)
 	_readouts.append(readout)
@@ -230,28 +241,28 @@ func _audio_row(parent: Control, y: float, caption: String, index: int) -> void:
 
 
 func _toggle_row(parent: Control, y: float, caption: String, toggle: Toggle) -> void:
-	var row := UITheme.button("", UITheme.FONT_SMALL)
+	var row := UITheme.button("", UITheme.FONT_LABEL)
 	row.name = "Toggle%d" % int(toggle)
 	row.position = Vector2(RIGHT_X, y) - PLAQUE.position
 	row.custom_minimum_size = Vector2(RIGHT_W, 44)
 	row.size = Vector2(RIGHT_W, 44)
 	row.add_theme_stylebox_override("normal", _row_box(Palette.SPACE_MID, 0.0, 0))
 	row.add_theme_stylebox_override("hover", _row_box(Palette.SPACE_MID, 0.45, 0))
-	row.add_theme_stylebox_override("pressed", _row_box(Palette.SPACE_MID, 0.6, 2))
-	row.add_theme_stylebox_override("focus", _row_box(Palette.SPACE_MID, 0.0, 2))
+	row.add_theme_stylebox_override("pressed", _row_box(Palette.SPACE_MID, 0.6, 0))
+	row.add_theme_stylebox_override("focus", _row_box(Palette.SPACE_MID, 0.0, 0))
 	row.add_theme_color_override("font_color", Palette.METAL_2)
 	var caret := row.get_node_or_null("Caret") as Control
 	if caret != null:
 		caret.position = Vector2(14, -9)
 		(caret as Label).add_theme_font_size_override("font_size", UITheme.FONT_SMALL)
 
-	var label := UITheme.label(caption, UITheme.FONT_SMALL, Palette.METAL_2)
-	label.position = Vector2(44, 13)
+	var label := UITheme.label(caption, UITheme.FONT_LABEL, Palette.METAL_2)
+	label.position = Vector2(44, 12)
 	row.add_child(label)
-	var value := UITheme.label("", UITheme.FONT_SMALL, Palette.METAL_4, true)
+	var value := UITheme.label("", UITheme.FONT_LABEL, Palette.METAL_4, true)
 	value.name = "Value"
-	value.position = Vector2(0, 13)
-	value.size = Vector2(RIGHT_W - 18, 18)
+	value.position = Vector2(0, 12)
+	value.size = Vector2(RIGHT_W - 18, 20)
 	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	row.add_child(value)
 	_toggle_values.append(value)
@@ -261,28 +272,56 @@ func _toggle_row(parent: Control, y: float, caption: String, toggle: Toggle) -> 
 	row.focus_entered.connect(_on_row_focus.bind(label, true))
 	row.focus_exited.connect(_on_row_focus.bind(label, false))
 	row.mouse_entered.connect(row.grab_focus)
+	row.add_theme_stylebox_override("focus", _empty_box())
 	parent.add_child(row)
+	_focus_ring(row, Vector2(RIGHT_W, 44.0))
 	_toggles.append(row)
 	_focusables.append(row)
 
 
-## Draws the UITheme focus bracket around a slider: a Slider has no focus stylebox, so the
-## bracket is the only thing that tells the player ←/→ will change this row.
-func _focus_frame(parent: Control, control: Control, at: Vector2, width: float) -> void:
-	var frame := Control.new()
-	frame.name = "FocusFrame"
-	frame.position = at
-	frame.size = Vector2(width, TRACK_H + 4.0)
-	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.draw.connect(_draw_focus_frame.bind(frame, control))
-	control.focus_entered.connect(frame.queue_redraw)
-	control.focus_exited.connect(frame.queue_redraw)
-	parent.add_child(frame)
+## Panel border in `metal_1` (3.9:1): `metal_0` measures 2.34:1 and fails the 3:1 floor.
+func _panel(rect: Rect2) -> Panel:
+	var panel := UITheme.panel(rect)
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(UITheme.PANEL_FILL, UITheme.PANEL_ALPHA)
+	box.border_color = Palette.METAL_1
+	box.set_border_width_all(UITheme.BORDER)
+	box.set_corner_radius_all(0)
+	box.content_margin_left = UITheme.CONTENT_MARGIN_X
+	box.content_margin_right = UITheme.CONTENT_MARGIN_X
+	box.content_margin_top = 14
+	box.content_margin_bottom = 14
+	panel.add_theme_stylebox_override("panel", box)
+	return panel
 
 
-func _draw_focus_frame(frame: Control, control: Control) -> void:
-	if control.has_focus():
-		UITheme.draw_focus_bracket(frame, Rect2(Vector2.ZERO, frame.size))
+## 2 px `funk_cyan` ring with a 1 px `space_void` gap (10.9:1 on `space_deep`). A Slider has
+## no focus stylebox of its own, so the ring is its only focus signal.
+func _focus_ring(control: Control, size: Vector2) -> void:
+	var ring := Control.new()
+	ring.name = "FocusRing"
+	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ring.position = Vector2(-RING_GAP - RING_WIDTH, -RING_GAP - RING_WIDTH)
+	ring.size = size + Vector2(RING_GAP + RING_WIDTH, RING_GAP + RING_WIDTH) * 2.0
+	ring.draw.connect(_draw_focus_ring.bind(ring, control))
+	control.focus_entered.connect(ring.queue_redraw)
+	control.focus_exited.connect(ring.queue_redraw)
+	control.add_child(ring)
+
+
+func _draw_focus_ring(ring: Control, control: Control) -> void:
+	if not control.has_focus():
+		return
+	var full := Rect2(Vector2.ZERO, ring.size)
+	ring.draw_rect(full.grow(-(RING_WIDTH + RING_GAP)), Palette.SPACE_VOID, false, RING_GAP)
+	ring.draw_rect(full.grow(-1.0), UITheme.ACCENT, false, RING_WIDTH)
+
+
+func _empty_box() -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(0, 0, 0, 0)
+	box.set_border_width_all(0)
+	return box
 
 
 ## ←/→ cycles the value of a focused toggle row; ↑/↓ keeps moving the focus.

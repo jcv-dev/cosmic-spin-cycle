@@ -110,16 +110,12 @@ func test_calibrate_emits_the_request() -> void:
 	assert_signal_emitted(_screen, "calibration_requested")
 
 
-func test_back_button_closes() -> void:
+func test_back_button_and_escape_both_close() -> void:
 	watch_signals(_screen)
 	(_screen.get_node("Plaque/BackButton") as Button).emit_signal("pressed")
 	assert_signal_emitted(_screen, "closed")
-
-
-func test_escape_closes() -> void:
-	watch_signals(_screen)
 	_screen.close()
-	assert_signal_emitted(_screen, "closed")
+	assert_signal_emit_count(_screen, "closed", 2)
 
 
 func test_reset_restores_defaults_and_refreshes() -> void:
@@ -131,6 +127,40 @@ func test_reset_restores_defaults_and_refreshes() -> void:
 	assert_false(Settings.fullscreen)
 	assert_eq((_screen.get_node("Plaque/Readout0") as Label).text, "0 dB")
 	assert_eq((_screen.get_node("Plaque/Toggle0/Value") as Label).text, "NO")
+
+
+func test_no_column_shows_more_than_five_rows() -> void:
+	var left := 0
+	var right := 0
+	var footer := 0
+	# Positions are plaque-local: the footer row starts at y = 430, the right column at x = 404.
+	for node in _screen._focusables:
+		var local: Vector2 = (node as Control).position
+		if local.y >= 400.0:
+			footer += 1
+		elif local.x < 200.0:
+			left += 1
+		else:
+			right += 1
+	assert_eq(left, 4, "audio column: three sliders + calibrate")
+	assert_eq(right, 4, "video/gamepad column: three toggles + haptics")
+	assert_eq(footer, 2, "footer: reset + back")
+	assert_lte(maxi(left, right), 5, "GAG menu depth rule: at most five rows per column")
+
+
+func test_panel_border_uses_metal_1() -> void:
+	var plaque := _screen.get_node("Plaque") as Panel
+	var box := plaque.get_theme_stylebox("panel") as StyleBoxFlat
+	assert_eq(box.border_color, Palette.METAL_1, "metal_0 borders fail the 3:1 non-text floor")
+
+
+func test_every_row_draws_the_measured_ring() -> void:
+	for node in _screen._focusables:
+		assert_not_null(node.get_node_or_null("FocusRing"), "%s needs a focus ring" % node.name)
+
+
+func test_no_text_below_the_type_floor() -> void:
+	assert_gte(_min_font_size(_screen), 12, "no player-facing text below 12 px")
 
 
 func test_every_row_is_focusable() -> void:
@@ -152,3 +182,13 @@ func test_every_row_is_focusable() -> void:
 		rows.append(node)
 	for row in rows:
 		assert_ne(row.focus_mode, Control.FOCUS_NONE, "%s must be focusable" % row.name)
+
+
+## Walks the screen and returns the smallest font size in use (UX_RESEARCH §9: floor 12 px).
+func _min_font_size(node: Node) -> int:
+	var smallest := 999
+	if node is Label or node is Button:
+		smallest = mini(smallest, (node as Control).get_theme_font_size("font_size"))
+	for child in node.get_children():
+		smallest = mini(smallest, _min_font_size(child))
+	return smallest
