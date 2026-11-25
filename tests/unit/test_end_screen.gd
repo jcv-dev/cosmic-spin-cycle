@@ -151,5 +151,12 @@ func test_rank_is_full_size_when_reduce_motion_is_on() -> void:
 	assert_eq(rank.scale, Vector2.ONE, "reduce motion must skip the 240 ms scale-in")
 
 
+func test_escape_returns_to_the_menu() -> void:
+	await _open(_result())
+	watch_signals(_screen)
+	_screen.cancel()
+	assert_signal_emitted(_screen, "menu_requested")
+
+
 func test_score_grouping_matches_the_title_screen() -> void:
 	assert_eq(END_SCENE.instantiate()._format_score(12500), "12 500")

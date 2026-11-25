@@ -98,8 +98,13 @@ func focus_first() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
-		menu_requested.emit()
+		cancel()
 		get_viewport().set_input_as_handled()
+
+
+## ESC is the way back to the menu; REPETIR stays the default focus.
+func cancel() -> void:
+	menu_requested.emit()
 
 
 func _rebuild() -> void:
