@@ -38,7 +38,7 @@ const TOAST_RECT := Rect2(400, 104, 480, 18)
 const REWARD_RECT := Rect2(1156, 104, 100, 18)
 ## Void meter strip (D046): the ribbon's bottom edge, 4 px, full ribbon width.
 const VOID_BAR_X := 8.0
-const VOID_BAR_Y := 23.0
+const VOID_BAR_Y := 28.0
 const VOID_BAR_W := 464.0
 const VOID_BAR_H := 4.0
 const DIEGETIC_SCENE := "res://scenes/ui/DiegeticLayer.tscn"
@@ -434,8 +434,6 @@ func _draw_ribbon(target: CanvasItem) -> void:
 ## second plaque. Colour and length both carry the information.
 func _draw_void_bar(target: CanvasItem) -> void:
 	var fraction := VoidIndex.fraction(_void_value)
-	if fraction <= 0.0 and not _void_collapsing:
-		return
 	var color := Palette.METAL_2
 	if _void_collapsing:
 		color = Palette.HAZARD_ORANGE
@@ -443,9 +441,11 @@ func _draw_void_bar(target: CanvasItem) -> void:
 		color = Palette.YEL_3
 	if _void_collapsing and not Settings.reduce_motion:
 		color.a = 0.55 + 0.45 * absf(sin(_pulse * DANGER_PULSE_HZ))
+	# The empty track is always drawn so the player learns the meter exists before it fills.
 	var full := Rect2(VOID_BAR_X, VOID_BAR_Y, VOID_BAR_W, VOID_BAR_H)
 	target.draw_rect(full, Color(Palette.SPACE_MID, 0.65))
-	target.draw_rect(Rect2(full.position, Vector2(VOID_BAR_W * fraction, VOID_BAR_H)), color)
+	if fraction > 0.0:
+		target.draw_rect(Rect2(full.position, Vector2(VOID_BAR_W * fraction, VOID_BAR_H)), color)
 
 
 ## The toast chip is as wide as its text so it never reads as a second bar.

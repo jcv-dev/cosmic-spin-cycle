@@ -69,6 +69,18 @@ func test_hazard_inside_the_zone_damages_stability() -> void:
 	assert_almost_eq(GameState.stability, 100.0 + Config.DIFFICULTY_HIT_DAMAGE[1], 0.001)
 
 
+func test_a_hit_fires_the_feedback_channels() -> void:
+	var center := Vector2(400, 300)
+	_player.global_position = center
+	Juice.release_motion()
+	_inject(Config.HazardKind.METEOR, center)
+	_director.call("_on_beat", 0)
+	assert_true(Juice.is_hitstopping(), "the hit freezes the frame for a beat")
+	assert_gt(Juice.trauma, 0.0, "the camera shakes")
+	var chip := _player.get_node_or_null("FeedbackChip")
+	assert_not_null(chip, "a -N chip floats over Pip")
+
+
 func test_gravity_pocket_never_damages() -> void:
 	var center := Vector2(400, 300)
 	_player.global_position = center
@@ -85,6 +97,8 @@ func test_leaving_on_the_beat_pays_a_perfect_dodge() -> void:
 	_director.call("_on_beat", 0)
 	assert_eq(GameState.stability, 100.0)
 	assert_eq(GameState.score, Config.HAZARD_DODGE_POINTS)
+	var chip := _player.get_node_or_null("FeedbackChip")
+	assert_not_null(chip, "the +25 chip confirms the dodge")
 
 
 func test_leaving_early_is_safe_but_pays_nothing() -> void:

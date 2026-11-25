@@ -459,3 +459,16 @@ caer dentro de una cinta (regresión en `tests/unit/test_washer_eject.gd`).
    oscuro. Ahora 0.92, colores del extremo claro de la paleta (magenta/orange/yel/cyan), trazo
    de 2.5 px con subrayado oscuro de 5 px, y radios mayores (fuga 72, meteorito 56, arco 24,
    bolsillo 44). El catálogo se revisa con `.work/hazard_gallery.tscn` (gitignored).
+
+## D052 — Cuatro canales de feedback por amenaza, y la barra de vacío siempre visible
+2026-11-25 · Reporte del dueño: "¿se supone que las hazards hacen algo? no veo feedback de
+nada". El daño existía (−6 en ESTÁNDAR), pero la única señal era el número de estabilidad.
+
+- **Golpe**: flash naranja de pantalla (90 ms), chip `−N` flotando sobre Pip, hitstop
+  (0.09 s meteorito / 0.05 s resto), sacudida de cámara 0.45 y impacto sonoro.
+- **Esquiva perfecta**: chip `+25` cian, texto `¡ESQUIVA PERFECTA!`, whoosh agudo.
+- **Esquiva normal**: whoosh suave. El silencio ya no significa "no pasó nada".
+- La telegrafía sobrevive 0.75 s extra (`RESOLVE_GRACE_S`) para que el beat que resuelve el
+  golpe nunca llegue cuando el dibujo ya se borró.
+- La barra de vacío pasa a y=28 (bajo el texto del objetivo) y dibuja siempre su carril, para
+  que el medidor se descubra antes de llenarse.

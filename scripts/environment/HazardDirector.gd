@@ -12,6 +12,8 @@ signal hazard_dodged(kind: int, perfect: bool)
 signal collapse_started
 
 const HAZARD_SCENE := "res://scenes/environment/Hazard.tscn"
+const IMPACT_SFX := "res://assets/audio/sfx/washer_explode.ogg"
+const DODGE_SFX := "res://assets/audio/sfx/throw_whoosh.ogg"
 ## How long the gravity-pocket axis flip lasts, in beats. One measure of disorientation.
 const POCKET_BEATS := 4
 
@@ -29,6 +31,8 @@ var _last_anchor := Vector2.ZERO
 var _invulnerable_left := 0.0
 var _collapsing_left := 0.0
 var _pocket_left := 0.0
+var _impact: AudioStreamPlayer
+var _dodge: AudioStreamPlayer
 
 
 func setup(player: Node2D, hazard_root: Node2D, seed_value: int, preset: int) -> void:
@@ -46,6 +50,7 @@ func setup(player: Node2D, hazard_root: Node2D, seed_value: int, preset: int) ->
 		GameState.wrong_washer_made.connect(_on_wrong_washer)
 	if not GameState.rhythm_missed.is_connected(_on_rhythm_missed):
 		GameState.rhythm_missed.connect(_on_rhythm_missed)
+	_ensure_audio()
 	void_changed.emit(void_value, false)
 
 
@@ -225,6 +230,10 @@ func _resolve(entry: Dictionary) -> void:
 	hazard_dodged.emit(kind, perfect)
 	if perfect:
 		_reward_dodge()
+	else:
+		# A safe dodge still gets an audible "you passed" so silence never means "nothing
+		# happened" (owner report).
+		_play(_dodge, 0.85, -16.0)
 
 
 func _hit(kind: int) -> void:
@@ -236,9 +245,18 @@ func _hit(kind: int) -> void:
 	GameState.add_stability(damage, "hazard")
 	GameState.emit_feedback(tr("¡GOLPE DEL VACÍO!"), &"danger")
 	hazard_hit.emit(kind, damage)
+	# Four channels of feedback, because one was not enough (owner: "no veo nada").
+	Juice.flash(Palette.HAZARD_ORANGE, 0.10)
+	if _player != null and is_instance_valid(_player) and _player is Node2D:
+		WasherFX.make_chip(
+			_player as Node2D, "-%d" % int(absf(damage)), false, Palette.HAZARD_ORANGE
+		)
 	if kind == Config.HazardKind.METEOR:
 		Juice.hitstop(Config.HAZARD_METEOR_HITSTOP_S)
-	Juice.shake(0.4, 0.3)
+	else:
+		Juice.hitstop(0.05)
+	Juice.shake(0.45, 0.3)
+	_play(_impact, 0.95, -8.0)
 
 
 func _reward_dodge() -> void:
@@ -246,6 +264,36 @@ func _reward_dodge() -> void:
 	void_value = VoidIndex.bump(void_value, Config.VOID_PERFECT_DODGE_RELIEF)
 	void_changed.emit(void_value, is_collapsing())
 	GameState.emit_feedback(tr("¡ESQUIVA PERFECTA!"), &"rhythm")
+	if _player != null and is_instance_valid(_player) and _player is Node2D:
+		WasherFX.make_chip(
+			_player as Node2D, "+%d" % Config.HAZARD_DODGE_POINTS, true, Palette.FUNK_CYAN
+		)
+
+
+func _ensure_audio() -> void:
+	if _impact != null:
+		return
+	_impact = _make_player(IMPACT_SFX, -8.0)
+	_dodge = _make_player(DODGE_SFX, -12.0)
+
+
+func _make_player(path: String, volume_db: float) -> AudioStreamPlayer:
+	var player := AudioStreamPlayer.new()
+	if ResourceLoader.exists(path):
+		player.stream = load(path) as AudioStream
+	player.volume_db = volume_db
+	if AudioServer.get_bus_index("SFX") >= 0:
+		player.bus = "SFX"
+	add_child(player)
+	return player
+
+
+func _play(player: AudioStreamPlayer, pitch: float, volume_db: float) -> void:
+	if player == null or player.stream == null:
+		return
+	player.pitch_scale = pitch
+	player.volume_db = volume_db
+	player.play()
 
 
 func _can_spawn() -> bool:

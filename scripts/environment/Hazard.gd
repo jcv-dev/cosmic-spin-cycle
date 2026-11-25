@@ -15,6 +15,8 @@ const LINE_W := 2.5
 const UNDERLAY_W := 5.0
 const UNDERLAY_ALPHA := 0.8
 const FADE_S := 0.18
+## Beat signals can land a frame or two after the wall-clock telegraph ends.
+const RESOLVE_GRACE_S := 0.75
 const DASHES := 12
 const ARC_DASHES := 9
 
@@ -75,8 +77,9 @@ func _process(delta: float) -> void:
 		_finished = true
 		queue_free()
 		return
-	if not _active and _elapsed >= warning_s + FADE_S:
-		# The telegraph was never resolved (shift ended or level freed): drop it.
+	if not _active and _elapsed >= warning_s + RESOLVE_GRACE_S:
+		# The telegraph was never resolved (shift ended or level freed): drop it. The grace
+		# keeps the visual alive while the audio beat that resolves it arrives.
 		_finished = true
 		queue_free()
 		return
