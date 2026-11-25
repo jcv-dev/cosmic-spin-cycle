@@ -65,7 +65,7 @@ const TURBULENCE_TIMEOUT_BEATS := 8
 const STABILITY_START := 100.0
 ## A lost item costs less than a wrong-machine throw: the owner read -8 as an instant
 ## punishment for not knowing the belts yet.
-const STABILITY_FELL_OFF_BELT := -3.0
+const STABILITY_FELL_OFF_BELT := -10.0
 const STABILITY_WRONG_WASHER := -12.0
 const STABILITY_EXPLOSION := -25.0
 const STABILITY_CHUTE_DELIVERY := 3.0

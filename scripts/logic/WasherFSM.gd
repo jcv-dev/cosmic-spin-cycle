@@ -47,10 +47,11 @@ const GRADE_UNKNOWN := -1
 
 ## Provisional (see docs/M4_WASHERS.md): the GDD numbers live in Config, these two encode
 ## §A6 #6's "phases >= 3" (the GDD counts phases from 1) and the cycle cadence.
-## Phase index (0-based) from which every third cycle shakes. Was 2 (phase 3); lowered to 1
-## so players meet turbulence — and therefore the AVERIADA state — before the last phase.
-const AUTO_TURBULENCE_PHASE := 1
+## Cycle cadence of scripted turbulence. Phase 0: every third cycle; from phase 1: every
+## second, so destabilisation is a regular threat rather than a rare event.
+const AUTO_TURBULENCE_PHASE := 0
 const AUTO_TURBULENCE_EVERY := 3
+const AUTO_TURBULENCE_EVERY_LATER := 2
 
 ## Seconds a finished load stays in the drum before it can be collected, so the node can
 ## play the `done` animation. Provisional; promote to Config if it needs tuning.
@@ -496,7 +497,8 @@ func _start_cycle() -> bool:
 	_turbulence_elapsed = 0.0
 	_auto_turbulence_fired = false
 	_auto_turbulent_at = -1.0
-	if phase >= AUTO_TURBULENCE_PHASE and cycle_count % AUTO_TURBULENCE_EVERY == 0:
+	var every := AUTO_TURBULENCE_EVERY if phase <= 0 else AUTO_TURBULENCE_EVERY_LATER
+	if phase >= AUTO_TURBULENCE_PHASE and cycle_count % every == 0:
 		_auto_turbulent_at = Config.TURBULENCE_AT_PROGRESS
 	state = State.WASHING
 	_push(&"washing_started", {"cycle_time": cycle_time})

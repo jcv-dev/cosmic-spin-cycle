@@ -263,25 +263,29 @@ func test_progress_completion_and_settle_table() -> void:
 
 
 func test_auto_turbulence_phase_rule_table() -> void:
-	var phase_three := _new_fsm(&"red", 2)
-	_complete_cycle(phase_three)
+	var phase_three := _new_fsm(&"red", 1)
 	_complete_cycle(phase_three)
 	phase_three.insert(_item(&"rocky", 6.0))
 	phase_three.start_cycle()
-	assert_eq(phase_three.cycle_count, 3)
+	assert_eq(phase_three.cycle_count, 2)
 	var events := phase_three.tick(3.05)
-	assert_true(_has_type(events, &"turbulent"), "cycle 3 goes turbulent at 50 %")
+	assert_true(_has_type(events, &"turbulent"), "phase 1 shakes every second cycle at 50 %")
 	assert_eq(phase_three.get_state(), WasherFSM.State.TURBULENT)
 
-	# Phase 0 is calm; from phase 1 (the GDD's phase 2) every third cycle shakes.
-	for phase in range(1):
-		var calm := _new_fsm(&"red", phase)
-		_complete_cycle(calm)
-		_complete_cycle(calm)
-		calm.insert(_item(&"rocky", 6.0))
-		calm.start_cycle()
-		var calm_events := calm.tick(3.05)
-		assert_false(_has_type(calm_events, &"turbulent"), "phase %d stays calm" % phase)
+	# Phase 0 shakes on every third cycle; from phase 1, every second cycle.
+	var early := _new_fsm(&"red", 0)
+	_complete_cycle(early)
+	early.insert(_item(&"rocky", 6.0))
+	early.start_cycle()
+	var early_events := early.tick(3.05)
+	assert_false(_has_type(early_events, &"turbulent"), "cycle 2 in phase 0 is calm")
+
+	var later := _new_fsm(&"red", 1)
+	_complete_cycle(later)
+	later.insert(_item(&"rocky", 6.0))
+	later.start_cycle()
+	var later_events := later.tick(3.05)
+	assert_true(_has_type(later_events, &"turbulent"), "phase 1 shakes every second cycle")
 
 
 func test_turbulence_accumulation_table() -> void:

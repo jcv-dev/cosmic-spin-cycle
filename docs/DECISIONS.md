@@ -363,3 +363,24 @@ Change: `ScoreRules` + `DeliveryChute` + `HUD._on_combo`.
 4. **Metronome louder again**: −6 dB downbeat / −9 dB beat (was −9/−12).
 5. Tutorial gate 6 is now `Mantén E para calmarla`; the director polls the machine state
    instead of listening for a strike, and its fail-forward completes the hold.
+
+## D044 — Playtest #5: harsher losses, real destabilisation, frozen-item fix
+2026-11-25 · Owner run found three concrete problems.
+1. **Losing an item hurts again**: `STABILITY_FELL_OFF_BELT` is **−10** (was −3). The owner
+   asked for the penalty to go "way up"; the E2E bot is expected to die faster, which is fine
+   because it never repairs or stabilises.
+2. **Washers never destabilised** because `MainLevel` called `set_requirement()`/`set_locked()`
+   but never `set_phase()`, so the FSM stayed in phase 0 and the "phase >= 1 every N cycles"
+   rule could not fire. Fixed: `_apply_washer_requirements` now forwards the phase. Cadence:
+   phase 0 every **3rd** cycle, phase 1+ every **2nd**, at 50 % progress (plus MISS
+   accumulation). This is the actual bug behind "I didn't see it on my run".
+3. **Items got pinned between washers**: when a wrong item jammed a machine, `_absorb()` queued
+   `freeze = true` and `_eject()` set `freeze = false` immediately, so the deferred true landed
+   last and the item stayed frozen. Grabbing it showed a held item that could not move and
+   throws bounced off the cabinet. Fixed by deferring the false too (`_eject`) and clearing
+   freeze on `begin_hold`; regression test added.
+4. **Beat circle checked**: `get_beat_phase()` is phase 0 exactly on the beat and
+   `delta_to_nearest_beat()` returns 0 there (verified headless at 120 BPM). The formula was
+   right; the cue was not. The ring now **brightens as it closes** and fires a white-hot
+   **120 ms beat flash**, so the instant is unmistakable rather than inferred from the
+   contraction.

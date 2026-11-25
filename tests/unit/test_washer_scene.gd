@@ -342,3 +342,16 @@ func test_broken_repair_takes_ten_seconds() -> void:
 	assert_eq(washer.get_state(), WasherFSM.State.BROKEN, "still broken before 10 s")
 	washer.tick(0.6)
 	assert_eq(washer.get_state(), WasherFSM.State.IDLE, "the repair completes at 10 s")
+
+
+func test_jammed_item_is_not_left_frozen_inside_the_machine() -> void:
+	var item := (load(Config.SCENE_LAUNDRY_ITEM) as PackedScene).instantiate() as LaundryItem
+	item.setup(&"sock", &"blue", &"solid", false)
+	add_child_autofree(item)
+	item.global_position = washer.global_position + Vector2(400.0, 0.0)
+	assert_true(washer.try_accept(item), "the wrong item jams the machine")
+	await wait_physics_frames(2)
+	assert_false(item.freeze, "an ejected item must be movable again")
+	item.begin_hold(null)
+	await wait_physics_frames(1)
+	assert_false(item.freeze, "grabbing it also clears any deferred freeze")

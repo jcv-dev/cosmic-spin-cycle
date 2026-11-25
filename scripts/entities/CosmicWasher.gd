@@ -429,6 +429,10 @@ func get_center_world() -> Vector2:
 	return global_position + BODY_CENTER
 
 
+func get_phase() -> int:
+	return _fsm.phase
+
+
 func get_mouth_world() -> Vector2:
 	return global_position
 
@@ -654,7 +658,10 @@ func _eject(item: Variant, explosive: bool, index: int = 0) -> void:
 	var offset := EJECT_OFFSET + Vector2(direction.x * 28.0, 0.0)
 	var body := item as RigidBody2D
 	if body != null:
-		body.freeze = false
+		# `_absorb` queued freeze=true; a direct false here is overwritten by that deferral and
+		# leaves the item pinned inside the machine (grabbed but immobile). Defer the false too
+		# so it lands after the true.
+		body.set_deferred(&"freeze", false)
 		body.global_position = global_position + offset
 		body.collision_layer = Config.CollisionLayer.ITEMS
 		body.collision_mask = Config.CollisionLayer.WORLD | Config.CollisionLayer.ITEMS

@@ -63,7 +63,7 @@ func test_consume_applies_the_stability_penalty() -> void:
 	assert_almost_eq(
 		GameState.stability, before + Config.STABILITY_FELL_OFF_BELT, 0.001, "config stability"
 	)
-	assert_eq(Config.STABILITY_FELL_OFF_BELT, -3.0, "retuned after the E2E playtest (D036)")
+	assert_eq(Config.STABILITY_FELL_OFF_BELT, -10.0, "owner: losing an item must hurt (D044)")
 
 
 func test_consume_bumps_the_drop_counter() -> void:

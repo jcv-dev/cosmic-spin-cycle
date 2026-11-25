@@ -16,6 +16,9 @@ const RING_MAX := 70.0
 const RING_WIDTH := 3.0
 const RING_WIDTH_PERFECT := 5.0
 const RING_ALPHA := 0.22
+## Bright, short-lived flash exactly on the beat: the contraction alone was too subtle.
+const RING_FLASH_S := 0.12
+const RING_FLASH_RADIUS := 96.0
 const RING_ALPHA_PERFECT := 0.70
 const RING_IDLE_ALPHA := 0.28
 
@@ -79,6 +82,7 @@ var _ring_radius := RING_MAX
 var _ring_width := RING_WIDTH
 var _ring_alpha := RING_ALPHA
 var _last_beat := -1
+var _beat_flash_left := 0.0
 var _dirty := true
 var _aim := Vector2.DOWN
 var _held: Node = null
@@ -528,10 +532,16 @@ func _update_ring() -> void:
 		_ring_alpha = lerpf(RING_IDLE_ALPHA, RING_ALPHA_PERFECT, 1.0 - progress)
 	else:
 		_ring_radius = clampf(lerpf(RING_MAX, RING_MIN, progress), RING_MIN, RING_MAX)
-		_ring_alpha = RING_ALPHA
+		# The ring brightens as it closes, so the eye is pulled to the beat.
+		_ring_alpha = lerpf(RING_ALPHA * 0.6, RING_ALPHA_PERFECT, progress)
 	_ring_width = RING_WIDTH_PERFECT if perfect else RING_WIDTH
 	if perfect:
 		_ring_alpha = maxf(_ring_alpha, RING_ALPHA_PERFECT)
+	var beat := BeatConductor.get_beat_index()
+	if beat != _last_beat:
+		_last_beat = beat
+		_beat_flash_left = RING_FLASH_S
+	_beat_flash_left = maxf(_beat_flash_left - get_process_delta_time(), 0.0)
 
 
 func _ring_is_animating() -> bool:
@@ -752,6 +762,20 @@ func _draw_ring(origin: Vector2) -> void:
 	draw_arc(origin, _ring_radius, 0.0, TAU, HudGlyphs.RING_SEGMENTS, ink, _ring_width, false)
 	# A bright bead on the ring's edge: the eye catches a moving dot faster than a circle.
 	draw_circle(origin + Vector2(0.0, -_ring_radius), 4.0, Color(ink, minf(1.0, ink.a + 0.35)))
+	# Beat flash: a white-hot ring that expands and fades in 120 ms. This is the "now".
+	if _beat_flash_left > 0.0 and not Settings.reduce_motion:
+		var t := _beat_flash_left / RING_FLASH_S
+		var radius := lerpf(RING_FLASH_RADIUS, _ring_radius, t)
+		draw_arc(
+			origin,
+			radius,
+			0.0,
+			TAU,
+			HudGlyphs.RING_SEGMENTS,
+			Color(Palette.METAL_4, t),
+			2.0 + 3.0 * t,
+			true
+		)
 
 
 # --- Test surface -----------------------------------------------------------

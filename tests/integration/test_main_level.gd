@@ -147,3 +147,12 @@ func test_phase_three_beat_flips_the_north_belt() -> void:
 	if spawner != null:
 		spawner.call("stop")
 	BeatConductor.stop()
+
+
+func test_phase_change_reaches_every_washer() -> void:
+	var level := _spawn_level()
+	level.warp_to(130.0)
+	for washer in level.call("get_washers"):
+		if washer.has_method("get_phase"):
+			assert_eq(int(washer.call("get_phase")), 1, "washers follow the shift phase")
+	BeatConductor.stop()

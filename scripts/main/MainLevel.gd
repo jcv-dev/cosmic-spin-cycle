@@ -657,6 +657,10 @@ func _phase_requirements() -> Array:
 func _apply_washer_requirements() -> void:
 	for washer_id in _washers:
 		var washer: Node = _washers[washer_id]
+		if washer.has_method("set_phase"):
+			# Without this the FSM stayed in phase 0 forever, so auto-turbulence (phase >= 1)
+			# never fired — the owner never saw a washer destabilise.
+			washer.call("set_phase", phase_index)
 		if washer.has_method("set_requirement"):
 			washer.call("set_requirement", _requirement_for(washer_id))
 		if washer.has_method("set_locked"):

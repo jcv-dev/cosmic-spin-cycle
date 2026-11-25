@@ -384,7 +384,8 @@ Rules:
 ## 10. Washers and chute (M4)
 
 ### `WasherFSM` — `res://scripts/logic/WasherFSM.gd` (pure)
-States `IDLE=0, WASHING=1, TURBULENT=2, DONE=3, BROKEN=4`. Repair takes 10 s; turbulence is
+States `IDLE=0, WASHING=1, TURBULENT=2, DONE=3, BROKEN=4`. `set_phase()` must be called by
+the level (it was not in M4–M6 v1, so auto-turbulence never fired). Repair takes 10 s; turbulence is
 cleared by holding `interact` (E / gamepad X) within 170 px of the cabinet for 3 s (D043). Capacity 3 (`galaxy_core`
 takes all 3), compatibility via `Compatibility.item_fits`, cycle time `max(item.wash_s)`
 floored at `MIN_WASH_TIME_S`, beat reductions applied once at insertion, turbulence at

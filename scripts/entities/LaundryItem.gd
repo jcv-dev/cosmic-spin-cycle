@@ -123,6 +123,10 @@ func begin_hold(holder: Node) -> void:
 	if is_held:
 		return
 	is_held = true
+	# An item ejected from a jammed machine may still carry a deferred freeze; a held item
+	# must always be steerable (owner: "it shows as picked but it does not move").
+	set_deferred(&"freeze", false)
+	sleeping = false
 	_holder = holder as Node2D
 	_throw_armed = false
 	_sock_slide_timer = 0.0
