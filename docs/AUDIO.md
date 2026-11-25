@@ -134,6 +134,15 @@ Phase durations (120/150/150/60 s) are not multiples of the loop lengths
 each loop is exactly 64 beats and the conductor counts beats from the stream
 restart, the measure grid stays locked across loop wraps.
 
+### Manifest and path convention
+
+`assets/audio/music.json` and `assets/audio/sfx/sfx.json` store **bare
+filenames** (`"file": "phase1_105.ogg"`), as frozen by `docs/CONTRACTS.md`: the
+beat engine prefixes `res://assets/audio/music/` (or `res://assets/audio/sfx/`
+for SFX). `tools/verify_audio.py` resolves each entry against the directory the
+manifest lives in, and still accepts an explicit relative path, so the check
+works either way. `sha256` in both manifests is the hash of the shipped Ogg.
+
 ## 2. SFX
 
 Mono 44.1 kHz Vorbis, peak −1.3…−1.6 dBFS (budget ≤ −1 dBFS), `sfx.json` records

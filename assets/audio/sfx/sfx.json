@@ -3,7 +3,7 @@
   "sfx": [
     {
       "id": "squelch_grab",
-      "file": "assets/audio/sfx/squelch_grab.ogg",
+      "file": "squelch_grab.ogg",
       "loop": false,
       "duration_s": 0.34,
       "peak_dbfs": -1.46,
@@ -17,7 +17,7 @@
     },
     {
       "id": "belt_hum",
-      "file": "assets/audio/sfx/belt_hum.ogg",
+      "file": "belt_hum.ogg",
       "loop": true,
       "duration_s": 4.0,
       "peak_dbfs": -1.57,
@@ -31,7 +31,7 @@
     },
     {
       "id": "washer_drum",
-      "file": "assets/audio/sfx/washer_drum.ogg",
+      "file": "washer_drum.ogg",
       "loop": true,
       "duration_s": 4.5,
       "peak_dbfs": -1.4,
@@ -45,7 +45,7 @@
     },
     {
       "id": "washer_done",
-      "file": "assets/audio/sfx/washer_done.ogg",
+      "file": "washer_done.ogg",
       "loop": false,
       "duration_s": 0.7,
       "peak_dbfs": -1.45,
@@ -59,7 +59,7 @@
     },
     {
       "id": "washer_explode",
-      "file": "assets/audio/sfx/washer_explode.ogg",
+      "file": "washer_explode.ogg",
       "loop": false,
       "duration_s": 1.1,
       "peak_dbfs": -1.6,
@@ -73,7 +73,7 @@
     },
     {
       "id": "ui_click",
-      "file": "assets/audio/sfx/ui_click.ogg",
+      "file": "ui_click.ogg",
       "loop": false,
       "duration_s": 0.09,
       "peak_dbfs": -1.55,
@@ -87,7 +87,7 @@
     },
     {
       "id": "throw_whoosh",
-      "file": "assets/audio/sfx/throw_whoosh.ogg",
+      "file": "throw_whoosh.ogg",
       "loop": false,
       "duration_s": 0.45,
       "peak_dbfs": -1.32,
@@ -101,7 +101,7 @@
     },
     {
       "id": "delivery_chime",
-      "file": "assets/audio/sfx/delivery_chime.ogg",
+      "file": "delivery_chime.ogg",
       "loop": false,
       "duration_s": 1.6,
       "peak_dbfs": -1.36,
@@ -115,7 +115,7 @@
     },
     {
       "id": "turbulent_alarm",
-      "file": "assets/audio/sfx/turbulent_alarm.ogg",
+      "file": "turbulent_alarm.ogg",
       "loop": false,
       "duration_s": 1.082698,
       "peak_dbfs": -1.41,

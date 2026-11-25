@@ -3,7 +3,7 @@
   "stems": [
     {
       "id": "phase1",
-      "file": "assets/audio/music/phase1_105.ogg",
+      "file": "phase1_105.ogg",
       "bpm": 105,
       "bars": 16,
       "beats_per_bar": 4,
@@ -17,7 +17,7 @@
     },
     {
       "id": "phase2",
-      "file": "assets/audio/music/phase2_118.ogg",
+      "file": "phase2_118.ogg",
       "bpm": 118,
       "bars": 16,
       "beats_per_bar": 4,
@@ -31,7 +31,7 @@
     },
     {
       "id": "phase3",
-      "file": "assets/audio/music/phase3_130.ogg",
+      "file": "phase3_130.ogg",
       "bpm": 130,
       "bars": 16,
       "beats_per_bar": 4,
@@ -45,7 +45,7 @@
     },
     {
       "id": "phase4",
-      "file": "assets/audio/music/phase4_142.ogg",
+      "file": "phase4_142.ogg",
       "bpm": 142,
       "bars": 16,
       "beats_per_bar": 4,

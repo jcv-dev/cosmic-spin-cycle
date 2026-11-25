@@ -565,7 +565,8 @@ def build_music(only: list[str] | None = None) -> int:
         out = normalise(out, MUSIC_PEAK_DB)
         duration = out.shape[0] / SR
         stems.append({
-            "id": plan["id"], "file": os.path.relpath(out_path, ROOT).replace(os.sep, "/"),
+            # Bare filename: the beat engine prefixes res://assets/audio/music/.
+            "id": plan["id"], "file": f"{plan['id']}_{plan['bpm']}.ogg",
             "bpm": plan["bpm"], "bars": BARS, "beats_per_bar": BEATS_PER_BAR,
             "duration_s": round(duration, 6), "first_beat_offset_s": 0.0,
             "loop_start_s": 0.0, "loop_end_s": round(duration, 6),
@@ -747,7 +748,8 @@ def build_sfx() -> int:
                                                  quality=5, target_db=SFX_PEAK_DB)
         seam = seam_metrics(x)
         entries.append({
-            "id": plan["id"], "file": os.path.relpath(out_path, ROOT).replace(os.sep, "/"),
+            # Bare filename: callers prefix res://assets/audio/sfx/.
+            "id": plan["id"], "file": f"{plan['id']}.ogg",
             "loop": plan["loop"], "duration_s": round(duration, 6),
             "peak_dbfs": round(decoded_peak, 2), "rms_dbfs": round(rms_db(x), 2),
             "channels": 1, "sample_rate": SR,

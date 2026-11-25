@@ -64,6 +64,13 @@ def record(kind: str, name: str, ok: bool, detail: str, warn: bool = False) -> N
     RESULTS.append({"kind": kind, "name": name, "ok": ok, "detail": detail, "warn": warn})
 
 
+def resolve_asset(base_dir: str, name: str) -> str:
+    """Manifests store bare filenames (contract); tolerate a relative path too."""
+    if os.path.isabs(name) or "/" in name:
+        return os.path.join(ROOT, name)
+    return os.path.join(base_dir, name)
+
+
 def sha256_file(path: str) -> str:
     import hashlib
     h = hashlib.sha256()
@@ -135,7 +142,7 @@ def check_music(strict: bool) -> None:
             record("music", name, False,
                    f"bpm {stem['bpm']} but phase table says {expected.get(name)}")
             continue
-        path = os.path.join(ROOT, stem["file"])
+        path = resolve_asset(os.path.join(ROOT, "assets", "audio", "music"), stem["file"])
         if not os.path.isfile(path):
             record("music", name, False, f"missing file {stem['file']}")
             continue
@@ -200,7 +207,7 @@ def check_sfx(strict: bool) -> None:
         if entry is None:
             record("sfx", name, False, "missing from sfx.json")
             continue
-        path = os.path.join(ROOT, entry["file"])
+        path = resolve_asset(os.path.join(ROOT, "assets", "audio", "sfx"), entry["file"])
         if not os.path.isfile(path):
             record("sfx", name, False, f"missing file {entry['file']}")
             continue
