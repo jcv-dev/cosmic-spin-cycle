@@ -28,10 +28,14 @@ because the tree is paused behind them.
 
 | Key | Title | First run | Pause | Options | End |
 |---|---|---|---|---|---|
-| ↑ / ↓ | move focus | move focus | move focus | move focus (row order above) | — |
+| ↑ / ↓ | move focus (wraps) | stay on the pair | move focus (wraps) | move focus (wraps) | — |
 | ← / → | move focus | move focus | move focus | change the focused value (slider, toggle) | move focus between buttons |
 | ENTER / Ⓐ | activate | activate | activate | toggle the focused row | activate |
 | ESC | focus SALIR (never quits by accident) | emit `closed` | `App` resumes (ESC is owned by `App`) | emit `closed` | emit `menu_requested` |
+
+First run persists the choice: `EMPEZAR EL TURNO` writes `Settings.mark_first_run_done()` from
+the prompt itself (the bible requires the prompt never to nag again), and the tutorial's own
+completion writes `tutorial_completed` + `first_run_done` through `App`.
 
 Options is the only screen that writes settings: it writes `Settings` and calls
 `Settings.save_settings()` + `Settings.apply()` on every change (no Apply button).
