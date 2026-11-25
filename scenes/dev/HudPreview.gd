@@ -18,4 +18,3 @@ func _ready() -> void:
 	add_child(hud)
 	hud.set_phase(2, Config.phase_bpm(2))
 	hud.show_grade(RhythmEvaluator.Grade.PERFECT)
-	hud.get_node("HintLabel").text = "HUD preview · F10 debug overlay pending"
