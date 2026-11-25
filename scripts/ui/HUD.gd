@@ -3,8 +3,8 @@ extends Control
 ## rhythmic measure dots. Player-facing strings go through tr(); Spanish source strings are
 ## the keys until the translation resources land (see docs/DECISIONS.md D017).
 
-const PANEL_RECT := Rect2(24, 14, 1232, 60)
-const STABILITY_RECT := Rect2(430, 40, 300, 14)
+const PANEL_RECT := Rect2(0, 0, 1280, 48)
+const STABILITY_RECT := Rect2(392, 22, 300, 12)
 const SEGMENTS := 12
 const HINT_TEXT := "WASD mover · ratón apuntar · ESPACIO agarrar/lanzar · SHIFT golpe rítmico"
 
@@ -66,21 +66,21 @@ func _process(delta: float) -> void:
 
 func _build_labels() -> void:
 	var font := Fonts.pixel_font()
-	_clock_label = _label("ClockLabel", Rect2(44, 18, 240, 42), 30, Palette.METAL_4, font)
-	_turno_label = _label("TurnoLabel", Rect2(46, 56, 100, 14), 10, Palette.METAL_2, font)
+	_clock_label = _label("ClockLabel", Rect2(24, 0, 220, 34), 26, Palette.METAL_4, font)
+	_turno_label = _label("TurnoLabel", Rect2(26, 32, 100, 12), 9, Palette.METAL_2, font)
 	_turno_label.text = tr("TURNO")
-	_phase_label = _label("PhaseLabel", Rect2(150, 56, 340, 14), 10, Palette.FUNK_CYAN, font)
+	_phase_label = _label("PhaseLabel", Rect2(128, 32, 300, 12), 9, Palette.FUNK_CYAN, font)
 	_stability_label = _label(
-		"StabilityLabel", Rect2(STABILITY_RECT.position.x, 16, 300, 16), 10, Palette.METAL_2, font
+		"StabilityLabel", Rect2(STABILITY_RECT.position.x, 4, 320, 14), 9, Palette.METAL_2, font
 	)
 	_stability_label.text = tr("ESTABILIDAD DEL TEJIDO CÓSMICO")
 	_stability_label.name = "StabilityLabel"
-	_combo_label = _label("ComboLabel", Rect2(860, 28, 150, 38), 28, Palette.FUNK_MAGENTA, font)
-	var combo_caption := _label("ComboCaption", Rect2(862, 16, 150, 14), 10, Palette.METAL_2, font)
+	_combo_label = _label("ComboLabel", Rect2(880, 12, 130, 30), 24, Palette.FUNK_MAGENTA, font)
+	var combo_caption := _label("ComboCaption", Rect2(882, 2, 150, 12), 9, Palette.METAL_2, font)
 	combo_caption.text = tr("COMBO")
-	_score_label = _label("ScoreLabel", Rect2(1050, 28, 190, 38), 24, Palette.METAL_4, font)
+	_score_label = _label("ScoreLabel", Rect2(1046, 12, 194, 30), 22, Palette.METAL_4, font)
 	_score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	var score_caption := _label("ScoreCaption", Rect2(1050, 16, 190, 14), 10, Palette.METAL_2, font)
+	var score_caption := _label("ScoreCaption", Rect2(1046, 2, 190, 12), 9, Palette.METAL_2, font)
 	score_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	score_caption.text = tr("PUNTOS")
 
@@ -116,7 +116,8 @@ func _draw() -> void:
 	draw_rect(PANEL_RECT, Palette.METAL_0, false, 2.0)
 	# corner accents
 	draw_rect(Rect2(PANEL_RECT.position, Vector2(10, 2)), Palette.FUNK_CYAN)
-	draw_rect(Rect2(PANEL_RECT.position + Vector2(0, 58), Vector2(10, 2)), Palette.FUNK_CYAN)
+	draw_rect(Rect2(0, 46, 1280, 2), Palette.METAL_0)
+	draw_rect(Rect2(PANEL_RECT.position + Vector2(0, 46), Vector2(10, 2)), Palette.FUNK_CYAN)
 	draw_rect(Rect2(PANEL_RECT.end - Vector2(10, 2), Vector2(10, 2)), Palette.FUNK_CYAN)
 	_draw_stability_bar()
 	_draw_measure_dots()
@@ -154,7 +155,7 @@ func _draw_measure_dots() -> void:
 	var active := -1
 	if BeatConductor.is_playing:
 		active = BeatConductor.get_beat_index() % Config.BEATS_PER_MEASURE
-	var origin := Vector2(624, 660)
+	var origin := Vector2(744, 37)
 	for i in range(Config.BEATS_PER_MEASURE):
 		var color := Palette.FUNK_CYAN if i == active else Palette.METAL_1
 		var radius := 4.0 if i == active else 3.0
