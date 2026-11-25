@@ -71,7 +71,30 @@ func test_focus_pair_stays_inside_the_modal() -> void:
 	assert_eq(tutorial.focus_neighbor_top, tutorial.get_path_to(tutorial))
 
 
+func test_both_actions_carry_the_measured_ring() -> void:
+	var tutorial := _screen.get_node("Plaque/TutorialButton") as Button
+	var skip := _screen.get_node("Plaque/SkipButton") as Button
+	for button in [tutorial, skip]:
+		var ring := button.get_node_or_null("FocusRing") as Control
+		assert_not_null(ring, "%s needs a focus ring" % button.name)
+		assert_eq(ring.size, Vector2(272, 48) + Vector2(6, 6))
+
+
+func test_no_text_below_the_type_floor() -> void:
+	assert_gte(_min_font_size(_screen), 12, "no player-facing text below 12 px")
+
+
 func test_close_emits_closed() -> void:
 	watch_signals(_screen)
 	_screen.close()
 	assert_signal_emitted(_screen, "closed")
+
+
+## Walks the screen and returns the smallest font size in use (UX_RESEARCH §9: floor 12 px).
+func _min_font_size(node: Node) -> int:
+	var smallest := 999
+	if node is Label or node is Button:
+		smallest = mini(smallest, (node as Control).get_theme_font_size("font_size"))
+	for child in node.get_children():
+		smallest = mini(smallest, _min_font_size(child))
+	return smallest

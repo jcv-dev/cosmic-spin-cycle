@@ -26,6 +26,10 @@ const ROW_NAMES: Array[StringName] = [
 const ROW_HEIGHT := 44
 const ROW_GAP := 8
 
+## Focus ring geometry: 2 px cyan + 1 px void gap (UX_RESEARCH §5, §8).
+const RING_WIDTH := 2.0
+const RING_GAP := 1.0
+
 const PLAQUE := Rect2(360, 125, 560, 470)
 const CONTENT_X := 392.0
 const CONTENT_W := 496.0
@@ -61,7 +65,7 @@ func focus_first() -> void:
 func _build() -> void:
 	add_child(UITheme.dimmer(UITheme.DIM_ALPHA))
 
-	var plaque := UITheme.panel(PLAQUE)
+	var plaque := _panel(PLAQUE)
 	plaque.name = "Plaque"
 	add_child(plaque)
 
@@ -70,7 +74,7 @@ func _build() -> void:
 	title.position = Vector2(CONTENT_X, TITLE_Y) - PLAQUE.position
 	plaque.add_child(title)
 
-	var caption := UITheme.label(CAPTION_TEXT, UITheme.FONT_MICRO, Palette.METAL_2)
+	var caption := UITheme.label(CAPTION_TEXT, UITheme.FONT_LABEL, Palette.METAL_2)
 	caption.name = "Caption"
 	caption.position = Vector2(CONTENT_X, CAPTION_Y) - PLAQUE.position
 	plaque.add_child(caption)
@@ -83,7 +87,7 @@ func _build() -> void:
 	rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	plaque.add_child(rule)
 
-	var controls_caption := UITheme.label(CONTROLS_CAPTION, UITheme.FONT_MICRO, Palette.METAL_1)
+	var controls_caption := UITheme.label(CONTROLS_CAPTION, UITheme.FONT_LABEL, Palette.METAL_1)
 	controls_caption.name = "ControlsCaption"
 	controls_caption.position = (Vector2(CONTENT_X, CONTROLS_Y) - PLAQUE.position)
 	plaque.add_child(controls_caption)
@@ -101,7 +105,7 @@ func _build() -> void:
 			)
 
 	if Settings.reduce_motion:
-		var note := UITheme.label("REDUCE MOTION: ACTIVADO", UITheme.FONT_MICRO, UITheme.ACCENT)
+		var note := UITheme.label("REDUCE MOTION: ACTIVADO", UITheme.FONT_SMALL, UITheme.ACCENT)
 		note.name = "ReduceMotionNote"
 		note.position = Vector2(CONTENT_X, NOTE_Y) - PLAQUE.position
 		plaque.add_child(note)
@@ -127,7 +131,7 @@ func _build() -> void:
 		_rows[index].focus_neighbor_left = _rows[index].get_path_to(_rows[index])
 		_rows[index].focus_neighbor_right = _rows[index].get_path_to(_rows[index])
 
-	var hint := UITheme.label(HINT_TEXT, UITheme.FONT_MICRO, Palette.METAL_1)
+	var hint := UITheme.label(HINT_TEXT, UITheme.FONT_SMALL, Palette.METAL_1)
 	hint.name = "Hint"
 	hint.position = Vector2(CONTENT_X, HINT_Y) - PLAQUE.position
 	plaque.add_child(hint)
@@ -149,8 +153,8 @@ func _menu_row(caption: String) -> Button:
 	row.custom_minimum_size = Vector2(CONTENT_W, ROW_HEIGHT)
 	row.add_theme_stylebox_override("normal", _row_box(Palette.SPACE_MID, 0.0, 0))
 	row.add_theme_stylebox_override("hover", _row_box(Palette.SPACE_MID, 0.45, 0))
-	row.add_theme_stylebox_override("pressed", _row_box(Palette.SPACE_MID, 0.6, 2))
-	row.add_theme_stylebox_override("focus", _row_box(Palette.SPACE_MID, 0.0, 2))
+	row.add_theme_stylebox_override("pressed", _row_box(Palette.SPACE_MID, 0.6, 0))
+	row.add_theme_stylebox_override("focus", _row_box(Palette.SPACE_MID, 0.0, 0))
 	row.add_theme_color_override("font_color", Palette.METAL_2)
 
 	var caret := row.get_node_or_null("Caret") as Control
@@ -184,7 +188,45 @@ func _menu_row(caption: String) -> Button:
 	row.focus_entered.connect(underline.set_visible.bind(true))
 	row.focus_exited.connect(underline.set_visible.bind(false))
 	row.mouse_entered.connect(row.grab_focus)
+	_focus_ring(row, Vector2(CONTENT_W, ROW_HEIGHT))
 	return row
+
+
+## Panel border in `metal_1` (3.9:1): `metal_0` measures 2.34:1 and fails the 3:1 floor.
+func _panel(rect: Rect2) -> Panel:
+	var panel := UITheme.panel(rect)
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(UITheme.PANEL_FILL, UITheme.PANEL_ALPHA)
+	box.border_color = Palette.METAL_1
+	box.set_border_width_all(UITheme.BORDER)
+	box.set_corner_radius_all(0)
+	box.content_margin_left = UITheme.CONTENT_MARGIN_X
+	box.content_margin_right = UITheme.CONTENT_MARGIN_X
+	box.content_margin_top = 14
+	box.content_margin_bottom = 14
+	panel.add_theme_stylebox_override("panel", box)
+	return panel
+
+
+## 2 px `funk_cyan` ring with a 1 px `space_void` gap (10.9:1 on `space_deep`).
+func _focus_ring(control: Control, size: Vector2) -> void:
+	var ring := Control.new()
+	ring.name = "FocusRing"
+	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ring.position = Vector2(-RING_GAP - RING_WIDTH, -RING_GAP - RING_WIDTH)
+	ring.size = size + Vector2(RING_GAP + RING_WIDTH, RING_GAP + RING_WIDTH) * 2.0
+	ring.draw.connect(_draw_focus_ring.bind(ring, control))
+	control.focus_entered.connect(ring.queue_redraw)
+	control.focus_exited.connect(ring.queue_redraw)
+	control.add_child(ring)
+
+
+func _draw_focus_ring(ring: Control, control: Control) -> void:
+	if not control.has_focus():
+		return
+	var full := Rect2(Vector2.ZERO, ring.size)
+	ring.draw_rect(full.grow(-(RING_WIDTH + RING_GAP)), Palette.SPACE_VOID, false, RING_GAP)
+	ring.draw_rect(full.grow(-1.0), UITheme.ACCENT, false, RING_WIDTH)
 
 
 func _row_box(fill: Color, alpha: float, left_border: int) -> StyleBoxFlat:

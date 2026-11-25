@@ -78,6 +78,16 @@ func test_focus_neighbours_wrap_vertically() -> void:
 	assert_eq(last.focus_neighbor_bottom, last.get_path_to(first))
 
 
+func test_rows_carry_the_measured_ring() -> void:
+	for name in ROW_NAMES:
+		var row := _screen.get_node("Plaque/%s" % name) as Button
+		assert_not_null(row.get_node_or_null("FocusRing"), "%s needs a focus ring" % name)
+
+
+func test_no_text_below_the_type_floor() -> void:
+	assert_gte(_min_font_size(_screen), 12, "no player-facing text below 12 px")
+
+
 func test_controls_block_lists_every_action() -> void:
 	var texts: Array[String] = []
 	for node in _screen.get_node("Plaque").get_children():
@@ -85,3 +95,13 @@ func test_controls_block_lists_every_action() -> void:
 			texts.append((node as Label).text)
 	for expected in ["MOVER", "APUNTAR", "AGARRAR · LANZAR", "GOLPE RÍTMICO", "PAUSA"]:
 		assert_true(texts.has(expected), "controls block must list %s" % expected)
+
+
+## Walks the screen and returns the smallest font size in use (UX_RESEARCH §9: floor 12 px).
+func _min_font_size(node: Node) -> int:
+	var smallest := 999
+	if node is Label or node is Button:
+		smallest = mini(smallest, (node as Control).get_theme_font_size("font_size"))
+	for child in node.get_children():
+		smallest = mini(smallest, _min_font_size(child))
+	return smallest
