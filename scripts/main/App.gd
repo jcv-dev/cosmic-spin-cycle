@@ -58,6 +58,13 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not event.is_action_pressed("pause") or event.is_echo():
 		return
+	if is_paused:
+		if _options != null:
+			_close_options()
+		else:
+			resume_game()
+		get_viewport().set_input_as_handled()
+		return
 	if _options != null:
 		_close_options()
 		get_viewport().set_input_as_handled()
