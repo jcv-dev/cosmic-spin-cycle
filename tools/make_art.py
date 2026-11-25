@@ -138,7 +138,7 @@ def main(argv: list[str]) -> int:
         for sheet_id in sorted(hashes):
             print(f"{hashes[sheet_id]}  {sheet_id}.png")
     total_frames = sum(
-        sum(anim.frames for anim in sheet.animations) for sheet in registry.sheets.values()
+        sum(len(anim.frames) for anim in sheet.animations) for sheet in registry.sheets.values()
     )
     print(
         f"built {len(registry.sheets)} sheets / {total_frames} frames "

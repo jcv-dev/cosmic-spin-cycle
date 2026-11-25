@@ -171,11 +171,12 @@ def scene() -> Path:
     canvas = pxlib.Canvas(layout["canvas"]["w"], layout["canvas"]["h"])
     canvas.blit(first_anim("env_room", "bg"), 0, 0)
 
+    # the room already paints the deck; show the floor tiles as a small patch so the
+    # tiling compatibility stays reviewable without burying the room
     floor = [first_anim("env_floor", name) for name in ("variant_a", "variant_b", "variant_c")]
-    for ty in range(28, 164, 16):
-        for tx in range(8, 312, 16):
-            pick = floor[((tx // 16) * 7 + (ty // 16) * 3) % 3]
-            canvas.blit(pick, tx, ty)
+    for index, tx in enumerate(range(16, 64, 16)):
+        for ty in range(112, 144, 16):
+            canvas.blit(floor[(index + ty // 16) % 3], tx, ty)
 
     belt = first_anim("env_belt", "scroll")
     for entry in layout["belts"]:
