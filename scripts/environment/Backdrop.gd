@@ -105,10 +105,10 @@ static func nebula_tile() -> Image:
 		return _nebula_tile
 	var image := Image.create(TILE_ART_W, SHEET_ART_H, false, Image.FORMAT_RGBA8)
 	image.fill(Color(0.0, 0.0, 0.0, 0.0))
+	# Blue-grey only: the plum haze used to push the whole floor toward magenta.
 	var bands := [
-		[Palette.BLUE_1, 0.18, 0.05, 15.0, 75.0],
-		[Palette.SPACE_HAZE, 0.13, -0.06, 150.0, 65.0],
-		[Palette.FUNK_PLUM, 0.07, 0.02, 200.0, 50.0],
+		[Palette.BLUE_1, 0.14, 0.05, 15.0, 75.0],
+		[Palette.SPACE_HAZE, 0.10, -0.06, 150.0, 65.0],
 	]
 	for y in range(SHEET_ART_H):
 		for x in range(TILE_ART_W):

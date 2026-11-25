@@ -19,20 +19,18 @@ const MAX_LIGHTS := 8
 ## true on hardware GL when real 2D lights matter more than the frame budget.
 const USE_POINT_LIGHTS := false
 ## Washer pool radius in world pixels (UX_BIBLE §3.5).
-const WASHER_RADIUS := 220.0
+const WASHER_RADIUS := 150.0
 ## Washer pool energy and its pulse amplitude (0.42…0.58).
-const WASHER_ENERGY := 0.30
-const WASHER_PULSE := 0.07
+const WASHER_ENERGY := 0.24
+const WASHER_PULSE := 0.06
 ## Chute light energy (UX_BIBLE §3.5).
-const CHUTE_ENERGY := 0.55
-## Cold overhead lamp energy and radius.
-const COLD_ENERGY := 0.18
-const COLD_RADIUS := 260.0
+const CHUTE_ENERGY := 0.42
 ## Warm lamp over the player spawn.
-const WARM_ENERGY := 0.16
-const WARM_RADIUS := 200.0
-## Room tint: cool and ~55 % brightness (UX_BIBLE §3.5).
-const ROOM_TINT := Color(0.70, 0.72, 0.84)
+const WARM_ENERGY := 0.10
+const WARM_RADIUS := 180.0
+## Room tint. Near-neutral on purpose: the art is already blue-grey, so a strong blue bias
+## plus saturated pools turned the floor magenta. This only darkens (~75 %) and cools a hair.
+const ROOM_TINT := Color(0.74, 0.76, 0.80)
 ## Pulse decay in seconds after each beat.
 const PULSE_DECAY := 0.28
 ## Radius of the generated gradient texture, in pixels.
@@ -51,7 +49,6 @@ static var _radial: GradientTexture2D = null
 var _modulate: CanvasModulate
 var _pools: Array[Node2D] = []
 var _chute: Node2D
-var _cold: Array[Node2D] = []
 var _warm: Node2D
 var _emitters: Array[CanvasItem] = []
 var _base_energy: Dictionary = {}
@@ -78,8 +75,8 @@ static func radial_texture() -> GradientTexture2D:
 	gradient.offsets = PackedFloat32Array([0.0, 0.35, 0.72, 1.0])
 	gradient.colors = PackedColorArray(
 		[
-			Color(1.0, 1.0, 1.0, 0.72),
-			Color(1.0, 1.0, 1.0, 0.44),
+			Color(1.0, 1.0, 1.0, 0.60),
+			Color(1.0, 1.0, 1.0, 0.38),
 			Color(1.0, 1.0, 1.0, 0.16),
 			Color(1.0, 1.0, 1.0, 0.0),
 		]
@@ -124,18 +121,13 @@ func _setup() -> void:
 	_chute = _add_light(
 		"ChuteCone",
 		RoomBuilder.layout_rect("chute").get_center(),
-		180.0,
+		170.0,
 		CHUTE_ENERGY,
 		&"clean_green"
 	)
-	for index in range(2):
-		var x := 240.0 if index == 0 else 1040.0
-		_cold.append(
-			_add_light(
-				"ColdLamp%d" % index, Vector2(x, 104.0), COLD_RADIUS, COLD_ENERGY, &"funk_cyan"
-			)
-		)
-	_warm = _add_light("SpawnWarm", RoomBuilder.player_spawn(), WARM_RADIUS, WARM_ENERGY, &"yel_3")
+	_warm = _add_light(
+		"SpawnFill", RoomBuilder.player_spawn(), WARM_RADIUS, WARM_ENERGY, &"metal_3"
+	)
 	_update_energy()
 
 
@@ -244,11 +236,11 @@ func _update_energy() -> void:
 static func _tint_color(name: StringName) -> Color:
 	match name:
 		&"red", &"red_3":
-			return Palette.RED_3
+			return Palette.RED_2
 		&"blue", &"blue_3":
-			return Palette.BLUE_3
+			return Palette.BLUE_2
 		&"yellow", &"yel_3":
-			return Palette.YEL_3
+			return Palette.YEL_2
 		&"clean_green":
 			return Palette.CLEAN_GREEN
 		&"funk_cyan":
