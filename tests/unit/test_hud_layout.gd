@@ -76,18 +76,21 @@ func test_stability_colour_bands() -> void:
 func test_stability_keeps_a_number_and_a_glyph() -> void:
 	var hud := _open_hud()
 	GameState.add_stability(-78.0)
-	assert_eq(hud.stability_text(), "22")
-	# The diamond is drawn, not a Label: assert the colour channel redundancy exists.
-	assert_true(hud.has_method("draw_slot"))
+	assert_eq(hud.readout()["stability"], "22")
+	# Colour is not the only channel: the number stays, and the value text carries the band
+	# colour while the paint slot draws the matching diamond.
+	assert_eq(
+		hud.get_node("PlaqueB/StabilityValue").get_theme_color("font_color"), Palette.HAZARD_ORANGE
+	)
 
 
 func test_combo_and_score_formatting() -> void:
 	var hud := _open_hud()
-	assert_eq(hud.combo_text(), "×1")
+	assert_eq(hud.readout()["combo"], "×1")
 	GameState.add_score(1240)
-	assert_eq(hud.score_text(), "001 240")
+	assert_eq(hud.readout()["score"], "001 240")
 	GameState.add_score(9)
-	assert_eq(hud.score_text(), "001 249")
+	assert_eq(hud.readout()["score"], "001 249")
 
 
 func test_combo_turns_magenta_at_four() -> void:
@@ -104,47 +107,49 @@ func test_combo_turns_magenta_at_four() -> void:
 
 func test_mission_ribbon_default_and_fade() -> void:
 	var hud := _open_hud()
-	assert_eq(hud.objective_text(), "OBJETIVO · LAVA Y ENTREGA HASTA LAS 06:00")
-	assert_almost_eq(hud.objective_alpha(), 1.0, 0.001, "fresh objective shouts")
+	assert_eq(hud.readout()["objective"], "OBJETIVO · LAVA Y ENTREGA HASTA LAS 06:00")
+	assert_almost_eq(hud.readout()["objective_alpha"], 1.0, 0.001, "fresh objective shouts")
 	hud.tick(7.9)
-	assert_almost_eq(hud.objective_alpha(), 1.0, 0.001, "still 100 % before 8 s")
+	assert_almost_eq(hud.readout()["objective_alpha"], 1.0, 0.001, "still 100 % before 8 s")
 	hud.tick(1.1)
-	assert_almost_eq(hud.objective_alpha(), 0.55, 0.001, "settles to 55 % and stays")
-	assert_eq(hud.objective_text(), "OBJETIVO · LAVA Y ENTREGA HASTA LAS 06:00")
+	assert_almost_eq(hud.readout()["objective_alpha"], 0.55, 0.001, "settles to 55 % and stays")
+	assert_eq(hud.readout()["objective"], "OBJETIVO · LAVA Y ENTREGA HASTA LAS 06:00")
 	hud.set_objective("LLEVA LA PIEZA LIMPIA AL DUCTO")
-	assert_almost_eq(hud.objective_alpha(), 1.0, 0.001, "a new objective re-shouts")
+	assert_almost_eq(hud.readout()["objective_alpha"], 1.0, 0.001, "a new objective re-shouts")
 
 
 func test_objective_is_capped_at_46_characters() -> void:
 	var hud := _open_hud()
 	hud.set_objective("X".repeat(80))
-	assert_eq(hud.objective_text().length(), 46)
+	assert_eq(hud.readout()["objective"].length(), 46)
 
 
 func test_feedback_is_one_toast_not_a_log() -> void:
 	var hud := _open_hud()
-	assert_eq(hud.toast_text(), "", "no toast before any feedback")
+	assert_eq(hud.readout()["toast"], "", "no toast before any feedback")
 	GameState.emit_feedback("+350", &"success")
-	assert_eq(hud.toast_text(), "+350")
+	assert_eq(hud.readout()["toast"], "+350")
 	assert_eq(hud.get_node("ToastLabel").get_theme_color("font_color"), Palette.CLEAN_GREEN)
 	GameState.emit_feedback("LAVADORA EQUIVOCADA", &"danger")
-	assert_eq(hud.toast_text(), "LAVADORA EQUIVOCADA", "the newest toast replaces the old one")
+	assert_eq(
+		hud.readout()["toast"], "LAVADORA EQUIVOCADA", "the newest toast replaces the old one"
+	)
 	assert_eq(hud.get_node("ToastLabel").get_theme_color("font_color"), Palette.HAZARD_ORANGE)
 	hud.tick(1.5)
-	assert_eq(hud.toast_text(), "", "the toast expires after 1.4 s")
+	assert_eq(hud.readout()["toast"], "", "the toast expires after 1.4 s")
 
 
 func test_reward_float_lives_near_plaque_b_and_expires() -> void:
 	Settings.reduce_motion = false
 	var hud := _open_hud()
-	assert_eq(hud.reward_text(), "")
+	assert_eq(hud.readout()["reward"], "")
 	hud.flash_reward(350)
-	assert_eq(hud.reward_text(), "+350")
+	assert_eq(hud.readout()["reward"], "+350")
 	var start: Vector2 = hud.get_node("RewardFloat").position
 	hud.tick(0.3)
 	assert_true(hud.get_node("RewardFloat").position.y < start.y, "the reward floats upward")
 	hud.tick(0.4)
-	assert_eq(hud.reward_text(), "", "the reward expires after 600 ms")
+	assert_eq(hud.readout()["reward"], "", "the reward expires after 600 ms")
 
 
 func test_reward_float_does_not_move_under_reduce_motion() -> void:
@@ -154,7 +159,7 @@ func test_reward_float_does_not_move_under_reduce_motion() -> void:
 	var start: Vector2 = hud.get_node("RewardFloat").position
 	hud.tick(0.3)
 	assert_eq(hud.get_node("RewardFloat").position, start, "reduce motion keeps it static")
-	assert_eq(hud.reward_text(), "+120", "the number is still readable")
+	assert_eq(hud.readout()["reward"], "+120", "the number is still readable")
 	Settings.reduce_motion = false
 
 
@@ -165,3 +170,25 @@ func test_danger_flag_pulses_but_is_readable_statically() -> void:
 	hud.set_danger(true)
 	assert_true(hud.danger)
 	Settings.reduce_motion = false
+
+
+func test_tutorial_mode_hides_tempo_and_score_but_keeps_stability() -> void:
+	var hud := _open_hud()
+	hud.set_tutorial_mode(true)
+	var state: Dictionary = hud.readout()
+	assert_false(state["bpm_visible"], "tempo is noise while learning")
+	assert_false(state["score_visible"], "score is noise while learning")
+	assert_true(state["stability_visible"], "stability teaches the fail state")
+
+
+func test_tutorial_step_replaces_the_clock() -> void:
+	var hud := _open_hud()
+	hud.set_shift_time(270.0)
+	hud.set_tutorial_mode(true)
+	assert_eq(hud.readout()["clock"], "03:22", "no step yet: the fail-safe keeps the clock")
+	hud.set_step(2, 7)
+	assert_eq(hud.readout()["clock"], "PASO 2/7")
+	hud.set_tutorial_mode(false)
+	assert_eq(hud.readout()["clock"], "03:22", "leaving the tutorial restores the clock")
+	assert_true(hud.readout()["bpm_visible"])
+	assert_true(hud.readout()["score_visible"])

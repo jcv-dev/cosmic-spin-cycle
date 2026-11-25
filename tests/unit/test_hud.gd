@@ -48,10 +48,10 @@ func test_hud_phase_caption_replaces_phase_number_with_the_name() -> void:
 	var hud := _open_hud()
 	hud.set_phase(2, 130)
 	assert_eq(hud.get_node("PlaqueA/BpmLabel").text, "130 BPM")
-	assert_string_contains(hud.caption_text(), "FASE 3")
-	assert_string_contains(hud.caption_text(), "MAREJADA")
+	assert_string_contains(hud.readout()["caption"], "FASE 3")
+	assert_string_contains(hud.readout()["caption"], "MAREJADA")
 	hud.tick(5.0)
-	assert_eq(hud.caption_text(), "TURNO · FASE 3", "the phase name is a 4 s announcement")
+	assert_eq(hud.readout()["caption"], "TURNO · FASE 3", "the phase name is a 4 s announcement")
 
 
 func test_hud_clock_warns_in_the_last_ten_seconds() -> void:

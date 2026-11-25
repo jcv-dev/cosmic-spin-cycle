@@ -50,6 +50,7 @@ const TOAST_S := 1.4
 const TOAST_ALPHA := 0.82
 const DEFAULT_OBJECTIVE := &"OBJETIVO · LAVA Y ENTREGA HASTA LAS 06:00"
 const REWARD_S := 0.6
+const STEP_CLOCK_FONT := 24
 const REWARD_RISE := 16.0
 const DANGER_PULSE_HZ := 3.0
 
@@ -59,6 +60,7 @@ var shift_time := 0.0
 var phase_index := 0
 var bpm := 105
 var danger := false
+var tutorial_mode := false
 
 var _phase_name_left := 0.0
 var _pulse := 0.0
@@ -91,6 +93,8 @@ var _objective_age := 0.0
 var _objective_alpha := 1.0
 var _toast_left := 0.0
 var _reward_left := 0.0
+var _step_index := 0
+var _step_total := 0
 
 
 ## Interior draw slot: a Control that asks the HUD to paint it, so the plaque can be scaled
@@ -102,7 +106,7 @@ class PaintSlot:
 
 	func _draw() -> void:
 		if host != null and is_instance_valid(host):
-			host.call("draw_slot", self, role)
+			host.call("_draw_slot", self, role)
 
 
 func _ready() -> void:
@@ -321,7 +325,7 @@ func _connect_state() -> void:
 # --- Painting ---------------------------------------------------------------
 
 
-func draw_slot(slot: Control, role: int) -> void:
+func _draw_slot(slot: Control, role: int) -> void:
 	match role:
 		Slot.PLAQUE_A:
 			_draw_beat_dots(slot)
@@ -572,6 +576,25 @@ func set_danger(on: bool) -> void:
 		_slot_b.queue_redraw()
 
 
+## Tutorial mode hides the tempo and the score — they are noise while learning — and lets the
+## clock become the step counter. Stability stays: it is the fail state the step teaches
+## (docs/UX_BIBLE.md §7). Safe to call before any step exists.
+func set_tutorial_mode(on: bool) -> void:
+	tutorial_mode = on
+	if _bpm_label != null:
+		_bpm_label.visible = not on
+	if _score_label != null:
+		_score_label.visible = not on
+	_refresh_clock()
+
+
+## 1-based step presentation: `PASO 2/7`.
+func set_step(index: int, total: int) -> void:
+	_step_index = maxi(index, 1)
+	_step_total = maxi(total, 0)
+	_refresh_clock()
+
+
 func show_grade(grade: int) -> void:
 	if _grade_label == null:
 		return
@@ -591,13 +614,23 @@ func clock_text() -> String:
 func _refresh_clock() -> void:
 	if _clock_label == null:
 		return
+	if tutorial_mode and _step_total > 0:
+		_clock_label.add_theme_font_size_override("font_size", STEP_CLOCK_FONT)
+		_clock_label.text = "PASO %d/%d" % [mini(_step_index, _step_total), _step_total]
+		_set_clock_color(Palette.METAL_4)
+		return
+	_clock_label.add_theme_font_size_override("font_size", UITheme.FONT_TITLE)
 	var text := clock_text()
 	if _clock_label.text != text:
 		_clock_label.text = text
-	var color := Palette.YEL_3 if _clock_warn else Palette.METAL_4
-	if _clock_color != color:
-		_clock_color = color
-		_clock_label.add_theme_color_override("font_color", color)
+	_set_clock_color(Palette.YEL_3 if _clock_warn else Palette.METAL_4)
+
+
+func _set_clock_color(color: Color) -> void:
+	if _clock_color == color:
+		return
+	_clock_color = color
+	_clock_label.add_theme_color_override("font_color", color)
 
 
 func _refresh_caption() -> void:
@@ -622,7 +655,7 @@ func _refresh_bpm() -> void:
 		_bpm_label.text = "%d BPM" % bpm
 
 
-# --- Test surfaces ----------------------------------------------------------
+# --- Test surface -----------------------------------------------------------
 
 
 func plaque_rect(plaque_name: String) -> Rect2:
@@ -632,37 +665,22 @@ func plaque_rect(plaque_name: String) -> Rect2:
 	return Rect2(node.position, node.size)
 
 
-func caption_text() -> String:
-	return _caption_label.text if _caption_label != null else ""
-
-
-func stability_text() -> String:
-	return _stability_value.text if _stability_value != null else ""
-
-
-func score_text() -> String:
-	return _score_label.text if _score_label != null else ""
-
-
-func combo_text() -> String:
-	return _combo_label.text if _combo_label != null else ""
-
-
-func objective_text() -> String:
-	return _objective_label.text if _objective_label != null else ""
-
-
-func objective_alpha() -> float:
-	return _objective_alpha
-
-
-func reward_text() -> String:
-	if _reward_label == null or not _reward_label.visible:
-		return ""
-	return _reward_label.text
-
-
-func toast_text() -> String:
-	if _toast_label == null or not _toast_label.visible:
-		return ""
-	return _toast_label.text
+## One snapshot of everything the layout tests assert, so they never walk node paths.
+func readout() -> Dictionary:
+	return {
+		"clock": _clock_label.text,
+		"caption": _caption_label.text,
+		"bpm": _bpm_label.text,
+		"stability": _stability_value.text,
+		"combo": _combo_label.text,
+		"score": _score_label.text,
+		"objective": _objective_label.text,
+		"objective_alpha": _objective_alpha,
+		"toast": _toast_label.text if _toast_label.visible else "",
+		"reward": _reward_label.text if _reward_label.visible else "",
+		"bpm_visible": _bpm_label.visible,
+		"score_visible": _score_label.visible,
+		"stability_visible": _stability_value.visible,
+		"tutorial": tutorial_mode,
+		"danger": danger,
+	}
