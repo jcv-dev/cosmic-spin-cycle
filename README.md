@@ -67,7 +67,7 @@ python3 tools/lint_sprites.py && python3 tools/verify_audio.py
 godot --headless --path . -s tools/sim_run.gd -- --seed=1234
 ```
 
-Current state: **313 tests / 7,163 asserts green**, 29/29 sprite sheets pass the contract
+Current state: **313 tests / 7,199 asserts green**, 29/29 sprite sheets pass the contract
 linter, 16/16 audio checks pass, and the 480 s simulation reports exactly 197 spawns.
 
 ## Documentation
@@ -99,3 +99,5 @@ Design source: *Cosmic Spin Cycle* GDD, Juan Camilo Valencia (Univalle). Music: 
 Effects* (CC0). Art: adapted from Kenney CC0 packs (Planets, Roguelike/RPG, Pixel Platformer
 Industrial Expansion), with authored fallbacks documented in PROVENANCE. Font: Silkscreen
 (OFL 1.1, Jason Kottke / The Silkscreen Project Authors). Test framework: GUT (MIT).
+
+![Sprite contact sheet](docs/media/sprites_contact.png)

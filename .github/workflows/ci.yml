@@ -50,9 +50,13 @@ jobs:
         run: gdformat --check scripts tests tools
 
       - name: Sprite contract lint
+        run: python tools/lint_sprites.py
+
+      - name: Audio contract verify
         run: |
-          if [ -f tools/lint_sprites.py ]; then
-            python tools/lint_sprites.py
-          else
-            echo "tools/lint_sprites.py not present yet — skipped"
-          fi
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          pip install fonttools numpy
+          python tools/verify_audio.py
+
+      - name: 480 s spawn simulation
+        run: godot --headless --path . -s tools/sim_run.gd -- --seed=1234
