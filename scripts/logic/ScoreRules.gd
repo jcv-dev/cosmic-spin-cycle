@@ -24,6 +24,21 @@ static func delivery_points(item_points: int, combo: int) -> int:
 	return maxi(item_points, 0) * clampi(combo, Config.COMBO_MIN, Config.COMBO_MAX)
 
 
+## Stability paid by the chute, scaled by combo. The base is the GDD's +3; a sustained combo
+## is worth more because it is the only reward that keeps the shift alive, not just the score.
+static func combo_stability_bonus(combo: int) -> float:
+	var level := clampi(combo, Config.COMBO_MIN, Config.COMBO_MAX)
+	if level >= Config.COMBO_MAX:
+		return 2.0
+	if level >= 4:
+		return 1.0
+	return 0.0
+
+
+static func delivery_stability(combo: int) -> float:
+	return Config.STABILITY_CHUTE_DELIVERY + combo_stability_bonus(combo)
+
+
 ## Letter rank from the score ratio and rhythm accuracy (AGENTS §A6 #13).
 ##
 ## `S` needs ratio >= 0.85 **and** accuracy >= 0.90; `A` >= 0.65; `B` >= 0.40; else `C`.

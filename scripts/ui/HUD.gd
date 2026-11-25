@@ -90,6 +90,7 @@ var _bpm_label: Label
 var _stability_caption: Label
 var _stability_value: Label
 var _combo_label: Label
+var _combo_caption: Label
 var _score_label: Label
 var _objective_label: Label
 var _objective_text := ""
@@ -217,11 +218,17 @@ func _build_plaque_b() -> void:
 		Rect2(238, 20, 50, 26)
 	)
 	_stability_value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_combo_caption = _place(
+		UITheme.label(tr("COMBO · PUNTOS"), UITheme.FONT_SMALL, Palette.METAL_2),
+		_plaque_b,
+		"ComboCaption",
+		Rect2(24, 38, 170, 14)
+	)
 	_combo_label = _place(
 		UITheme.label("×1", UITheme.FONT_H1, Palette.METAL_3, true),
 		_plaque_b,
 		"ComboLabel",
-		Rect2(24, 54, 120, 38)
+		Rect2(24, 52, 120, 34)
 	)
 	_score_label = _place(
 		UITheme.label("000 000", UITheme.FONT_H2, Palette.METAL_4),
@@ -510,6 +517,12 @@ func _on_combo(value: int) -> void:
 	_combo_label.text = "×%d" % value
 	var color := Palette.FUNK_MAGENTA if value >= 4 else Palette.METAL_3
 	_combo_label.add_theme_color_override("font_color", color)
+	if _combo_caption != null:
+		var sustain := value >= 4
+		_combo_caption.text = tr("COMBO · +ESTAB") if sustain else tr("COMBO · PUNTOS")
+		_combo_caption.add_theme_color_override(
+			"font_color", Palette.FUNK_CYAN if sustain else Palette.METAL_2
+		)
 
 
 func _on_score(value: int) -> void:

@@ -107,3 +107,20 @@ func test_summary_table() -> void:
 	var clamped := result.duplicate()
 	clamped["score"] = 99999
 	assert_almost_eq(float(ScoreRules.summary(clamped, 2000)["score_ratio"]), 1.0, 0.0001)
+
+
+func test_combo_adds_stability_at_four_and_eight() -> void:
+	assert_almost_eq(ScoreRules.combo_stability_bonus(1), 0.0, 0.0001)
+	assert_almost_eq(ScoreRules.combo_stability_bonus(3), 0.0, 0.0001)
+	assert_almost_eq(ScoreRules.combo_stability_bonus(4), 1.0, 0.0001)
+	assert_almost_eq(ScoreRules.combo_stability_bonus(7), 1.0, 0.0001)
+	assert_almost_eq(ScoreRules.combo_stability_bonus(8), 2.0, 0.0001)
+	assert_almost_eq(ScoreRules.delivery_stability(1), 3.0, 0.0001)
+	assert_almost_eq(ScoreRules.delivery_stability(4), 4.0, 0.0001)
+	assert_almost_eq(ScoreRules.delivery_stability(8), 5.0, 0.0001)
+	assert_almost_eq(
+		ScoreRules.delivery_stability(99),
+		Config.STABILITY_CHUTE_DELIVERY + 2.0,
+		0.0001,
+		"the bonus caps with the combo"
+	)

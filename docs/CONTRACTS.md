@@ -104,7 +104,9 @@ API: `reset(seed: int = 0)`, `add_stability(delta: float, reason: String = "")`,
 `end_shift(victory: bool, reason: String)`, `accuracy() -> float`,
 `max_combo -> int`, `reset_rng(seed)`.
 
-Rules: combo starts ×1, `PERFECT +2`, `GOOD +1`, `MISS` resets to ×1, cap ×8. Stability
+Rules: combo starts ×1, `PERFECT +2`, `GOOD +1`, `MISS` resets to ×1, cap ×8. Combo
+multiplies delivery points (`item.points × combo`) and, at ×4 and ×8, adds +1 / +2 stability
+on delivery (`ScoreRules.delivery_stability`, D041). Stability
 clamps 0…100; reaching 0 ends the shift as defeat (`reason = "stability"`). `accuracy()`
 = `(perfect + good) / max(rhythm_actions, 1)`.
 

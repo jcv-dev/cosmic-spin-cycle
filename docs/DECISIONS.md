@@ -322,3 +322,13 @@ assert the new numbers.
    room centre, so items that pile at the far end of a reversed belt cannot stay stuck.
 8. **HUD smaller**: plaques 300×86 at 90 % instead of 312×94 at 97 %; holograms sit 64 px into
    the cabinet so the drum is never covered.
+
+## D041 — Combo has a survival payoff, not only a score payoff
+2026-11-25 · The owner asked the right question: "what does the combo do for me? Just score?"
+It did only multiply points at the chute (`item.points × combo`), which feeds the rank but
+never changes a decision during play. Adopted: **×4 adds +1 stability on delivery, ×8 adds
++2** (`ScoreRules.combo_stability_bonus`), so holding a combo through a bad stretch is a
+survival tool, not a vanity number. The HUD caption now reads `COMBO · PUNTOS` and switches
+to `COMBO · +ESTAB` (cyan) at ×4, and the first time the player reaches ×4 a single toast
+explains it. Nothing else about the combo changed (build +2/+1, MISS resets, cap ×8).
+Change: `ScoreRules` + `DeliveryChute` + `HUD._on_combo`.
