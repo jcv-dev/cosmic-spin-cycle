@@ -42,11 +42,12 @@ COLOUR_FAMILY = {"red": "red", "blue": "blue", "yellow": "yel"}
 
 #: Accent -> the darkest palette colour used for its selective outline.
 ACCENT_OUTLINE = {
-    "funk_cyan": "funk_teal",
+    # accents hue-shift to a deep space shadow for their 1 px sel-out (palette rule 4/5)
+    "funk_cyan": "space_deep",
     "funk_teal": "space_deep",
     "funk_magenta": "funk_plum",
     "funk_plum": "space_deep",
-    "clean_green": "funk_teal",
+    "clean_green": "space_deep",
     "hazard_orange": "yel_0",
 }
 

@@ -18,7 +18,7 @@ no suitable CC0 source existed). Details and hashes: `docs/PROVENANCE.md`.
 | `item_grime_16` | 16x16 | 1 | 1 | built | procedural | authored in pxlib |
 | `item_grime_24` | 24x24 | 1 | 1 | built | procedural | authored in pxlib |
 | `item_grime_32` | 32x32 | 1 | 1 | built | procedural | authored in pxlib |
-| `char_pip` | 24x24 | 12 | 30 | planned | TBD | TBD |
+| `char_pip` | 24x24 | 12 | 30 | built | procedural | hand-authored in pxlib |
 | `env_belt` | 16x16 | 1 | 4 | built | composed | authored slats/rails; industrial tile language |
 | `env_belt_cap` | 16x16 | 1 | 1 | built | composed | authored portal + bracket |
 | `env_shredder` | 32x32 | 1 | 3 | built | composed | authored funnel + hazard band |

@@ -1,0 +1,89 @@
+{
+  "id": "char_pip",
+  "frame_size": [
+    24,
+    24
+  ],
+  "scale": 4,
+  "pivot": [
+    12,
+    22
+  ],
+  "animations": {
+    "idle_down": {
+      "row": 0,
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "run_down": {
+      "row": 1,
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "throw_down": {
+      "row": 2,
+      "frames": 2,
+      "fps": 18,
+      "loop": false
+    },
+    "strike_down": {
+      "row": 3,
+      "frames": 2,
+      "fps": 18,
+      "loop": false
+    },
+    "idle_side": {
+      "row": 4,
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "run_side": {
+      "row": 5,
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "throw_side": {
+      "row": 6,
+      "frames": 2,
+      "fps": 18,
+      "loop": false
+    },
+    "strike_side": {
+      "row": 7,
+      "frames": 2,
+      "fps": 18,
+      "loop": false
+    },
+    "idle_up": {
+      "row": 8,
+      "frames": 2,
+      "fps": 4,
+      "loop": true
+    },
+    "run_up": {
+      "row": 9,
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "throw_up": {
+      "row": 10,
+      "frames": 2,
+      "fps": 18,
+      "loop": false
+    },
+    "strike_up": {
+      "row": 11,
+      "frames": 2,
+      "fps": 18,
+      "loop": false
+    }
+  },
+  "tier": "A",
+  "source": "art/src/pip.py",
+  "note": "gravity gloves in funk_cyan; side strip faces right"
+}
