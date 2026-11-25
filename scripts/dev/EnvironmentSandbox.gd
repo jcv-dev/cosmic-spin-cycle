@@ -135,6 +135,16 @@ func _apply_bare() -> void:
 		var tint := rig.room_tint()
 		if tint != null:
 			tint.color = Color.WHITE
+	# The display machinery also carries the pass's albedo trim and panel readouts; strip
+	# both so `--bare` is the untouched greybox.
+	var readouts := get_node_or_null(^"PanelReadouts") as CanvasItem
+	if readouts != null:
+		readouts.visible = false
+	var washers: Dictionary = machines.get("washers", {})
+	for key: StringName in washers.keys():
+		var sprite := washers[key] as CanvasItem
+		if sprite != null:
+			sprite.self_modulate = Color.WHITE
 
 
 func _build_belts() -> void:
