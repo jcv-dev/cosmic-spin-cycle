@@ -111,3 +111,24 @@ SHA-256 in `art/sources/audio/SOURCES.json`; licence texts are committed under
 
 * `art/sources/audio/LICENSE-CC0-1.0.txt` — CC0 1.0 Universal legal text.
 * `assets/fonts/OFL.txt` — SIL Open Font License 1.1 for Silkscreen (Jason Kottke / The Silkscreen Project Authors).
+
+## M4–M6 (owner UX phase) — no new shipped raster assets
+
+The washing machines, chute, holograms, HUD, menus, tutorial overlay, lighting pools, steam,
+dust, embers, starfield, vignette and diorama were built **procedurally in Godot** from the
+existing palette and the 29 shipped CC0 sheets (`mach_washer`, `env_chute`,
+`ui_holo_icons`, `ui_logo`, `ui_panel`, `fx_*`, `char_pip`). No third-party image, font, sound
+or music file was added in this phase, so the asset licences in the sections above are
+unchanged.
+
+Runtime-generated textures (created in code, never committed as files):
+
+| Texture | Size | Source | Licence |
+|---|---|---|---|
+| radial light gradient | 512×512 | `LightingRig.radial_texture()` (GradientTexture2D) | original |
+| soft particle puff | 16×16 | `Atmosphere.puff_texture()` (Image) | original |
+| starfield / dust | drawn per frame | `Backdrop` / `TitleScreen._on_dust_draw` (seeded RNG) | original |
+| HUD glyphs (triangle/circle/square/diamond/pattern square) | drawn per frame | `HudGlyphs` / `WasherFX` | original |
+
+`docs/UX_RESEARCH.md` and `docs/UX_RESEARCH_SOURCES.md` cite external articles and videos for
+design evidence only; no text, image or code from them is shipped.
