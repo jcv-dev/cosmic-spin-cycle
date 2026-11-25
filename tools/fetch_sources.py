@@ -73,6 +73,13 @@ INDUSTRIAL_TILES = [
     ("tile_0111", "steel beam, joints"),
 ]
 
+# the Roguelike pack ships one sheet, so these uses cut single tiles out of it
+ROGUELIKE_TILES = [
+    {"tile": 860, "as": "tiles/tile_0860.png", "note": "flat steel deck plate, 1 px bevel"},
+    {"tile": 692, "as": "tiles/tile_0692.png", "note": "bordered steel plate"},
+    {"tile": 702, "as": "tiles/tile_0702.png", "note": "cracked plate (wear / grime mask)"},
+]
+
 PACKS = [
     {
         "id": "kenney-planets",
@@ -94,6 +101,27 @@ PACKS = [
         "rejected": [
             ("Planets/planet00.png", "pale mint; low contrast against space_void"),
             ("Planets/planet05.png", "brown/tan; hue too warm for the crimson ramp"),
+        ],
+    },
+    {
+        "id": "kenney-roguelike",
+        "title": "Roguelike/RPG pack",
+        "author": "Kenney (Kenney Vleugels), with Lynn Evers",
+        "page": "https://kenney.nl/assets/roguelike-rpg-pack",
+        "license": "CC0-1.0",
+        "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "license_member": "License.txt",
+        "dir": "kenney-roguelike",
+        "archive": "kenney-roguelike.zip",
+        "sha256": "8e7d2378f8f794245645f6d7dc7aeeb246791410a7e512293c594b46a5a9524b",
+        "uses": [
+            {"member": "Spritesheet/roguelikeSheet_transparent.png",
+             "as": tile["as"], "note": tile["note"], "tile": tile["tile"],
+             "tile_size": 16}
+            for tile in ROGUELIKE_TILES
+        ],
+        "rejected": [
+            ("Spritesheet/roguelikeSheet_transparent.png", "sheet itself; tiles are extracted instead"),
         ],
     },
     {
@@ -204,14 +232,38 @@ def read_licence(pack: dict, archive: zipfile.ZipFile) -> str:
     return text
 
 
+def cut_tile(data: bytes, index: int, size: int = 16, gap: int = 1) -> bytes:
+    """Cut one tile out of a sheet with a uniform gutter (deterministic, no scaling)."""
+    import io
+
+    from PIL import Image
+
+    sheet = Image.open(io.BytesIO(data)).convert("RGBA")
+    columns = sheet.width // (size + gap)
+    row, column = divmod(index, columns)
+    box = (column * (size + gap), row * (size + gap),
+           column * (size + gap) + size, row * (size + gap) + size)
+    out = io.BytesIO()
+    sheet.crop(box).save(out, format="PNG", optimize=False, compress_level=9)
+    return out.getvalue()
+
+
 def extract(pack: dict, archive: zipfile.ZipFile) -> list[dict]:
     dest = SOURCES / pack["dir"]
     extracted: list[dict] = []
-    for member, rel, note in pack["uses"]:
+    for use in pack["uses"]:
+        if isinstance(use, dict):
+            member, rel, note = use["member"], use["as"], use["note"]
+            tile = use.get("tile")
+        else:
+            member, rel, note = use
+            tile = None
         try:
             data = archive.read(member)
         except KeyError as exc:
             raise SystemExit(f"{pack['id']}: member {member} missing from archive") from exc
+        if tile is not None:
+            data = cut_tile(data, tile, use.get("tile_size", 16))
         target = dest / rel
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(data)
@@ -324,8 +376,13 @@ def main(argv: list[str]) -> int:
                 "dir": pack["dir"],
                 "retrieved": RETRIEVED,
                 "sha256": pack["sha256"],
-                "uses": [{"member": m, "as": rel, "sha256": e["sha256"]}
-                         for (m, rel, _), e in zip(pack["uses"], extracted)],
+                "uses": [
+                    {"member": (u["member"] if isinstance(u, dict) else u[0]),
+                     "as": (u["as"] if isinstance(u, dict) else u[1]),
+                     "tile": (u.get("tile") if isinstance(u, dict) else None),
+                     "sha256": e["sha256"]}
+                    for u, e in zip(pack["uses"], extracted)
+                ],
                 "extracted": [
                     {"path": e["path"], "sha256": e["sha256"]} for e in extracted
                 ],

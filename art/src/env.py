@@ -201,23 +201,18 @@ def chute_frame(state: str, step: int) -> Canvas:
 
 
 def floor_tile(variant: int) -> Canvas:
-    """A quiet, seamless deck plate: dark base, edge seams, rivets, one blemish.
+    """Deck plate adapted from a real Kenney Roguelike tile (CC0).
 
-    Low contrast on purpose - the floor must never compete with items.  Authored here
-    after the industrial tiles proved too busy at 16 px to tile as a floor.
+    ``tile_0692`` is a bordered 16x16 steel plate, so the source *is* the tile: it is
+    mapped onto the space ramp with only slots 1..3 (the floor must stay dark) and its
+    own 1 px bevel becomes the plate seam.  Variants add one authored blemish so a floor
+    field is not a perfectly repeating stamp.
     """
-    c = Canvas(16, 16)
-    c.rect(0, 0, 16, 16, "space_deep")
-    # plate seams on the tile edges keep the floor seamless
+    source = pxlib.load_source("kenney-roguelike", "tiles/tile_0692.png")
+    c = pxlib.source_to_canvas(source, 16, 16, "space", slots=(1, 1, 2, 2, 3))
+    # reinforce the source bevel so the seam still reads after quantisation
     c.hline(0, 15, 0, "space_mid")
-    c.vline(0, 0, 15, "space_mid")
-    c.hline(0, 15, 15, "space_mid")
-    c.vline(15, 0, 15, "space_mid")
-    # rivets at the quarter points
-    for x, y in ((3, 3), (11, 3), (3, 11), (11, 11)):
-        c.set(x, y, "space_haze")
-        c.set(x + 1, y, "space_mid")
-        c.set(x, y + 1, "space_mid")
+    c.hline(0, 15, 15, "space_haze")
     if variant == 1:
         for dx, dy in ((5, 6), (6, 7), (7, 7), (8, 8), (9, 9)):
             c.set(dx, dy, "space_mid")
