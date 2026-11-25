@@ -1,0 +1,98 @@
+[gd_resource type="Resource" script_class="ItemDatabase" load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/ItemData.gd" id="1_item"]
+[ext_resource type="Script" path="res://scripts/data/ItemDatabase.gd" id="2_db"]
+
+[sub_resource type="Resource" id="ItemData_rocky"]
+script = ExtResource("1_item")
+id = &"rocky"
+display_key = "ITEM_ROCKY"
+mass_kg = 1.0
+wash_s = 6.0
+points = 100
+slots = 1
+radius = 8.0
+bounce = 0.4
+friction = 0.6
+linear_damp = 0.4
+belt_speed_scale = 1.0
+special = 0
+sprite_id = "item_rocky"
+tint_color = Color(0.768627, 0.117647, 0.227451, 1)
+unique = false
+
+[sub_resource type="Resource" id="ItemData_sock"]
+script = ExtResource("1_item")
+id = &"sock"
+display_key = "ITEM_SOCK"
+mass_kg = 0.3
+wash_s = 4.0
+points = 150
+slots = 1
+radius = 6.0
+bounce = 0.3
+friction = 0.5
+linear_damp = 0.6
+belt_speed_scale = 1.6
+special = 3
+sprite_id = "item_sock"
+tint_color = Color(0.231373, 0.427451, 0.941176, 1)
+unique = false
+
+[sub_resource type="Resource" id="ItemData_moon"]
+script = ExtResource("1_item")
+id = &"moon"
+display_key = "ITEM_MOON"
+mass_kg = 0.8
+wash_s = 7.0
+points = 200
+slots = 1
+radius = 8.0
+bounce = 0.55
+friction = 0.55
+linear_damp = 0.35
+belt_speed_scale = 1.0
+special = 1
+sprite_id = "item_moon"
+tint_color = Color(1, 0.760784, 0.101961, 1)
+unique = false
+
+[sub_resource type="Resource" id="ItemData_gas_giant"]
+script = ExtResource("1_item")
+id = &"gas_giant"
+display_key = "ITEM_GAS_GIANT"
+mass_kg = 2.2
+wash_s = 10.0
+points = 350
+slots = 2
+radius = 12.0
+bounce = 0.85
+friction = 0.5
+linear_damp = 0.25
+belt_speed_scale = 1.0
+special = 0
+sprite_id = "item_gas"
+tint_color = Color(1, 0.760784, 0.101961, 1)
+unique = false
+
+[sub_resource type="Resource" id="ItemData_galaxy_core"]
+script = ExtResource("1_item")
+id = &"galaxy_core"
+display_key = "ITEM_GALAXY_CORE"
+mass_kg = 3.0
+wash_s = 12.0
+points = 1000
+slots = 3
+radius = 16.0
+bounce = 0.5
+friction = 0.6
+linear_damp = 0.3
+belt_speed_scale = 1.0
+special = 2
+sprite_id = "item_core"
+tint_color = Color(0.098039, 0.890196, 0.819608, 1)
+unique = true
+
+[resource]
+script = ExtResource("2_db")
+items = Array[ExtResource("1_item")]([SubResource("ItemData_rocky"), SubResource("ItemData_sock"), SubResource("ItemData_moon"), SubResource("ItemData_gas_giant"), SubResource("ItemData_galaxy_core")])

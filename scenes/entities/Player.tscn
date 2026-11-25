@@ -1,0 +1,69 @@
+[gd_scene load_steps=5 format=3 uid="uid://c9k3qv2player01"]
+
+[ext_resource type="Script" path="res://scripts/entities/Player.gd" id="1_player"]
+[ext_resource type="Script" path="res://scripts/components/MagneticGrabber.gd" id="2_grabber"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_body"]
+radius = 14.0
+
+[node name="Player" type="CharacterBody2D" groups=["player"]]
+z_index = 2
+collision_layer = 2
+collision_mask = 1
+motion_mode = 1
+script = ExtResource("1_player")
+
+[node name="Visual" type="Node2D" parent="."]
+
+[node name="Shadow" type="Polygon2D" parent="Visual"]
+color = Color(0.0431373, 0.0470588, 0.0627451, 0.45)
+polygon = PackedVector2Array(18, 12, 17.39, 13.81, 15.59, 15.5, 12.73, 16.95, 9, 18.06, 4.66, 18.76, 0, 19, -4.66, 18.76, -9, 18.06, -12.73, 16.95, -15.59, 15.5, -17.39, 13.81, -18, 12, -17.39, 10.19, -15.59, 8.5, -12.73, 7.05, -9, 5.94, -4.66, 5.24, 0, 5, 4.66, 5.24, 9, 5.94, 12.73, 7.05, 15.59, 8.5, 17.39, 10.19)
+
+[node name="Body" type="Polygon2D" parent="Visual"]
+color = Color(0.0980392, 0.890196, 0.819608, 1)
+polygon = PackedVector2Array(15, 0, 14.27, 4.64, 12.14, 8.82, 8.82, 12.14, 4.64, 14.27, 0, 15, -4.64, 14.27, -8.82, 12.14, -12.14, 8.82, -14.27, 4.64, -15, 0, -14.27, -4.64, -12.14, -8.82, -8.82, -12.14, -4.64, -14.27, 0, -15, 4.64, -14.27, 8.82, -12.14, 12.14, -8.82, 14.27, -4.64)
+
+[node name="BodyInner" type="Polygon2D" parent="Visual"]
+color = Color(0.0431373, 0.498039, 0.52549, 1)
+polygon = PackedVector2Array(11, 0, 10.46, 3.4, 8.9, 6.47, 6.47, 8.9, 3.4, 10.46, 0, 11, -3.4, 10.46, -6.47, 8.9, -8.9, 6.47, -10.46, 3.4, -11, 0, -10.46, -3.4, -8.9, -6.47, -6.47, -8.9, -3.4, -10.46, 0, -11, 3.4, -10.46, 6.47, -8.9, 8.9, -6.47, 10.46, -3.4)
+
+[node name="VisorOutline" type="Polygon2D" parent="Visual"]
+color = Color(0.0784314, 0.0901961, 0.164706, 1)
+polygon = PackedVector2Array(8.5, -4, 7.99, -1.43, 6.51, 0.82, 4.25, 2.5, 1.48, 3.39, -1.48, 3.39, -4.25, 2.5, -6.51, 0.82, -7.99, -1.43, -8.5, -4, -7.99, -6.57, -6.51, -8.82, -4.25, -10.5, -1.48, -11.39, 1.48, -11.39, 4.25, -10.5, 6.51, -8.82, 7.99, -6.57)
+
+[node name="Visor" type="Polygon2D" parent="Visual"]
+color = Color(0.764706, 0.847059, 1, 1)
+polygon = PackedVector2Array(6.5, -4, 6.11, -2.12, 4.98, -0.46, 3.25, 0.76, 1.13, 1.42, -1.13, 1.42, -3.25, 0.76, -4.98, -0.46, -6.11, -2.12, -6.5, -4, -6.11, -5.88, -4.98, -7.54, -3.25, -8.76, -1.13, -9.42, 1.13, -9.42, 3.25, -8.76, 4.98, -7.54, 6.11, -5.88)
+
+[node name="GloveLeft" type="Polygon2D" parent="Visual"]
+position = Vector2(-13, 9)
+color = Color(0.956863, 0.964706, 0.988235, 1)
+polygon = PackedVector2Array(4.5, 0, 3.9, 2.25, 2.25, 3.9, 0, 4.5, -2.25, 3.9, -3.9, 2.25, -4.5, 0, -3.9, -2.25, -2.25, -3.9, 0, -4.5, 2.25, -3.9, 3.9, -2.25)
+
+[node name="GloveRight" type="Polygon2D" parent="Visual"]
+position = Vector2(13, 9)
+color = Color(0.956863, 0.964706, 0.988235, 1)
+polygon = PackedVector2Array(4.5, 0, 3.9, 2.25, 2.25, 3.9, 0, 4.5, -2.25, 3.9, -3.9, 2.25, -4.5, 0, -3.9, -2.25, -2.25, -3.9, 0, -4.5, 2.25, -3.9, 3.9, -2.25)
+
+[node name="Art" type="Sprite2D" parent="Visual"]
+visible = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_body")
+
+[node name="HoldAnchor" type="Marker2D" parent="."]
+position = Vector2(0, -48)
+
+[node name="Grabber" type="Node2D" parent="."]
+script = ExtResource("2_grabber")
+
+[node name="AimIndicator" type="Node2D" parent="."]
+
+[node name="Line" type="Line2D" parent="AimIndicator"]
+points = PackedVector2Array(22, 0, 62, 0)
+width = 2.0
+default_color = Color(0.0980392, 0.890196, 0.819608, 0.55)
+
+[node name="Tip" type="Polygon2D" parent="AimIndicator"]
+color = Color(0.0980392, 0.890196, 0.819608, 0.85)
+polygon = PackedVector2Array(68, 0, 58, -5, 58, 5)
