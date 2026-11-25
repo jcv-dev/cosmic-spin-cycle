@@ -38,3 +38,14 @@ static func has_custom_font() -> bool:
 		if file.ends_with(".ttf") or file.ends_with(".otf"):
 			return true
 	return false
+
+
+## Bold face of the same family (Silkscreen ships Regular + Bold). Falls back to the
+## regular face so a missing file never breaks a screen.
+static func pixel_font_bold() -> Font:
+	var bold := "res://assets/fonts/Silkscreen-Bold.ttf"
+	if ResourceLoader.exists(bold):
+		var font := load(bold) as Font
+		if font != null:
+			return font
+	return pixel_font()

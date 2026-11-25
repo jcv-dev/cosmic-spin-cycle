@@ -15,6 +15,13 @@ var reduce_motion := false
 var show_debug_overlay := false
 var locale := "es"
 var db_seed := 0
+var haptics := true
+var ui_scale := 1.0
+var tutorial_completed := false
+var tutorial_skipped := false
+var first_run_done := false
+var best_score := 0
+var best_rank := ""
 
 var _loaded := false
 
@@ -58,6 +65,13 @@ func load_settings() -> void:
 	show_debug_overlay = bool(cfg.get_value("debug", "show_overlay", false))
 	locale = String(cfg.get_value("game", "locale", "es"))
 	db_seed = int(cfg.get_value("debug", "seed", 0))
+	haptics = bool(cfg.get_value("input", "haptics", true))
+	ui_scale = float(cfg.get_value("video", "ui_scale", Config.HUD_SCALE_DEFAULT))
+	tutorial_completed = bool(cfg.get_value("game", "tutorial_completed", false))
+	tutorial_skipped = bool(cfg.get_value("game", "tutorial_skipped", false))
+	first_run_done = bool(cfg.get_value("game", "first_run_done", false))
+	best_score = int(cfg.get_value("game", "best_score", 0))
+	best_rank = String(cfg.get_value("game", "best_rank", ""))
 	_loaded = true
 	settings_changed.emit()
 
@@ -75,6 +89,13 @@ func save_settings() -> Error:
 	cfg.set_value("debug", "show_overlay", show_debug_overlay)
 	cfg.set_value("game", "locale", locale)
 	cfg.set_value("debug", "seed", db_seed)
+	cfg.set_value("input", "haptics", haptics)
+	cfg.set_value("video", "ui_scale", ui_scale)
+	cfg.set_value("game", "tutorial_completed", tutorial_completed)
+	cfg.set_value("game", "tutorial_skipped", tutorial_skipped)
+	cfg.set_value("game", "first_run_done", first_run_done)
+	cfg.set_value("game", "best_score", best_score)
+	cfg.set_value("game", "best_rank", best_rank)
 	return cfg.save(PATH)
 
 
@@ -112,6 +133,63 @@ func apply() -> void:
 		AudioServer.set_bus_volume_db(sfx_bus, sfx_volume_db)
 
 
+## True when the player has never finished OR skipped the tutorial and has never started
+## a shift: only then does the first-run prompt appear (it must never nag).
+func needs_first_run_prompt() -> bool:
+	return not first_run_done and not tutorial_completed and not tutorial_skipped
+
+
+func mark_tutorial_completed() -> void:
+	tutorial_completed = true
+	tutorial_skipped = false
+	first_run_done = true
+	save_settings()
+	settings_changed.emit()
+
+
+func mark_tutorial_skipped() -> void:
+	tutorial_skipped = true
+	first_run_done = true
+	save_settings()
+	settings_changed.emit()
+
+
+func mark_first_run_done() -> void:
+	first_run_done = true
+	save_settings()
+	settings_changed.emit()
+
+
+## Stores the best rank/score shown on the title screen. Never invents a record.
+func record_result(points: int, rank_letter: String) -> void:
+	var changed := false
+	if points > best_score:
+		best_score = points
+		changed = true
+	if rank_letter != "" and (best_rank == "" or rank_letter < best_rank):
+		best_rank = rank_letter
+		changed = true
+	if changed:
+		save_settings()
+		settings_changed.emit()
+
+
+func set_haptics(value: bool) -> void:
+	haptics = value
+	save_settings()
+	settings_changed.emit()
+
+
+func set_ui_scale(value: float) -> void:
+	ui_scale = clampf(
+		value,
+		Config.HUD_SCALE_OPTIONS[0],
+		Config.HUD_SCALE_OPTIONS[Config.HUD_SCALE_OPTIONS.size() - 1]
+	)
+	save_settings()
+	settings_changed.emit()
+
+
 func reset_to_defaults() -> void:
 	user_calibration_offset = 0.0
 	calibration_samples.clear()
@@ -122,6 +200,13 @@ func reset_to_defaults() -> void:
 	reduce_motion = false
 	show_debug_overlay = false
 	locale = "es"
+	haptics = true
+	ui_scale = Config.HUD_SCALE_DEFAULT
+	tutorial_completed = false
+	tutorial_skipped = false
+	first_run_done = false
+	best_score = 0
+	best_rank = ""
 	save_settings()
 	apply()
 	settings_changed.emit()

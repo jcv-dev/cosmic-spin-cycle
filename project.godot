@@ -23,6 +23,7 @@ config/icon="res://icon.svg"
 Config="*res://scripts/autoload/Config.gd"
 Settings="*res://scripts/autoload/Settings.gd"
 GameState="*res://scripts/autoload/GameState.gd"
+Juice="*res://scripts/autoload/Juice.gd"
 BeatConductor="*res://scenes/main/BeatConductor.tscn"
 
 [display]

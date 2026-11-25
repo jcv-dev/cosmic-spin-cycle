@@ -85,6 +85,37 @@ const CORE_GRAVITY_ACCEL := 220.0
 const MAX_ALIVE_ITEMS := 40
 const MAX_ITEM_SPEED := 1600.0
 
+# --- Washers, chute and the M4 loop (AGENTS §A5, §A6 #3-#11) -----------------
+const WASHER_MOUTH_RADIUS_PX := 60.0
+const WASHER_REPAIR_S := 6.0
+const CHUTE_ACCEPT_RADIUS_PX := 64.0
+## First 20 s are onboarding: one item is placed on the floor near Pip so the first
+## useful action does not require crossing the room (docs/UX_BIBLE.md §2).
+const STARTER_ITEM_AT_S := 1.2
+const STARTER_ITEM_ID := &"rocky"
+const STARTER_ITEM_COLOR := &"red"
+const STARTER_ITEM_PATTERN := &"solid"
+
+# --- Input feel -------------------------------------------------------------
+## Presses are buffered this long so an action slightly before it becomes legal still fires.
+const INPUT_BUFFER_S := 0.12
+## Gamepad aim snaps to an 8-way direction inside this angle (radians) as an assist.
+const AIM_SNAP_RAD := 0.21
+## A compatible washer mouth inside this angle and range makes the reticle stick to it.
+const AIM_STICKY_RAD := 0.32
+const AIM_STICKY_RANGE_PX := 420.0
+
+# --- Tutorial (docs/UX_BIBLE.md §7) ----------------------------------------
+const TUTORIAL_SEED := 7001
+const TUTORIAL_WINDOW_SCALE := 2.0
+const TUTORIAL_SOFT_SKIP_S := 12.0
+const TUTORIAL_MAX_S := 240.0
+
+# --- UI ---------------------------------------------------------------------
+const HUD_SCALE_DEFAULT := 1.0
+const HUD_SCALE_OPTIONS: Array[float] = [1.0, 1.25]
+const TEXT_SPEED := 0.02
+
 # --- Scoring (GDD §4.3, §A6 #13) -------------------------------------------
 const RANK_S_THRESHOLD := 0.85
 const RANK_S_ACCURACY := 0.90

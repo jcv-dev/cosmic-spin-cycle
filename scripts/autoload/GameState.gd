@@ -8,6 +8,8 @@ signal combo_changed(mult: int)
 signal score_changed(v: int)
 signal phase_changed(idx: int)
 signal shift_ended(result: Dictionary)
+## Short contextual message for the HUD/overlay layer (never a wall of text).
+signal feedback(text: String, kind: StringName)
 
 var stability := Config.STABILITY_START
 var combo := Config.COMBO_MIN
@@ -27,6 +29,8 @@ var washed_count := 0
 var exploded_count := 0
 var dropped_count := 0
 var wrong_washer_count := 0
+var final_load_delivered := 0
+var feedback_count := 0
 
 var _end_result: Dictionary = {}
 
@@ -57,6 +61,8 @@ func reset(p_seed: int = 0) -> void:
 	exploded_count = 0
 	dropped_count = 0
 	wrong_washer_count = 0
+	final_load_delivered = 0
+	feedback_count = 0
 	_end_result = {}
 
 	stability_changed.emit(stability)
@@ -94,6 +100,14 @@ func register_grade(grade: int) -> void:
 		combo = Config.COMBO_MIN
 	max_combo = maxi(max_combo, combo)
 	combo_changed.emit(combo)
+
+
+## Emits one short contextual line. `kind` is one of info | success | danger | rhythm.
+func emit_feedback(text: String, kind: StringName = &"info") -> void:
+	if is_ended:
+		return
+	feedback_count += 1
+	feedback.emit(text, kind)
 
 
 func add_score(points: int) -> void:
@@ -134,6 +148,8 @@ func end_shift(victory: bool, reason: String) -> void:
 		"delivered": delivered_count,
 		"washed": washed_count,
 		"exploded": exploded_count,
+		"wrong_washer": wrong_washer_count,
+		"final_load_delivered": final_load_delivered,
 		"seed": seed_value,
 	}
 	shift_ended.emit(_end_result)
