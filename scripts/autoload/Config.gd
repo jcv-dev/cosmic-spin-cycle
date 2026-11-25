@@ -190,8 +190,11 @@ const HAZARD_VENT_ACTIVE_BEATS := 3
 const HAZARD_VENT_GRAVITY_RADIUS_PX := 170.0
 ## Suction speed at the centre, in px/s. The player is dragged by displacement, not by adding
 ## to `velocity`, because the walk friction would erase the pull in a few frames.
-const HAZARD_VENT_PULL_SPEED := 220.0
-const HAZARD_VENT_ITEM_PULL := 520.0
+## Tuned down 30% after the first hands-on pass: 220 felt too sticky.
+const HAZARD_VENT_PULL_SPEED := 155.0
+## Items are lighter than Pip and live in the air, so the well bites them harder: +50% after
+## the first pass (a throw only curved if it practically grazed the centre).
+const HAZARD_VENT_ITEM_PULL := 780.0
 const HAZARD_VENT_SLOW_SCALE := 0.55
 const HAZARD_VENT_TICK_S := 0.5
 ## Every other hazard stays dangerous for exactly one beat.

@@ -528,3 +528,10 @@ desvíen al pasar cerca. La fuga de vacío deja de ser un disco que golpea una v
    entre dos raíles; el bolsillo gira en dos anillos contrarrotatorios.
 6. **Margen del jugador**: 24 px (96 → 48 → 24), porque a 96 y 48 había que perseguir las
    amenazas.
+
+## D056 — Ajuste del pozo: menos tirón al jugador, más a los planetas
+2026-11-25 · Primera pasada con las manos en el mando.
+- Arrastre del jugador **220 → 155 px/s** (−30 %): 220 se sentía demasiado pegajoso.
+- Fuerza sobre los planetas **520 → 780 px/s²** (+50 %): había que rozar el centro para notar
+  la curva del tiro.
+- Sin cambios en radio, caída lineal, freno al 55 % ni duración de 3 beats.
