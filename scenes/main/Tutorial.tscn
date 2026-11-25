@@ -1,0 +1,17 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/tutorial/TutorialRoot.gd" id="1_root"]
+[ext_resource type="PackedScene" path="res://scenes/main/MainLevel.tscn" id="2_level"]
+[ext_resource type="PackedScene" path="res://scenes/ui/TutorialOverlay.tscn" id="3_overlay"]
+[ext_resource type="Script" path="res://scripts/tutorial/TutorialDirector.gd" id="4_director"]
+
+[node name="Tutorial" type="Node2D"]
+script = ExtResource("1_root")
+
+[node name="MainLevel" parent="." instance=ExtResource("2_level")]
+mode = &"tutorial"
+
+[node name="Overlay" parent="." instance=ExtResource("3_overlay")]
+
+[node name="Director" type="Node" parent="."]
+script = ExtResource("4_director")
