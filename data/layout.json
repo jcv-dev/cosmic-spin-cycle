@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "coord_space": "art_px",
+  "art_scale": 4,
+  "canvas": { "w": 320, "h": 180 },
+  "room": { "x": 0, "y": 0, "w": 320, "h": 180, "wall": 8 },
+  "belts": [
+    {
+      "id": "belt_north",
+      "x": 84, "y": 10, "w": 152, "h": 16,
+      "flow": [1, 0],
+      "spawn": [84, 18],
+      "active_phases": [0, 1, 2, 3],
+      "reversed_in_phase3": false
+    },
+    {
+      "id": "belt_south",
+      "x": 84, "y": 154, "w": 152, "h": 16,
+      "flow": [-1, 0],
+      "spawn": [236, 162],
+      "active_phases": [1, 2, 3],
+      "reversed_in_phase3": false
+    },
+    {
+      "id": "belt_west",
+      "x": 10, "y": 60, "w": 16, "h": 80,
+      "flow": [0, -1],
+      "spawn": [18, 140],
+      "active_phases": [2, 3],
+      "reversed_in_phase3": true
+    }
+  ],
+  "shredders": [
+    { "id": "shredder_north", "x": 236, "y": 6, "w": 32, "h": 32, "feeds_belt": "belt_north" },
+    { "id": "shredder_south", "x": 44, "y": 146, "w": 32, "h": 32, "feeds_belt": "belt_south" },
+    { "id": "shredder_west", "x": 6, "y": 42, "w": 32, "h": 32, "feeds_belt": "belt_west" }
+  ],
+  "washers": [
+    { "id": "washer_nw", "x": 36, "y": 32, "w": 48, "h": 48, "mouth": [60, 80] },
+    { "id": "washer_ne", "x": 236, "y": 32, "w": 48, "h": 48, "mouth": [260, 80] },
+    { "id": "washer_sw", "x": 36, "y": 96, "w": 48, "h": 48, "mouth": [60, 144] },
+    { "id": "washer_se", "x": 236, "y": 96, "w": 48, "h": 48, "mouth": [260, 144] }
+  ],
+  "chute": { "x": 144, "y": 74, "w": 32, "h": 32, "center": [160, 90] },
+  "player_spawn": [160, 128],
+  "notes": "Top-left origin, y down. world_px = art_px * art_scale. Frozen for M0-M3."
+}

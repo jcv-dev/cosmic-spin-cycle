@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "source": "AGENTS.md Part B4",
+  "rules": {
+    "alpha": [0, 255],
+    "max_colors_per_frame": 8,
+    "body_fill_slot": "_2",
+    "min_contrast_vs_space_void": 3.0
+  },
+  "colors": [
+    { "name": "space_void", "hex": "#0B0C10", "role": "space", "note": "GDD background" },
+    { "name": "space_deep", "hex": "#14172A", "role": "space" },
+    { "name": "space_mid", "hex": "#1F2340", "role": "space" },
+    { "name": "space_haze", "hex": "#2E3460", "role": "space", "note": "shadow hue shift target" },
+
+    { "name": "metal_0", "hex": "#4A5278", "role": "metal" },
+    { "name": "metal_1", "hex": "#6B7599", "role": "metal" },
+    { "name": "metal_2", "hex": "#9AA4C4", "role": "metal" },
+    { "name": "metal_3", "hex": "#CDD3E8", "role": "metal" },
+    { "name": "metal_4", "hex": "#F4F6FC", "role": "metal" },
+
+    { "name": "red_0", "hex": "#3D0A1C", "role": "crimson" },
+    { "name": "red_1", "hex": "#7A1230", "role": "crimson" },
+    { "name": "red_2", "hex": "#C41E3A", "role": "crimson", "note": "body fill" },
+    { "name": "red_3", "hex": "#F0526B", "role": "crimson" },
+    { "name": "red_4", "hex": "#FF9AA8", "role": "crimson" },
+
+    { "name": "blue_0", "hex": "#0E1A4D", "role": "nebula" },
+    { "name": "blue_1", "hex": "#1E3A9A", "role": "nebula" },
+    { "name": "blue_2", "hex": "#3B6DF0", "role": "nebula", "note": "body fill" },
+    { "name": "blue_3", "hex": "#7FA6FF", "role": "nebula" },
+    { "name": "blue_4", "hex": "#C3D8FF", "role": "nebula" },
+
+    { "name": "yel_0", "hex": "#5C3A00", "role": "solar" },
+    { "name": "yel_1", "hex": "#B07A00", "role": "solar" },
+    { "name": "yel_2", "hex": "#FFC21A", "role": "solar", "note": "body fill" },
+    { "name": "yel_3", "hex": "#FFE066", "role": "solar" },
+    { "name": "yel_4", "hex": "#FFF5B8", "role": "solar" },
+
+    { "name": "funk_cyan", "hex": "#19E3D1", "role": "accent", "note": "Pip + pulse ring" },
+    { "name": "funk_teal", "hex": "#0B7F86", "role": "accent" },
+    { "name": "funk_magenta", "hex": "#E040FB", "role": "accent", "note": "PERFECT" },
+    { "name": "funk_plum", "hex": "#7A1F8F", "role": "accent" },
+    { "name": "clean_green", "hex": "#5CFF8A", "role": "accent", "note": "DONE / clean" },
+    { "name": "hazard_orange", "hex": "#FF7A1A", "role": "accent", "note": "TURBULENT / alerts" }
+  ]
+}
