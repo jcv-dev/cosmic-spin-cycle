@@ -32,6 +32,9 @@ const GLYPHS := {
 	"S": ["0111", "1000", "0110", "0001", "1110"],
 }
 
+static var _vignette_texture: ImageTexture = null
+static var _dust_texture: ImageTexture = null
+
 var _specs: Array[Dictionary] = []
 
 
@@ -57,14 +60,90 @@ static func build_dressing(root: Node2D, seed_value: int = SEED) -> RoomDressing
 	return node
 
 
-## Adds the z 20 foreground (vignette, lamps, ceiling pipes, dust) and returns the node.
-static func build_foreground(root: Node2D) -> RoomDressing:
-	var node := RoomDressing.new()
-	node.name = "Foreground"
-	node.z_index = 20
-	node.setup(foreground_specs())
-	root.add_child(node)
-	return node
+## Adds the z 20 foreground (vignette, lamps, ceiling pipes, dust) and returns the props
+## node. The vignette and the dust speckle are single generated textures, so the whole
+## foreground costs three draw calls before the props.
+static func build_foreground(root: Node2D) -> Node2D:
+	var layer := Node2D.new()
+	layer.name = "Foreground"
+	layer.z_index = 20
+	root.add_child(layer)
+	_add_texture_sprite(layer, "Vignette", vignette_texture())
+	_add_texture_sprite(layer, "Dust", dust_texture())
+	var props := RoomDressing.new()
+	props.name = "ForegroundProps"
+	props.setup(foreground_specs())
+	layer.add_child(props)
+	return layer
+
+
+static func _add_texture_sprite(parent: Node2D, node_name: String, texture: Texture2D) -> void:
+	var sprite := Sprite2D.new()
+	sprite.name = node_name
+	sprite.texture = texture
+	sprite.centered = false
+	sprite.position = Vector2.ZERO
+	sprite.scale = Vector2.ONE * float(Config.ART_SCALE)
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	parent.add_child(sprite)
+
+
+## Generated 320×180 vignette: zero alpha across the play lane, up to 48 % at the frame
+## edge. Cached for the session so five room builds share one texture.
+static func vignette_texture() -> ImageTexture:
+	if _vignette_texture != null:
+		return _vignette_texture
+	var width := 320
+	var height := 180
+	var image := Image.create(width, height, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.0, 0.0, 0.0, 0.0))
+	var colour := Palette.SPACE_VOID
+	# The play lane is 30…290 art px horizontally and 30…150 vertically.
+	var lane := Rect2i(30, 30, 260, 120)
+	for y in range(height):
+		for x in range(width):
+			if lane.has_point(Vector2i(x, y)):
+				continue
+			var depth := _edge_depth(x, y, lane)
+			var alpha := 0.48 * clampf(1.0 - float(depth) / 30.0, 0.0, 1.0)
+			if alpha <= 0.0:
+				continue
+			image.set_pixel(x, y, Color(colour.r, colour.g, colour.b, alpha))
+	_vignette_texture = ImageTexture.create_from_image(image)
+	return _vignette_texture
+
+
+## Distance in art px from the play lane outwards, capped at the frame edge.
+static func _edge_depth(x: int, y: int, lane: Rect2i) -> int:
+	var left := lane.position.x - x
+	var right := x - (lane.position.x + lane.size.x - 1)
+	var top := lane.position.y - y
+	var bottom := y - (lane.position.y + lane.size.y - 1)
+	return maxi(maxi(left, right), maxi(top, bottom))
+
+
+## Generated 320×180 dust speckle at 3–5 % alpha: 1 art px per mote, cached.
+static func dust_texture() -> ImageTexture:
+	if _dust_texture != null:
+		return _dust_texture
+	var image := Image.create(320, 180, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.0, 0.0, 0.0, 0.0))
+	var rng := RandomNumberGenerator.new()
+	rng.seed = SEED + 7
+	var colour := Palette.METAL_3
+	for index in range(150):
+		var x := rng.randi_range(1, 318)
+		var y := rng.randi_range(1, 178)
+		var alpha := 0.05 if index % 3 == 0 else 0.03
+		image.set_pixel(x, y, Color(colour.r, colour.g, colour.b, alpha))
+	_dust_texture = ImageTexture.create_from_image(image)
+	return _dust_texture
+
+
+## Drops the generated foreground textures (tests only).
+static func clear_cache() -> void:
+	_vignette_texture = null
+	_dust_texture = null
 
 
 ## Installs a spec list and triggers the first paint.
@@ -682,9 +761,12 @@ func _draw_bucket(rect: Rect2) -> void:
 
 func _draw_baskets(rect: Rect2) -> void:
 	var colors := [Palette.METAL_0, Palette.METAL_1, Palette.SPACE_HAZE]
+	var box_height := rect.size.y / 3.0
 	for index in range(3):
-		var offset := Vector2(float(index) * 4.0 - 4.0, float(index) * 8.0)
-		var box := Rect2(rect.position + offset, Vector2(rect.size.x - 8.0, 8.0))
+		var offset := Vector2(float(index) * 2.0, float(index) * box_height)
+		var box := Rect2(
+			rect.position + offset, Vector2(rect.size.x - float(index) * 4.0, box_height - 2.0)
+		)
 		draw_rect(box, Color(colors[index].r, colors[index].g, colors[index].b, 0.9))
 		draw_rect(
 			Rect2(box.position, Vector2(box.size.x, 2.0)),
@@ -695,58 +777,12 @@ func _draw_baskets(rect: Rect2) -> void:
 # --- foreground (§3.6.6) ----------------------------------------------------
 
 
-## Deterministic foreground list: vignette bands, ceiling pipes, lamp cords and dust.
+## Deterministic foreground props: ceiling pipes, lamp cords and their glow rings.
 static func foreground_specs() -> Array[Dictionary]:
 	var specs: Array[Dictionary] = []
-	_foreground_vignette(specs)
 	_foreground_pipes(specs)
 	_foreground_lamps(specs)
-	_foreground_dust(specs)
 	return specs
-
-
-static func _foreground_vignette(specs: Array[Dictionary]) -> void:
-	# Four margin bands; the play lane (x 120…1160, y 120…600) stays completely clear.
-	var steps := 12
-	var band := 120.0
-	for step in range(steps):
-		var fraction := float(step) / float(steps)
-		var alpha := 0.48 * (1.0 - fraction)
-		var thickness := band / float(steps)
-		var offset := float(step) * thickness
-		var color := Palette.SPACE_VOID
-		specs.append(
-			{
-				"kind": &"rect",
-				"rect": Rect2(0.0, offset, 1280.0, thickness),
-				"color": color,
-				"alpha": alpha,
-			}
-		)
-		specs.append(
-			{
-				"kind": &"rect",
-				"rect": Rect2(0.0, 720.0 - offset - thickness, 1280.0, thickness),
-				"color": color,
-				"alpha": alpha,
-			}
-		)
-		specs.append(
-			{
-				"kind": &"rect",
-				"rect": Rect2(offset, band, thickness, 480.0),
-				"color": color,
-				"alpha": alpha,
-			}
-		)
-		specs.append(
-			{
-				"kind": &"rect",
-				"rect": Rect2(1280.0 - offset - thickness, band, thickness, 480.0),
-				"color": color,
-				"alpha": alpha,
-			}
-		)
 
 
 static func _foreground_pipes(specs: Array[Dictionary]) -> void:
@@ -827,22 +863,6 @@ static func _foreground_lamps(specs: Array[Dictionary]) -> void:
 					"width": 8.0,
 				}
 			)
-
-
-static func _foreground_dust(specs: Array[Dictionary]) -> void:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = SEED + 7
-	for index in range(150):
-		var x := float(rng.randi_range(1, 318)) * float(Config.ART_SCALE)
-		var y := float(rng.randi_range(1, 178)) * float(Config.ART_SCALE)
-		specs.append(
-			{
-				"kind": &"rect",
-				"rect": Rect2(x, y, 4.0, 4.0),
-				"color": Palette.METAL_3,
-				"alpha": 0.03 if index % 3 != 0 else 0.05,
-			}
-		)
 
 
 # --- display-only machinery (dev sandbox + title diorama) -------------------
