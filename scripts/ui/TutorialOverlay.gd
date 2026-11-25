@@ -582,6 +582,9 @@ func _draw_fx(canvas: CanvasItem) -> void:
 		var beat_radius := 40.0 + 32.0 * (1.0 - _beat_phase)
 		if Settings.reduce_motion:
 			beat_radius = 56.0
+		# A stable outer field marks the timing zone; the inner ring is the moving pulse, so
+		# the gate reads even on a frame where the pulse happens to be small.
+		canvas.draw_arc(beat_centre, 72.0, 0.0, TAU, 40, Color(UITheme.ACCENT, 0.18), 1.0)
 		var beat_alpha := 0.95 if hot else 0.35
 		canvas.draw_arc(
 			beat_centre, beat_radius, 0.0, TAU, 36, Color(UITheme.ACCENT, beat_alpha), 2.0
