@@ -170,10 +170,8 @@ func _build_props() -> void:
 		# The north-east corner belongs to the MEJOR TURNO plaque, so its shredder is skipped.
 		if _on_right(shredder, 0.0) and float(shredder.get("y", 0)) > 20.0:
 			_prop(props, "env_shredder", Vector2i(32, 32), _art_rect(shredder, Vector2(32, 32)))
-	for belt in layout.get("belts", []):
-		# Only the north belt frames the top edge; the others would be cut by plate or footer.
-		if _on_right(belt, 0.0) and float(belt.get("y", 0)) < 100.0:
-			_tile_belt(props, belt)
+	# Belts are deliberately left out of the title: the scroll chevrons fight the wordmark and
+	# a belt cut by the menu plate or the footer reads as a mistake.
 	# Pip stands where the nest of cables ends, out of the way of the type.
 	_prop(props, "char_pip", Vector2i(24, 24), Rect2(Vector2(812, 452), Vector2(96, 96)))
 
