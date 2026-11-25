@@ -222,6 +222,8 @@ func _spawn_level(with_tutorial: bool) -> Node:
 		node.connect("shift_finished", _on_shift_finished)
 	if node.has_signal("tutorial_completed"):
 		node.connect("tutorial_completed", _on_tutorial_completed)
+	if node.has_signal("tutorial_skipped"):
+		node.connect("tutorial_skipped", _on_tutorial_skipped)
 	return node
 
 
@@ -234,6 +236,11 @@ func _on_shift_finished(result: Dictionary) -> void:
 
 func _on_tutorial_completed() -> void:
 	Settings.mark_tutorial_completed()
+	show_title()
+
+
+func _on_tutorial_skipped() -> void:
+	Settings.mark_tutorial_skipped()
 	show_title()
 
 

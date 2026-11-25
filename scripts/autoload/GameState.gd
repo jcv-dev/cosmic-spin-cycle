@@ -31,6 +31,8 @@ var dropped_count := 0
 var wrong_washer_count := 0
 var final_load_delivered := 0
 var feedback_count := 0
+## Tutorial guard: negative stability changes are ignored while true.
+var stability_protected := false
 
 var _end_result: Dictionary = {}
 
@@ -63,6 +65,7 @@ func reset(p_seed: int = 0) -> void:
 	wrong_washer_count = 0
 	final_load_delivered = 0
 	feedback_count = 0
+	stability_protected = false
 	_end_result = {}
 
 	stability_changed.emit(stability)
@@ -78,6 +81,8 @@ func reset_rng(p_seed: int) -> void:
 
 func add_stability(delta: float, reason: String = "") -> void:
 	if is_ended:
+		return
+	if stability_protected and delta < 0.0:
 		return
 	stability = clampf(stability + delta, 0.0, 100.0)
 	stability_changed.emit(stability)
