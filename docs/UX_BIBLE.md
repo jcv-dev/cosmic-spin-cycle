@@ -586,13 +586,13 @@ punishing. Total ≈150 s at average pace, hard cap 240 s.
 
 | # | Gate | Prompt (≤ 24 ch) | Success | Fail-forward |
 |---|---|---|---|---|
-| 1 | Move | `MUÉVETE` | 200 px travelled | after 4 s, dotted circle at 120 px |
-| 2 | Grab | `AGARRA` | one grab | item steered inside `GRAB_RADIUS` |
-| 3 | Throw | `LANZA` | one throw leaves the hold radius | aim assist ×1.5 until first success |
-| 4 | Beat | `LANZA AL RITMO` | two throws ≥ GOOD | window widens to ±195 ms after 2 misses; granted after 3 |
-| 5 | Match | `SUELTA AQUÍ` | one correct-colour insert (only the compatible washer is lit) | the wrong mouth bounces with `NO`, no penalty |
-| 6 | Strike | `GOLPE AL RITMO` | one strike ≥ GOOD on a scripted turbulent washer | turbulence cannot explode in the tutorial |
-| 7 | Deliver | `LLEVA EL LIMPIO AL DUCTO` | one clean delivery to the chute | beacon pulses every 2 s |
+| 1 | Move | `Muévete para alcanzar la ropa` | 200 px travelled | after 4 s, dotted circle at 120 px |
+| 2 | Grab | `Agarra para poder lavarla` | one grab | item steered inside `GRAB_RADIUS` |
+| 3 | Throw | `Lanza para lavar la ropa` | one throw leaves the hold radius | aim assist ×1.5 until first success |
+| 4 | Beat | `Lanza al cerrarse el anillo` | two throws ≥ GOOD | window widens to ±195 ms after 2 misses; granted after 3 |
+| 5 | Match | `Tira a la roja: lava lo ROJO` | one correct-colour insert (only the compatible washer is lit) | the wrong mouth bounces with `NO`, no penalty |
+| 6 | Strike | `Golpéala para que no explote` | one strike ≥ GOOD on a scripted turbulent washer | turbulence cannot explode in the tutorial |
+| 7 | Deliver | `Lleva la limpia a la tapa verde` | one clean delivery to the chute | beacon pulses every 2 s |
 
 Skip: hold `ESC` 1 s or `START` → immediate skip, `tutorial_skipped = true`. Replay: title → Tutorial,
 always available. Completion persists in `Settings.tutorial_completed`; nothing is gated behind it.
