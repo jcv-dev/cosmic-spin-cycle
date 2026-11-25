@@ -1,0 +1,23 @@
+{
+  "id": "env_shredder",
+  "frame_size": [
+    32,
+    32
+  ],
+  "scale": 4,
+  "pivot": [
+    16,
+    30
+  ],
+  "animations": {
+    "idle": {
+      "row": 0,
+      "frames": 3,
+      "fps": 8,
+      "loop": true
+    }
+  },
+  "tier": "A",
+  "source": "art/src/env.py",
+  "note": "vacuum shredder at the belt end"
+}

@@ -1,0 +1,24 @@
+{
+  "id": "env_room",
+  "frame_size": [
+    320,
+    180
+  ],
+  "scale": 4,
+  "pivot": [
+    160,
+    90
+  ],
+  "animations": {
+    "bg": {
+      "row": 0,
+      "frames": 1,
+      "fps": 1,
+      "loop": true
+    }
+  },
+  "tier": "A",
+  "source": "art/src/env.py",
+  "allow_edge": true,
+  "note": "wall, bays, viewports, conduit and floor base; no props baked in"
+}

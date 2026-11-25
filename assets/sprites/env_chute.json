@@ -1,0 +1,41 @@
+{
+  "id": "env_chute",
+  "frame_size": [
+    32,
+    32
+  ],
+  "scale": 4,
+  "pivot": [
+    16,
+    16
+  ],
+  "animations": {
+    "closed": {
+      "row": 0,
+      "frames": 1,
+      "fps": 1,
+      "loop": true
+    },
+    "opening": {
+      "row": 1,
+      "frames": 3,
+      "fps": 12,
+      "loop": false
+    },
+    "open": {
+      "row": 2,
+      "frames": 2,
+      "fps": 6,
+      "loop": true
+    },
+    "accept": {
+      "row": 3,
+      "frames": 3,
+      "fps": 12,
+      "loop": false
+    }
+  },
+  "tier": "A",
+  "source": "art/src/env.py",
+  "note": "pneumatic iris hatch"
+}

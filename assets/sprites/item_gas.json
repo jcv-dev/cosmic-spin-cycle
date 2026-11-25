@@ -1,0 +1,71 @@
+{
+  "id": "item_gas",
+  "frame_size": [
+    24,
+    24
+  ],
+  "scale": 4,
+  "pivot": [
+    12,
+    12
+  ],
+  "animations": {
+    "red_solid": {
+      "row": 0,
+      "frames": 2,
+      "fps": 3,
+      "loop": true
+    },
+    "red_ringed": {
+      "row": 1,
+      "frames": 2,
+      "fps": 3,
+      "loop": true
+    },
+    "red_spotted": {
+      "row": 2,
+      "frames": 2,
+      "fps": 3,
+      "loop": true
+    },
+    "blue_solid": {
+      "row": 3,
+      "frames": 2,
+      "fps": 3,
+      "loop": true
+    },
+    "blue_ringed": {
+      "row": 4,
+      "frames": 2,
+      "fps": 3,
+      "loop": true
+    },
+    "blue_spotted": {
+      "row": 5,
+      "frames": 2,
+      "fps": 3,
+      "loop": true
+    },
+    "yellow_solid": {
+      "row": 6,
+      "frames": 2,
+      "fps": 3,
+      "loop": true
+    },
+    "yellow_ringed": {
+      "row": 7,
+      "frames": 2,
+      "fps": 3,
+      "loop": true
+    },
+    "yellow_spotted": {
+      "row": 8,
+      "frames": 2,
+      "fps": 3,
+      "loop": true
+    }
+  },
+  "tier": "A",
+  "source": "art/src/items.py",
+  "note": "gas giant, 2-slot weight"
+}

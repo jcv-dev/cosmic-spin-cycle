@@ -1,0 +1,291 @@
+{
+  "version": 1,
+  "note": "Content-addressed source lockfile. Every entry is CC0. Archives live in art/sources/_downloads/ (git-ignored) and are verified against sha256 on every fetch. Kenney download URLs are short-lived signed links, so the lockfile pins the asset page plus the archive hash instead of the signed URL.",
+  "packs": [
+    {
+      "id": "kenney-planets",
+      "title": "Planets",
+      "author": "Kenney (Kenney Vleugels)",
+      "page": "https://kenney.nl/assets/planets",
+      "license": "CC0-1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "license_member": "License.txt",
+      "dir": "kenney-planets",
+      "retrieved": "2026-11-24",
+      "sha256": "289386e1cbc4a9a727654795b857c1f3f3447b170c7ba1ceeb9b007d1b84f683",
+      "uses": [
+        {
+          "member": "Planets/planet03.png",
+          "as": "planets/planet03.png",
+          "sha256": "b23893179576c6d833221a6f343896b33d057a5be509e28c6871fd44125cc958"
+        },
+        {
+          "member": "Planets/planet04.png",
+          "as": "planets/planet04.png",
+          "sha256": "b9e5fd3a164a4d5d29b0ee28b93eb7e6524df43dcdbcb2615c323f6c6a509650"
+        },
+        {
+          "member": "Planets/planet07.png",
+          "as": "planets/planet07.png",
+          "sha256": "ffd85aa57cda3bf888628a05133eed33e2fbd9aa1cb337b7d23f9560a2eadf97"
+        },
+        {
+          "member": "Planets/planet09.png",
+          "as": "planets/planet09.png",
+          "sha256": "8c6bdd9f220646aa6c0331e2220fcbe484c2307c10c63ae624c9065245d25444"
+        }
+      ],
+      "extracted": [
+        {
+          "path": "art/sources/kenney-planets/planets/planet03.png",
+          "sha256": "b23893179576c6d833221a6f343896b33d057a5be509e28c6871fd44125cc958"
+        },
+        {
+          "path": "art/sources/kenney-planets/planets/planet04.png",
+          "sha256": "b9e5fd3a164a4d5d29b0ee28b93eb7e6524df43dcdbcb2615c323f6c6a509650"
+        },
+        {
+          "path": "art/sources/kenney-planets/planets/planet07.png",
+          "sha256": "ffd85aa57cda3bf888628a05133eed33e2fbd9aa1cb337b7d23f9560a2eadf97"
+        },
+        {
+          "path": "art/sources/kenney-planets/planets/planet09.png",
+          "sha256": "8c6bdd9f220646aa6c0331e2220fcbe484c2307c10c63ae624c9065245d25444"
+        },
+        {
+          "path": "art/sources/kenney-planets/LICENSE.txt",
+          "sha256": "f9151e3adda789dc96df0d826b7381c6587fd28c16e423cb7141778ab587d384"
+        }
+      ],
+      "rejected": [
+        {
+          "member": "Planets/planet00.png",
+          "reason": "pale mint; low contrast against space_void"
+        },
+        {
+          "member": "Planets/planet05.png",
+          "reason": "brown/tan; hue too warm for the crimson ramp"
+        }
+      ]
+    },
+    {
+      "id": "kenney-industrial",
+      "title": "Pixel Platformer: Industrial Expansion",
+      "author": "Kenney (Kenney Vleugels)",
+      "page": "https://kenney.nl/assets/pixel-platformer-industrial-expansion",
+      "license": "CC0-1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "license_member": "License.txt",
+      "dir": "kenney-industrial",
+      "retrieved": "2026-11-24",
+      "sha256": "c46e8fee3528434d1680d50a2373c77eb33b1d5db5c7b000d495edecc854fd3e",
+      "uses": [
+        {
+          "member": "Tiles/tile_0056.png",
+          "as": "tiles/tile_0056.png",
+          "sha256": "9a2f139dda5442767c254f1667b786f79f59cace14a23ed88be67c6b1c103c31"
+        },
+        {
+          "member": "Tiles/tile_0057.png",
+          "as": "tiles/tile_0057.png",
+          "sha256": "49d9a02579f93775a93bac37534c4750a2496a473eab82f7b4e0e4fef1f03872"
+        },
+        {
+          "member": "Tiles/tile_0062.png",
+          "as": "tiles/tile_0062.png",
+          "sha256": "fc846497ec5dee5e2abcc39f767be89c2219c55b2ced9213e143e255d007ec05"
+        },
+        {
+          "member": "Tiles/tile_0063.png",
+          "as": "tiles/tile_0063.png",
+          "sha256": "1f929892199f79a97f7da89d0c372083f518624b2e08041b6481133274f05695"
+        },
+        {
+          "member": "Tiles/tile_0068.png",
+          "as": "tiles/tile_0068.png",
+          "sha256": "7ac3ef8d44c14b80a1a651f8fb84fe7bdbe3b30cade54510db0b8cfdb3f8bb54"
+        },
+        {
+          "member": "Tiles/tile_0073.png",
+          "as": "tiles/tile_0073.png",
+          "sha256": "e806aa2e613cc0a3c2553d85b41894439bba11b57fee1c5b10454d1b17e91c23"
+        },
+        {
+          "member": "Tiles/tile_0079.png",
+          "as": "tiles/tile_0079.png",
+          "sha256": "380c257e5fc4887784cdd06cfb706a805708d6902a52baebca775dc37d31d187"
+        },
+        {
+          "member": "Tiles/tile_0084.png",
+          "as": "tiles/tile_0084.png",
+          "sha256": "42ac665700e81b722fc967672eb26aa5fc04cb26c25befc8ca67cd34c0beb631"
+        },
+        {
+          "member": "Tiles/tile_0085.png",
+          "as": "tiles/tile_0085.png",
+          "sha256": "e229b411ff20f403c94be346bd0fad40b31970ae916da6a50221c693c97a9aed"
+        },
+        {
+          "member": "Tiles/tile_0086.png",
+          "as": "tiles/tile_0086.png",
+          "sha256": "b8af6ad70d6fd6b4f98c7f35c012c21bd58cab10776a56274701319c0622830d"
+        },
+        {
+          "member": "Tiles/tile_0087.png",
+          "as": "tiles/tile_0087.png",
+          "sha256": "0be3cc38c132caebcde2d5249e29b45385cf58a50b839ba374f4965378931e23"
+        },
+        {
+          "member": "Tiles/tile_0088.png",
+          "as": "tiles/tile_0088.png",
+          "sha256": "f26a98012d4dd5ca0b221639f8875b0570eeebb7dac8d59537d33011220c56e6"
+        },
+        {
+          "member": "Tiles/tile_0094.png",
+          "as": "tiles/tile_0094.png",
+          "sha256": "7298689014263f53fbeaa3c40caf3a1196417edca35011376bfb48172df81363"
+        },
+        {
+          "member": "Tiles/tile_0099.png",
+          "as": "tiles/tile_0099.png",
+          "sha256": "db5cef9d1876c07aead700f1f5652400237e0e6188794d450c07777bb12c34e8"
+        },
+        {
+          "member": "Tiles/tile_0100.png",
+          "as": "tiles/tile_0100.png",
+          "sha256": "06e0c0b171bf4052ed7e3e59737cd6875bb6ba607e7ce946225b548adbb14b1c"
+        },
+        {
+          "member": "Tiles/tile_0101.png",
+          "as": "tiles/tile_0101.png",
+          "sha256": "c95980faf00c6085bef87cee6c371fa4c9f71a2a52769ed5e28f9844d74709a0"
+        },
+        {
+          "member": "Tiles/tile_0102.png",
+          "as": "tiles/tile_0102.png",
+          "sha256": "d08aa37c51656a59ff02822cf3b212643d4fb55d09ada0a544476cd40caa7bb1"
+        },
+        {
+          "member": "Tiles/tile_0103.png",
+          "as": "tiles/tile_0103.png",
+          "sha256": "aff1402089ae6c0751873e5cc7bc53c969220715d7018513e98b89388d8555de"
+        },
+        {
+          "member": "Tiles/tile_0108.png",
+          "as": "tiles/tile_0108.png",
+          "sha256": "bbc13ed3ee8d0ffcb3616a4e737ef20a1687c4e40c28032cc5582d55e535ef13"
+        },
+        {
+          "member": "Tiles/tile_0110.png",
+          "as": "tiles/tile_0110.png",
+          "sha256": "a521adc1ceb99916abdbff3de748f3a88fb0b5e4cf95c9a4e9de57ccb5baafa0"
+        },
+        {
+          "member": "Tiles/tile_0111.png",
+          "as": "tiles/tile_0111.png",
+          "sha256": "0cc5df3a3d7dae8f9f33f58e76f15af9ccd0007b73043b8edf503073af729100"
+        }
+      ],
+      "extracted": [
+        {
+          "path": "art/sources/kenney-industrial/tiles/tile_0056.png",
+          "sha256": "9a2f139dda5442767c254f1667b786f79f59cace14a23ed88be67c6b1c103c31"
+        },
+        {
+          "path": "art/sources/kenney-industrial/tiles/tile_0057.png",
+          "sha256": "49d9a02579f93775a93bac37534c4750a2496a473eab82f7b4e0e4fef1f03872"
+        },
+        {
+          "path": "art/sources/kenney-industrial/tiles/tile_0062.png",
+          "sha256": "fc846497ec5dee5e2abcc39f767be89c2219c55b2ced9213e143e255d007ec05"
+        },
+        {
+          "path": "art/sources/kenney-industrial/tiles/tile_0063.png",
+          "sha256": "1f929892199f79a97f7da89d0c372083f518624b2e08041b6481133274f05695"
+        },
+        {
+          "path": "art/sources/kenney-industrial/tiles/tile_0068.png",
+          "sha256": "7ac3ef8d44c14b80a1a651f8fb84fe7bdbe3b30cade54510db0b8cfdb3f8bb54"
+        },
+        {
+          "path": "art/sources/kenney-industrial/tiles/tile_0073.png",
+          "sha256": "e806aa2e613cc0a3c2553d85b41894439bba11b57fee1c5b10454d1b17e91c23"
+        },
+        {
+          "path": "art/sources/kenney-industrial/tiles/tile_0079.png",
+          "sha256": "380c257e5fc4887784cdd06cfb706a805708d6902a52baebca775dc37d31d187"
+        },
+        {
+          "path": "art/sources/kenney-industrial/tiles/tile_0084.png",
+          "sha256": "42ac665700e81b722fc967672eb26aa5fc04cb26c25befc8ca67cd34c0beb631"
+        },
+        {
+          "path": "art/sources/kenney-industrial/tiles/tile_0085.png",
+          "sha256": "e229b411ff20f403c94be346bd0fad40b31970ae916da6a50221c693c97a9aed"
+        },
+        {
+          "path": "art/sources/kenney-industrial/tiles/tile_0086.png",
+          "sha256": "b8af6ad70d6fd6b4f98c7f35c012c21bd58cab10776a56274701319c0622830d"
+        },
+        {
+          "path": "art/sources/kenney-industrial/tiles/tile_0087.png",
+          "sha256": "0be3cc38c132caebcde2d5249e29b45385cf58a50b839ba374f4965378931e23"
+        },
+        {
+          "path": "art/sources/kenney-industrial/tiles/tile_0088.png",
+          "sha256": "f26a98012d4dd5ca0b221639f8875b0570eeebb7dac8d59537d33011220c56e6"
+        },
+        {
+          "path": "art/sources/kenney-industrial/tiles/tile_0094.png",
+          "sha256": "7298689014263f53fbeaa3c40caf3a1196417edca35011376bfb48172df81363"
+        },
+        {
+          "path": "art/sources/kenney-industrial/tiles/tile_0099.png",
+          "sha256": "db5cef9d1876c07aead700f1f5652400237e0e6188794d450c07777bb12c34e8"
+        },
+        {
+          "path": "art/sources/kenney-industrial/tiles/tile_0100.png",
+          "sha256": "06e0c0b171bf4052ed7e3e59737cd6875bb6ba607e7ce946225b548adbb14b1c"
+        },
+        {
+          "path": "art/sources/kenney-industrial/tiles/tile_0101.png",
+          "sha256": "c95980faf00c6085bef87cee6c371fa4c9f71a2a52769ed5e28f9844d74709a0"
+        },
+        {
+          "path": "art/sources/kenney-industrial/tiles/tile_0102.png",
+          "sha256": "d08aa37c51656a59ff02822cf3b212643d4fb55d09ada0a544476cd40caa7bb1"
+        },
+        {
+          "path": "art/sources/kenney-industrial/tiles/tile_0103.png",
+          "sha256": "aff1402089ae6c0751873e5cc7bc53c969220715d7018513e98b89388d8555de"
+        },
+        {
+          "path": "art/sources/kenney-industrial/tiles/tile_0108.png",
+          "sha256": "bbc13ed3ee8d0ffcb3616a4e737ef20a1687c4e40c28032cc5582d55e535ef13"
+        },
+        {
+          "path": "art/sources/kenney-industrial/tiles/tile_0110.png",
+          "sha256": "a521adc1ceb99916abdbff3de748f3a88fb0b5e4cf95c9a4e9de57ccb5baafa0"
+        },
+        {
+          "path": "art/sources/kenney-industrial/tiles/tile_0111.png",
+          "sha256": "0cc5df3a3d7dae8f9f33f58e76f15af9ccd0007b73043b8edf503073af729100"
+        },
+        {
+          "path": "art/sources/kenney-industrial/LICENSE.txt",
+          "sha256": "f3413899d1ca5e7d6e889755fd5718d2fe194f115cb42dd436c8db5c6d8a6837"
+        }
+      ],
+      "rejected": [
+        {
+          "member": "Tiles/tile_0000.png",
+          "reason": "grass/stone terrain; wrong genre"
+        },
+        {
+          "member": "Tiles/tile_0045.png",
+          "reason": "outdoor pipe; no industrial read"
+        }
+      ]
+    }
+  ]
+}

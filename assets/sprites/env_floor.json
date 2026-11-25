@@ -1,0 +1,36 @@
+{
+  "id": "env_floor",
+  "frame_size": [
+    16,
+    16
+  ],
+  "scale": 4,
+  "pivot": [
+    8,
+    8
+  ],
+  "animations": {
+    "variant_a": {
+      "row": 0,
+      "frames": 1,
+      "fps": 1,
+      "loop": true
+    },
+    "variant_b": {
+      "row": 1,
+      "frames": 1,
+      "fps": 1,
+      "loop": true
+    },
+    "variant_c": {
+      "row": 2,
+      "frames": 1,
+      "fps": 1,
+      "loop": true
+    }
+  },
+  "tier": "A",
+  "source": "art/src/env.py",
+  "allow_edge": true,
+  "note": "three subtle variants, seamless"
+}

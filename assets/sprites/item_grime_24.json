@@ -1,0 +1,23 @@
+{
+  "id": "item_grime_24",
+  "frame_size": [
+    24,
+    24
+  ],
+  "scale": 4,
+  "pivot": [
+    12,
+    12
+  ],
+  "animations": {
+    "overlay": {
+      "row": 0,
+      "frames": 1,
+      "fps": 1,
+      "loop": true
+    }
+  },
+  "tier": "A",
+  "source": "art/src/items.py",
+  "note": "grime overlay"
+}
