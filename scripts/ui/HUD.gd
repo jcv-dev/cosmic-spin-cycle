@@ -32,7 +32,9 @@ const DOT_DOWNBEAT_SCALE := 1.3
 const STABILITY_DIAMOND_CENTER := Vector2(280, 16)
 const STABILITY_DIAMOND_RADIUS := 6.0
 const RIBBON_RECT := Rect2(400, 6, 480, 28)
-const TOAST_RECT := Rect2(400, 34, 480, 18)
+## The toast hangs just under the ribbon, clear of the north belt lane (y 35…100) that the
+## level draws inside the wall band.
+const TOAST_RECT := Rect2(400, 104, 480, 18)
 const REWARD_RECT := Rect2(1156, 104, 100, 18)
 const DIEGETIC_SCENE := "res://scenes/ui/DiegeticLayer.tscn"
 const GROUP_DIEGETIC := &"diegetic"
@@ -52,7 +54,7 @@ const TOAST_S := 1.4
 const TOAST_ALPHA := 0.82
 const DEFAULT_OBJECTIVE := &"OBJETIVO · LAVA Y ENTREGA HASTA LAS 06:00"
 const REWARD_S := 0.6
-const STEP_CLOCK_FONT := 24
+const STEP_CLOCK_FONT := 28
 const REWARD_RISE := 16.0
 const DANGER_PULSE_HZ := 3.0
 
@@ -153,7 +155,7 @@ func tick(delta: float) -> void:
 		_toast_left = maxf(_toast_left - delta, 0.0)
 		if _toast_left <= 0.0:
 			_toast_label.visible = false
-			_slot_toast.queue_redraw()
+			_slot_toast.visible = false
 	if _reward_left > 0.0:
 		_reward_left = maxf(_reward_left - delta, 0.0)
 		_update_reward()
@@ -178,20 +180,20 @@ func _build_plaque_a() -> void:
 		UITheme.label("00:00", UITheme.FONT_TITLE, Palette.METAL_4, true),
 		_plaque_a,
 		"ClockLabel",
-		Rect2(24, 4, 272, 52)
+		Rect2(24, 8, 272, 52)
 	)
 	_bpm_label = _place(
 		UITheme.label("105 BPM", UITheme.FONT_SMALL, Palette.METAL_2),
 		_plaque_a,
 		"BpmLabel",
-		Rect2(196, 10, 92, 16)
+		Rect2(196, 64, 92, 16)
 	)
 	_bpm_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_caption_label = _place(
 		UITheme.label("", UITheme.FONT_SMALL, Palette.METAL_2),
 		_plaque_a,
 		"CaptionLabel",
-		Rect2(24, 64, 272, 16)
+		Rect2(24, 64, 168, 16)
 	)
 
 
@@ -245,6 +247,7 @@ func _build_ribbon() -> void:
 	_objective_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_slot_toast = _make_slot("Paint", Slot.TOAST, TOAST_RECT.size)
 	_slot_toast.position = TOAST_RECT.position
+	_slot_toast.visible = false
 	add_child(_slot_toast)
 	_reward_label = _place(
 		UITheme.label("", UITheme.FONT_LABEL, Palette.CLEAN_GREEN, true),
@@ -580,8 +583,8 @@ func _on_feedback(text: String, kind: StringName) -> void:
 	_toast_label.text = line.left(TOAST_MAX_CHARS)
 	_toast_label.add_theme_color_override("font_color", _kind_color(kind))
 	_toast_label.visible = true
+	_slot_toast.visible = true
 	_toast_left = TOAST_S
-	_slot_toast.queue_redraw()
 
 
 static func _kind_color(kind: StringName) -> Color:
@@ -706,15 +709,8 @@ func _refresh_caption() -> void:
 		return
 	var text := "%s · %s %d" % [tr("TURNO"), tr("FASE"), phase_index + 1]
 	if _phase_name_left > 0.0 and phase_index < PHASE_NAMES.size():
-		text = (
-			"%s · %s %d · %s"
-			% [
-				tr("TURNO"),
-				tr("FASE"),
-				phase_index + 1,
-				tr(String(PHASE_NAMES[phase_index])),
-			]
-		)
+		# The announcement drops TURNO so the caption never collides with the tempo readout.
+		text = ("%s %d · %s" % [tr("FASE"), phase_index + 1, tr(String(PHASE_NAMES[phase_index]))])
 	_caption_label.text = text
 
 

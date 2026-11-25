@@ -29,6 +29,7 @@ const TARGET_MAX_PERP := 64.0
 const TRACER_ALPHA := 0.30
 const TRACER_WIDTH := 2.0
 const WORLD_TEXT_SIZE := 12
+const LABEL_DY := -28.0
 
 const STATE_NONE := &"none"
 const STATE_WASHER_OK := &"washer_ok"
@@ -36,7 +37,8 @@ const STATE_WASHER_NO := &"washer_no"
 const STATE_CHUTE := &"chute"
 
 ## Contextual prompt + held-item chip (docs/UX_BIBLE.md §6.5, §6.6).
-const PROMPT_DY := -112.0
+## 24 px above Pip's silhouette top (the 24 art px sprite is 96 world px tall).
+const PROMPT_DY := -120.0
 const PROMPT_KIND_NONE := &"none"
 const PROMPT_KIND_THROW := &"throw"
 const PROMPT_KIND_GRAB := &"grab"
@@ -536,22 +538,25 @@ func _draw_reticle(center: Vector2) -> void:
 		STATE_WASHER_OK:
 			HudGlyphs.draw_cross(self, center, RETICLE_RADIUS, Palette.FUNK_CYAN, 2.0)
 			HudGlyphs.draw_brackets(self, center, BRACKET_RADIUS, Palette.FUNK_CYAN, 2.0)
-			_draw_text_chip(tr("LANZAR"), center + Vector2(0.0, 34.0), Palette.FUNK_CYAN)
+			if _prompt_kind != PROMPT_KIND_THROW:
+				_draw_text_chip(tr("LANZAR"), center + Vector2(0.0, LABEL_DY), Palette.FUNK_CYAN)
 		STATE_WASHER_NO:
 			HudGlyphs.draw_cross(self, center, RETICLE_RADIUS, Palette.RED_3, 2.0)
 			HudGlyphs.draw_reject(self, center, RETICLE_RADIUS + 6.0, Palette.RED_3, 2.0)
-			_draw_text_chip(tr("NO"), center + Vector2(0.0, 34.0), Palette.RED_3)
+			_draw_text_chip(tr("NO"), center + Vector2(0.0, LABEL_DY), Palette.RED_3)
 		STATE_CHUTE:
 			if _chute_ok:
 				HudGlyphs.draw_cross(self, center, RETICLE_RADIUS, Palette.CLEAN_GREEN, 2.0)
 				HudGlyphs.draw_chevron(
 					self, center + Vector2(0.0, 8.0), 6.0, Palette.CLEAN_GREEN, 2.0
 				)
-				_draw_text_chip(tr("ENTREGAR"), center + Vector2(0.0, 34.0), Palette.CLEAN_GREEN)
+				_draw_text_chip(
+					tr("ENTREGAR"), center + Vector2(0.0, LABEL_DY), Palette.CLEAN_GREEN
+				)
 			else:
 				HudGlyphs.draw_cross(self, center, RETICLE_RADIUS, Palette.HAZARD_ORANGE, 2.0)
 				_draw_text_chip(
-					tr("LAVA PRIMERO"), center + Vector2(0.0, 34.0), Palette.HAZARD_ORANGE
+					tr("LAVA PRIMERO"), center + Vector2(0.0, LABEL_DY), Palette.HAZARD_ORANGE
 				)
 		_:
 			var idle := Palette.METAL_2

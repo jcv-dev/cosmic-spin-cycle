@@ -217,3 +217,15 @@ func test_hud_scale_is_clamped_to_the_offered_options() -> void:
 	assert_almost_eq(hud.scale_factor(), 1.25, 0.001)
 	hud.set_hud_scale(0.1)
 	assert_almost_eq(hud.scale_factor(), 1.0, 0.001)
+
+
+func test_the_toast_may_dip_into_the_field_but_never_past_128_px() -> void:
+	# The only transient that enters the play field: it hangs under the ribbon, clear of the
+	# north belt lane, and stops 20 px into the field's top edge (docs/HUD.md §1.4).
+	var hud := _open_hud()
+	assert_false(hud.get_node("ToastLabel").visible, "no toast at rest")
+	GameState.emit_feedback("PIEZA PERDIDA", &"danger")
+	var toast := hud.get_node("ToastLabel") as Label
+	assert_true(toast.visible)
+	assert_gte(toast.position.y, 100.0, "never over the belt lane")
+	assert_lte(toast.position.y + toast.size.y, 128.0, "never deeper than 20 px into the field")
