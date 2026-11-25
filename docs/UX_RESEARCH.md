@@ -158,4 +158,144 @@ What must the first screen do, and how do keyboard/gamepad users get through it 
 - **Don't put settings on the title screen's first level.** Celeste-style granular assist menus are right for Celeste; six settings in one column is right for a 480 s arcade game, and GAG explicitly warns against menu depth.
 - **Don't use the title screen to teach.** Every attempt to explain the loop in text on the title screen will be skipped ([S12](UX_RESEARCH_SOURCES.md#s12)); the tutorial exists for that.
 
+---
+
+## 6. Tutorial design: gates, not paragraphs
+
+### The question
+How do we teach five verbs, a beat and a routing rule in 2–4 minutes without a text wall?
+
+### Evidence
+**Teach at the moment of first contact.** Contextual ("just in time") tutorials are triggered by normal play, not by a menu; the stated benefits are retention, speed and reduced cognitive load in the first minutes ([S12](UX_RESEARCH_SOURCES.md#s12)). The same source's timing heuristic is the most actionable number in this document: if most players solve a step within 10 s, highlight at 11 s, once.
+
+**Valve's invisible tutorial is the ceiling, not the floor.** *Half-Life 2* teaches "sawblades cut zombies" in two beats with no words: a bisected zombie is visible, the exit is blocked by blades, the player pulls a blade with the gravity gun and a zombie walks in ([S18](UX_RESEARCH_SOURCES.md#s18), subtitle transcript). That works because the *world* can stage a demonstration. Our world cannot stage "throw on the beat" — nothing in a laundromat demonstrates tempo — so the honest conclusion is that one verb (the beat) must be taught explicitly and the rest can be taught by staging.
+
+**Hi-Fi Rush teaches "beat by beat, button by button"**, and its director frames that as an accessibility decision, not a difficulty one ([S02](UX_RESEARCH_SOURCES.md#s02)). **Overcooked teaches recipes with visual shorthand** — icons, not sentences ([S05](UX_RESEARCH_SOURCES.md#s05)).
+
+**Three guidelines constrain the form:** include interactive tutorials; let players progress through text prompts at their own pace; allow instructions and narrative to be replayed; never convey essential information by text alone ([S07](UX_RESEARCH_SOURCES.md#s07)).
+
+### Adopt
+- **One verb per gate, one gate at a time.** Seven gates (§14). A gate opens only when the previous one's success condition is met; no timers except the shift clock.
+- **Prompts are labels, not sentences.** ≤ 6 words, ≤ 24 characters, ≤ 2 lines, 20 px Silkscreen, anchored to the object (washer mouth, item, chute). No modal, no pause, no darkened screen. The beat keeps running.
+- **Every gate has a visible success condition** (a ring fills, a washer flashes `clean_green`) so the player knows the gate ended without reading anything.
+- **Idle hint at 11 s, once.** If no input for 11 s during a gate, the target pulses twice at 1 Hz. Never repeats within the gate.
+- **Skip and replay are always available:** hold `Esc` 1 s or press `Start`; replayable from Pause → `Ver tutorial`. Skipping sets `tutorial_done = true` and never re-triggers automatically.
+- **Fail-forward:** after 3 failed attempts at a gate, grant it, show the correct action once (200 ms ghost animation), and continue. A stuck player must never be stuck in the tutorial.
+
+### Don't copy
+- **Don't copy the invisible-tutorial purism.** It requires a world that can stage failure safely; ours has a 480 s clock and a stability bar that only goes down. We use *staged* first encounters (first item always lands near Pip, first washer always compatible) rather than pure environmental teaching.
+- **Don't pause the beat to explain the beat.** Every rhythm game in the corpus keeps time running; a paused tutorial teaches a game that does not exist.
+- **Don't teach turbulence before the player has successfully washed once.** It is a failure state; introducing it early teaches "the game punishes you" before it teaches "the game rewards you".
+
+---
+
+## 7. Game feel: a budget, not a vibe
+
+### The question
+Which feedback effects, at what magnitudes, and how do we keep them accessible?
+
+### Evidence
+The most concrete published numbers come from Vlambeer's Nuclear Throne, at **320×240 / 30 fps** — almost exactly our resolution ([S13](UX_RESEARCH_SOURCES.md#s13)):
+
+| Element | Published value | At our 320×180, 60 fps, ×4 |
+|---|---|---|
+| Hit freeze | "about 10-20 milliseconds" | 10–20 ms = 1 frame at 60 fps; use 0 or 1 frame |
+| Camera kick | "6 pixels" from aim direction | 6 px = 1.5 art px → **quantise to 4 or 8 world px** |
+| Screen shake | "add 4 to the screenshake", degenerates quickly | 4 px = 1 art px; 8 px = 2 art px |
+| Weapon kick | 2 px, snaps back | 1 art px |
+| Enemy knockback | 3 px/frame | 12 world px/frame — too fast for our 340 px/s player; halve |
+| Hit flash | first frame white, then 2 frames of "hit" pose | 1 frame white = 16.7 ms; safe |
+
+The same source's framing is the important part: these were tuned by hand "until it's right", not derived. So the budget below is a *starting point to tune*, not a law.
+
+### Adopt (the budget)
+
+| Effect | Magnitude | Duration | Reduce-motion variant |
+|---|---|---|---|
+| Hitstop on PERFECT | 0 (never) | — | — |
+| Hitstop on explosion | 2 frames | 33 ms | 0 frames |
+| Screen shake | 4 px, decaying in 4 px steps | ≤ 120 ms | off, replaced by a 1 px `hazard_orange` frame flash |
+| Camera punch on grade | none | — | — |
+| White flash on insert | 1 frame, item only (not screen) | 16.7 ms | none |
+| Grade burst | `fx_burst_perfect` 16×16, 4 frames @18 fps | 222 ms (3 frames @142 BPM) | static icon, 200 ms |
+| Item scale pop | ×1.15 for 3 frames | 50 ms | none |
+
+Rules: no hitstop on rhythm grading (it would desynchronise the player's internal clock); shake is quantised to art pixels; nothing transient outlives `0.45 × T_beat`.
+
+### Don't copy
+- **Don't copy "more juice is better".** The counter-talk ("Indies, resist the urge to 'juice it or lose it'", GDC Europe 2014) exists because juice competes with clarity. In a game whose failure mode is *not knowing what happened*, a screen-wide effect on every throw is an anti-feature.
+- **Don't shake the camera on the beat.** It looks great in a 20-second GIF and makes 480 s nauseating; and a beat-synced shake at 2.37 Hz is a motion-sickness trigger, not a rhythm aid.
+
+---
+
+## 8. Accessibility: the non-negotiables
+
+### Evidence → requirement
+| Guideline ([S07](UX_RESEARCH_SOURCES.md#s07) unless noted) | Our concrete obligation |
+|---|---|
+| No essential info by fixed colour alone | Colour + glyph + position on every washer and item (already §B2; now enforced in HUD chips too) |
+| No essential info by sound alone | Every SFX has a visual twin: turbulence alarm → flashing ring; chute accept → green flash; miss → item puff |
+| Text contrast ≥ 4.5:1; large text ≥ 3:1; non-text UI ≥ 3:1 ([S08](UX_RESEARCH_SOURCES.md#s08)) | Current hint 3.90:1 **fails**; `metal_0` panel border 2.34:1 **fails** the 3:1 non-text rule |
+| No more than 3 flashes/second ([S09](UX_RESEARCH_SOURCES.md#s09)) | 142 BPM = 2.37 Hz, legal; but keep flashing area ≤ 25 % of the screen and never full-screen magenta/red |
+| Avoid placing essential temporary information outside eye-line | Kill the bottom strip; prompts go at the object |
+| Indicate/allow reminder of controls and objectives | Pause shows controls + current goal; `H`/`Select` toggles a 3 s overlay |
+| Allow text prompts at own pace; replay instructions | Prompts never auto-advance a gate; tutorial replayable from Pause |
+| Settings saved/remembered; start without menu depth | `Settings.cfg`; title is 1 level, options 1 level |
+| Provide option to turn off background movement / sudden events | `Sacudida`, `Ritmo visible`, `Fondo animado` toggles |
+| Remap controls; all UI reachable by same input | Gamepad + keyboard parity from M6; remap is a stretch goal, documented as such |
+
+### Adopt
+- **A `Reduce motion` preset** that in one toggle sets shake 0, hitstop 0, bursts static, background animation off, beat ring to a non-scaling tick. GAG's "avoid any sudden unexpected movement" and Microsoft's accessibility tags both treat this as a single user-facing switch, not five.
+- **A text-size setting with three steps: 20 / 24 / 28 px** for all body and prompt text. This is the cheapest possible fix for the readability defect and it is a *setting*, so the default can stay conservative.
+- **A colour-blind check built into the palette usage, not a filter.** Our colour coding is already redundant by design (triangle/circle/square); the HUD must not introduce a *new* colour-only code (e.g. red vs green chips). Enforce: every chip carries a glyph.
+
+### Don't copy
+- **Don't ship a deuteranopia/protanopia post-process filter as the accessibility story.** At 30 colours with hand-picked ramps, a filter shifts the whole palette off-spec and breaks the lint. Redundancy is the fix; filters are a last resort.
+- **Don't hide the beat bar behind "accessibility".** It belongs in Options → Gameplay, default on, because the owner's complaint is the target case, not an edge case.
+
+---
+
+## 9. Typography and HUD layout: the measured case
+
+### What the repo actually renders today
+`HUD.gd` builds labels at **9, 10, 11, 22, 24, 26 and 44 px**. Silkscreen's metrics (measured with fontTools on `Silkscreen-Regular.ttf`, upm 1000): **cap height 0.70 em**, x-height 0.50 em, average lowercase advance 0.723 em, average cap advance 0.745 em.
+
+| Element | Size now | Cap height now | Floor at 720p | Verdict |
+|---|---|---|---|---|
+| Clock | 26 px | 18.2 px | ≈ 19 px | borderline |
+| Combo / score | 24 / 22 px | 16.8 / 15.4 px | ≈ 19 px | **below** |
+| Captions (`TURNO`, `COMBO`, `PUNTOS`) | 9 px | 6.3 px | ≈ 19 px | **~33 % of floor** |
+| Bottom hint | 11 px | 7.7 px | ≈ 19 px | **~41 % of floor** |
+
+The floor is derived from EA Sports' accessibility lead: text should be "a minimum of 28 pixels tall … on a 1080p screen", measured from user research ([S10](UX_RESEARCH_SOURCES.md#s10)). 28 px × (720/1080) = **18.7 px at 720p** **[inference: linear scaling of a viewing-distance rule; desktop viewing distance is shorter than a TV's, so this is conservative in the wrong direction — it is a floor, not a target]**.
+
+### Spanish costs more than English — and short strings cost the most
+Microsoft's localisation guidance gives growth *by source length*: 1–4 chars **+100 %**, 5–10 **+80 %**, 11–20 **+60 %**, 21–30 **+40 %**, 31–50 **+20 %**, >50 **+10 %** ([S11](UX_RESEARCH_SOURCES.md#s11)). Our copy is Spanish-first, so this matters in reverse when we stub English later — but the operational rule holds now: **never size a label to its text; size the zone and assert the string fits.**
+
+Measured widths in Silkscreen Regular (px at the given size):
+
+| String | chars | @14 | @16 | @20 | @24 |
+|---|---|---|---|---|---|
+| `ESTABILIDAD DEL TEJIDO` | 22 | 196 | 224 | 280 | 336 |
+| `Recoge: ESPACIO · Suelta: ESPACIO` | 33 | 294 | — | — | — |
+| `Aprieta ESPACIO al ritmo` | 24 | — | 250 | — | — |
+| `Lavadora equivocada` | 19 | — | 218 | — | — |
+| `Empezar turno` | 13 | — | — | 188 | 259 |
+| `Se acabó el turno` | 17 | — | — | — | 325 |
+
+Note that `ESTABILIDAD DEL TEJIDO` at 24 px is **336 px** — wider than the 300 px stability bar it is supposed to label. The label must shorten (see below), not the bar.
+
+**Copy rules for 1280×720.** Capacity per line, Silkscreen Regular: 300 px zone holds **33/25/20/16** caps at 12/16/20/24 px. So:
+- Persistent labels: **≤ 12 chars at 20 px** (`ESTABILIDAD`, 20 px = 166 px — fits a 180 px slot).
+- Contextual prompts: **≤ 24 chars at 20 px, max 2 lines** (`Aprieta ESPACIO al ritmo` = 24 ch / 313 px — fits a 340 px bubble).
+- Buttons: **≤ 14 chars at 24 px** (`Empezar turno` = 13 ch / 259 px).
+- Grade words: **PERFECTO / BIEN / FUERA DE RITMO** are fine at 32–40 px *at the event*, not centre-screen (`FUERA DE RITMO` = 14 ch / 222 px at 24 px, 370 px at 40 px).
+
+### The layout the evidence forces
+`data/layout.json` in world px: north belt 336–944 × 40–104; west belt 40–104 × 240–560; south belt 336–944 × 616–680; washers at 144–336 / 944–1136 × 128–320 and 384–576; chute **576–704 × 296–424**; player spawn (640, 512).
+
+- The **top band 0–48 px still clips the north belt by 8 px** (belt starts at y = 40). The band must become two **corner clusters**: left 0–330 × 0–120 (clock, turn), right 950–1280 × 0–120 (stability, combo, score). The 608 px between them stays clear for the belt.
+- The **chute is at the exact screen centre** (640, 360) and the grade label currently occupies y 286–346 — 50 px of overlap with the chute's top edge. **Move all grade text to the event or to a 300 px band at y 600–680** (below the south belt, above nothing).
+- Time-critical prompts must be within ~200 px of the player or the target; the bottom strip at y = 688 is 176 px from the south belt and 300+ px from the washers — outside eye-line by GAG's definition.
+
 <!-- END -->
