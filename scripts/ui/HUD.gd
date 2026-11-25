@@ -40,7 +40,7 @@ const DIEGETIC_SCENE := "res://scenes/ui/DiegeticLayer.tscn"
 const GROUP_DIEGETIC := &"diegetic"
 
 # --- Timing -----------------------------------------------------------------
-const PANEL_ALPHA := 0.88
+const PANEL_ALPHA := 0.97
 const CLOCK_WARN_S := 10.0
 const PHASE_NAME_HOLD_S := 4.0
 const DANGER_STABILITY := 35.0

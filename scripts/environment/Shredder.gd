@@ -157,12 +157,19 @@ func _draw_throat_chevrons(r: float, hazard: Color) -> void:
 		draw_colored_polygon(points, ink)
 
 
-## The honest tell: a small "−8" chip under the mouth instead of a glowing hub.
+## The honest tell: a small "−8" chip instead of a glowing hub. It sits away from the room
+## centre (above on the north wall, below elsewhere) and is dim until the first loss, so it
+## never collides with a washer hologram or reads as a permanent objective.
 func _draw_loss_marker(r: float, hazard: Color, void_color: Color) -> void:
-	var chip := Rect2(-18.0, r + 2.0, 36.0, 22.0)
-	draw_rect(chip, Color(void_color.r, void_color.g, void_color.b, 0.85))
-	draw_rect(chip, Color(hazard.r, hazard.g, hazard.b, 0.45), false, 2.0)
-	var ink := Color(hazard.r, hazard.g, hazard.b, 0.9)
+	var above := global_position.y < 160.0
+	var y := -r - 24.0 if above else r + 2.0
+	var chip := Rect2(-18.0, y, 36.0, 22.0)
+	var idle_alpha := 0.34 if consumed_count == 0 else 0.85
+	draw_rect(chip, Color(void_color.r, void_color.g, void_color.b, idle_alpha))
+	draw_rect(
+		chip, Color(hazard.r, hazard.g, hazard.b, 0.35 if consumed_count == 0 else 0.5), false, 2.0
+	)
+	var ink := Color(hazard.r, hazard.g, hazard.b, 0.55 if consumed_count == 0 else 0.9)
 	var rows := [["000", "000", "111", "000", "000"], ["111", "101", "111", "101", "111"]]
 	var pixel := 4.0
 	var origin := chip.position + Vector2(4.0, 2.0)
