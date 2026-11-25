@@ -4,3 +4,6 @@
 
 # Local scratch and tooling
 .work/
+
+# Parallel session worktrees
+.worktrees/
