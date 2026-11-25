@@ -247,7 +247,7 @@ func _on_tutorial_skipped() -> void:
 func _show_end(result: Dictionary) -> void:
 	var screen := _instance(END_SCENE)
 	if screen == null:
-		return
+		screen = FallbackScreens.end(self, result)
 	if screen.has_method("setup"):
 		screen.call("setup", result)
 	_ui.add_child(screen)
