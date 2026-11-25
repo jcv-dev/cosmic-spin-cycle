@@ -176,6 +176,12 @@ static func grade_throw(delta_t: float, misses: int) -> int:
 	return RhythmEvaluator.evaluate(delta_t, window_scale(misses))
 
 
+## Gate 6 grades with the flat tutorial tolerance (no fail-forward widening needed: the
+## washer cannot explode and the director rescues a stalled player).
+static func grade_strike(delta_t: float) -> int:
+	return RhythmEvaluator.evaluate(delta_t, STRIKE_WINDOW_SCALE)
+
+
 ## 0..1 fill for the 2 px cyan underline under the chip.
 static func progress(state: Dictionary) -> float:
 	if bool(state.get("granted", false)):

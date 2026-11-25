@@ -19,7 +19,9 @@ signal skip_cancelled
 signal completion_continued
 
 const LAYER := 25
-const CHIP_TOP := 10
+## Below the 48 px HUD bar so the tutorial chip never fights the clock/stability readout,
+## and still inside the y 0–104 safe band (docs/UX_BIBLE.md §12).
+const CHIP_TOP := 56
 const CHIP_HEIGHT := 46
 const CHIP_PAD_X := 16
 const CHIP_GAP := 10
@@ -31,9 +33,9 @@ const PROMPT_MIN_Y := 108.0
 const FADE_IN_S := 0.12
 const FADE_OUT_S := 0.12
 const PULSE_S := 0.26
-const BEACON_RADIUS := 26.0
-const SKIP_RECT := Rect2(360, 236, 560, 236)
-const COMPLETE_RECT := Rect2(340, 220, 600, 280)
+const BEACON_RADIUS := 30.0
+const SKIP_RECT := Rect2(360, 268, 560, 184)
+const COMPLETE_RECT := Rect2(340, 252, 600, 216)
 const PLAQUE_MARGIN := 26
 
 var camera: Camera2D
@@ -56,7 +58,7 @@ var _complete: Control
 var _complete_button: Button
 var _complete_stat: Label
 
-var _step_index := 0
+var _step_index := -1
 var _progress := 0.0
 var _prompt_world := Vector2.ZERO
 var _prompt_active := false
@@ -80,8 +82,7 @@ func _ready() -> void:
 	_build_fx()
 	_build_skip()
 	_build_complete()
-	_set_step_content()
-	_layout_chip()
+	set_step(0, 0.0)
 
 
 func _process(delta: float) -> void:
@@ -105,10 +106,14 @@ func _pulse_alive(pulse: Dictionary) -> bool:
 
 ## Sets the chip to a gate. `ratio` fills the cyan underline (0..1).
 func set_step(index: int, ratio: float = 0.0) -> void:
-	_step_index = TutorialSteps.clamp_index(index)
+	var safe := TutorialSteps.clamp_index(index)
 	_progress = clampf(ratio, 0.0, 1.0)
-	_set_step_content()
-	_layout_chip()
+	if safe != _step_index:
+		_step_index = safe
+		_set_step_content()
+		_layout_chip()
+		return
+	_layout_underline()
 
 
 func set_progress(ratio: float) -> void:
@@ -285,6 +290,8 @@ func _build_root() -> void:
 func _build_chip() -> void:
 	_chip = UITheme.panel(Rect2(Vector2.ZERO, Vector2(10, CHIP_HEIGHT)), true)
 	_chip.name = "StepChip"
+	# metal_1 keeps a 3.9:1 border over the belt behind the chip (docs/UX_BIBLE.md §12.9).
+	_chip.add_theme_stylebox_override("panel", _chip_stylebox())
 	_chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_chip)
 	_step_label = UITheme.label("PASO 1/7", UITheme.FONT_LABEL, UITheme.INK_MUTED)
@@ -306,6 +313,16 @@ func _build_chip() -> void:
 	_underline_fill.color = UITheme.ACCENT
 	_underline_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_chip.add_child(_underline_fill)
+
+
+## A slightly brighter border than the default panel: the chip sits over the north belt.
+func _chip_stylebox() -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(UITheme.PANEL_FILL, UITheme.PANEL_ALPHA)
+	box.border_color = Palette.METAL_1
+	box.set_border_width_all(UITheme.BORDER)
+	box.set_corner_radius_all(0)
+	return box
 
 
 func _build_prompt() -> void:
