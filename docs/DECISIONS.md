@@ -549,3 +549,20 @@ debería ser tragado. Sí, con tres límites para que no sea una trampa invisibl
    que la lavadora equivocada (−12): perder el tiro ya cuesta puntos y tiempo; el vacío añade
    riesgo, no una segunda sentencia. Feedback: chip `−3` en el pozo, texto
    `¡EL VACÍO SE LO TRAGÓ!`, impacto grave y el planeta desaparece.
+
+## D058 — Solo vacío y meteorito; el meteorito entra por los ojos
+2026-11-25 · El dueño pidió limitar el catálogo y rehacer el meteorito, que era el eslabón
+débil visualmente.
+
+1. **Catálogo recortado**: `HazardPlanner.enabled_kinds()` devuelve solo `VOID_VENT` y
+   `METEOR`. El arco de pelusa y el bolsillo de gravedad siguen implementados y testeados,
+   pero fuera de rotación; reactivarlos es una línea.
+2. **Meteorito redibujado**: roca poligonal de dos tonos con contorno oscuro y rotación
+   lenta, cayendo desde 320 px con tres estelas de fuego; la sombra del suelo crece con el
+   aviso.
+3. **Explosión**: en la fase activa (1 beat) dibuja quemadura en el suelo, humo, ocho
+   estelas naranjas, ocho esquirlas amarillas con contorno, anillo expansivo y un flash
+   crema que dura el 60 % de la ventana.
+4. **Open Design no está disponible** en esta sesión (solo hay MCP de Atlassian, Unity y
+   Godot) y Track B sigue cerrado: no se añaden PNG de terceros. Todo el arte de amenazas es
+   procedural y palette-locked, igual que el resto de affordances del juego.

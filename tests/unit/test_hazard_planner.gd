@@ -68,15 +68,21 @@ func test_phase_zero_only_leaks_void() -> void:
 		assert_eq(int(entry["kind"]), Config.HazardKind.VOID_VENT)
 
 
-func test_later_phases_unlock_more_kinds() -> void:
-	var seen := {}
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 7
-	for _i in range(400):
-		var entry := HazardPlanner.plan(3, Config.Difficulty.CHAOS, rng, Vector2.ZERO)
-		if not entry.is_empty():
-			seen[int(entry["kind"])] = true
-	assert_eq(seen.size(), 4, "phase 4 can spawn every kind")
+func test_only_the_shipped_kinds_are_in_rotation() -> void:
+	var enabled := HazardPlanner.enabled_kinds()
+	assert_eq(enabled.size(), 2, "void vent and meteorite only (D058)")
+	assert_true(Config.HazardKind.VOID_VENT in enabled)
+	assert_true(Config.HazardKind.METEOR in enabled)
+	for phase in range(4):
+		for kind: int in HazardPlanner.kinds_for_phase(phase):
+			assert_true(enabled.has(kind), "phase %d never offers a parked kind" % phase)
+
+
+func test_phase_zero_only_leaks_void_and_the_last_phase_adds_the_meteorite() -> void:
+	assert_eq(HazardPlanner.kinds_for_phase(0), [Config.HazardKind.VOID_VENT])
+	assert_eq(
+		HazardPlanner.kinds_for_phase(3), [Config.HazardKind.VOID_VENT, Config.HazardKind.METEOR]
+	)
 
 
 func test_chaos_is_denser_than_calm() -> void:

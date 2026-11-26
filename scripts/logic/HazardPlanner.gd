@@ -21,28 +21,42 @@ const LAYOUT_PATH := "res://data/layout.json"
 static var _layout_cache: Dictionary = {}
 
 
-## Kinds available per phase index. Phase 0 is the onboarding beat: only the void vent.
+## Kinds shipped right now (D058). The lint arc and the gravity pocket stay implemented and
+## tested but out of rotation until their art earns its place; enabling one is a one-line
+## change here.
+static func enabled_kinds() -> Array[int]:
+	return [Config.HazardKind.VOID_VENT, Config.HazardKind.METEOR]
+
+
+## Kinds available per phase index, intersected with [method enabled_kinds].
 ## A function, not a const, so the enum values are resolved at runtime (GDScript cannot
 ## constant-fold `Config.HazardKind.*` in a const initialiser).
 static func kinds_for_phase(phase: int) -> Array[int]:
+	var allowed := enabled_kinds()
+	var by_phase: Array[int] = []
 	match clampi(phase, 0, 3):
 		0:
-			return [Config.HazardKind.VOID_VENT]
+			by_phase = [Config.HazardKind.VOID_VENT]
 		1:
-			return [Config.HazardKind.VOID_VENT, Config.HazardKind.METEOR]
+			by_phase = [Config.HazardKind.VOID_VENT, Config.HazardKind.METEOR]
 		2:
-			return [
+			by_phase = [
 				Config.HazardKind.VOID_VENT,
 				Config.HazardKind.METEOR,
 				Config.HazardKind.LINT_ARC,
 			]
 		_:
-			return [
+			by_phase = [
 				Config.HazardKind.VOID_VENT,
 				Config.HazardKind.METEOR,
 				Config.HazardKind.LINT_ARC,
 				Config.HazardKind.GRAVITY_POCKET,
 			]
+	var result: Array[int] = []
+	for kind: int in by_phase:
+		if allowed.has(kind):
+			result.append(kind)
+	return result
 
 
 ## Empty dictionary means "this measure spawns nothing".

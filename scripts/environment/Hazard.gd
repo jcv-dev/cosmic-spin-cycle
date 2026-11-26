@@ -146,35 +146,102 @@ func _draw_vent(color: Color, alpha: float) -> void:
 ## Meteor: the rock falls in from above while the reticle closes, then the floor bursts.
 func _draw_meteor(color: Color, alpha: float) -> void:
 	var radius := Config.HAZARD_METEOR_RADIUS_PX
-	draw_circle(Vector2.ZERO, radius, Color(Palette.SPACE_VOID, alpha * 0.45))
+	if _active:
+		_draw_explosion(radius, color)
+		return
+	var shadow := lerpf(0.6, 1.0, _warning_progress())
+	draw_circle(Vector2.ZERO, radius * shadow, Color(Palette.SPACE_VOID, alpha * 0.45))
 	var shrink := lerpf(WARNING_START_SCALE, 1.0, _warning_progress())
 	_dashed_circle(radius * shrink, 8, color, alpha)
-	var fall := lerpf(-200.0, 0.0, _warning_progress())
-	if _active:
-		draw_circle(Vector2.ZERO, radius * 0.55, Color(color, alpha * 0.5))
-		_draw_shockwave(radius, color)
-	else:
-		for i in range(3):
-			var trail_y := fall - 20.0 * float(i + 1)
-			draw_line(
-				Vector2(-4.0, trail_y),
-				Vector2(4.0, trail_y + 9.0),
-				Color(color, alpha * (0.5 - 0.12 * float(i))),
-				2.0
-			)
-		var rock := _rock_points(radius * 0.45)
-		var offset := Vector2(0.0, fall)
-		draw_colored_polygon(_offset_points(rock, offset), Palette.METAL_1)
-		draw_polyline(_closed(rock, offset), Color(Palette.SPACE_VOID, alpha), LINE_W)
+	var cross := radius * 0.5
+	draw_line(Vector2(-cross, 0), Vector2(cross, 0), Color(color, alpha * 0.9), LINE_W)
+	draw_line(Vector2(0, -cross), Vector2(0, cross), Color(color, alpha * 0.9), LINE_W)
+	var progress := _warning_progress()
+	var fall := lerpf(-320.0, 0.0, progress)
+	var rock_radius := radius * 0.75
+	# Fiery trail: three tapered streaks behind the falling rock.
+	for i in range(3):
+		var t := float(i) / 3.0
+		var trail_y := fall - rock_radius - 12.0 - 28.0 * t
+		var width := 7.0 * (1.0 - t)
 		draw_line(
-			offset + Vector2(-8.0, -4.0),
-			offset + Vector2(-2.0, -11.0),
-			Color(Palette.METAL_4, alpha),
+			Vector2(-width, trail_y),
+			Vector2(width, trail_y + 18.0),
+			Color(Palette.YEL_3, alpha * (0.55 - 0.15 * t)),
+			3.0 - t * 1.5
+		)
+	# The rock itself: two tones, dark outline, slow rotation.
+	var spin := progress * 2.4
+	var rock := _rock_points(rock_radius)
+	var rotated := PackedVector2Array()
+	for point in rock:
+		rotated.append(point.rotated(spin))
+	var offset := Vector2(0.0, fall)
+	draw_colored_polygon(_offset_points(rotated, offset), Palette.METAL_1)
+	var lit := PackedVector2Array()
+	for point in rotated:
+		lit.append(point * 0.55 + Vector2(-rock_radius * 0.18, -rock_radius * 0.22))
+	draw_colored_polygon(_offset_points(lit, offset), Palette.METAL_2)
+	draw_polyline(_closed(rotated, offset), Color(Palette.SPACE_VOID, alpha), LINE_W)
+	draw_circle(
+		offset + Vector2(rock_radius * 0.28, rock_radius * 0.12),
+		maxf(rock_radius * 0.16, 2.0),
+		Color(Palette.METAL_0, alpha)
+	)
+
+
+## Impact: scorch, blast streaks, shards, smoke, ring and flash, inside the active window.
+func _draw_explosion(radius: float, color: Color) -> void:
+	var t := _active_progress()
+	var fade := 1.0 - t
+	# Burnt floor under the impact.
+	draw_circle(Vector2.ZERO, radius * 0.9, Color(Palette.SPACE_VOID, 0.5 * fade))
+	# Smoke behind everything.
+	for i in range(5):
+		var angle := TAU * float(i) / 5.0 + 0.4
+		var distance := radius * (0.45 + 1.0 * t)
+		var puff := Vector2.RIGHT.rotated(angle) * distance + Vector2(0.0, -10.0 * t)
+		draw_circle(puff, radius * (0.3 + 0.3 * t), Color(Palette.SPACE_HAZE, fade * 0.45))
+	# Blast streaks: the punch that reads at a glance.
+	for i in range(8):
+		var angle := TAU * float(i) / 8.0 + 0.15
+		var from := Vector2.RIGHT.rotated(angle) * radius * 0.35
+		var to := Vector2.RIGHT.rotated(angle) * radius * (0.6 + 1.3 * t)
+		draw_line(from, to, Color(Palette.HAZARD_ORANGE, fade * 0.95), 4.0 * fade + 1.0)
+	# Shards: bright, outlined, flying outward.
+	for i in range(8):
+		var angle := TAU * float(i) / 8.0 + 0.2
+		var point := Vector2.RIGHT.rotated(angle) * radius * (0.4 + 1.5 * t)
+		var size := 14.0 * fade
+		if size <= 1.0:
+			continue
+		var shard := PackedVector2Array(
+			[
+				point + Vector2(-size, -size * 0.6),
+				point + Vector2(size, -size),
+				point + Vector2(size * 0.35, size),
+			]
+		)
+		draw_colored_polygon(shard, Palette.YEL_3)
+		draw_polyline(
+			PackedVector2Array([shard[0], shard[1], shard[2], shard[0]]),
+			Color(Palette.SPACE_VOID, fade),
 			1.5
 		)
-	var cross := radius * 0.55
-	draw_line(Vector2(-cross, 0), Vector2(cross, 0), Color(color, alpha), LINE_W)
-	draw_line(Vector2(0, -cross), Vector2(0, cross), Color(color, alpha), LINE_W)
+	draw_arc(Vector2.ZERO, radius * (0.8 + 1.5 * t), 0.0, TAU, 32, Color(color, fade), 3.0)
+	if t < 0.6:
+		var flash := 1.0 - t / 0.6
+		draw_circle(Vector2.ZERO, radius * (0.55 + 1.0 * t), Color(Palette.YEL_4, flash))
+		draw_arc(
+			Vector2.ZERO,
+			radius * (0.55 + 1.0 * t),
+			0.0,
+			TAU,
+			28,
+			Color(Palette.HAZARD_ORANGE, flash),
+			5.0 * flash + 1.0
+		)
+		draw_circle(Vector2.ZERO, radius * 0.32, Color(Palette.METAL_4, flash))
 
 
 ## Lint arc: two rails plus a crackling current that jumps between them.
