@@ -69,7 +69,14 @@ func test_position_is_one_based_and_minus_one_when_absent() -> void:
 
 
 func test_round_trip_through_disk() -> void:
-	var result := {"score": 1234, "rank": "B", "accuracy": 0.75, "max_combo": 4, "delivered": 9, "seed": 77}
+	var result := {
+		"score": 1234,
+		"rank": "B",
+		"accuracy": 0.75,
+		"max_combo": 4,
+		"delivered": 9,
+		"seed": 77,
+	}
 	var submitted := Leaderboard.submit(result, Config.Difficulty.CHAOS, PATH, 1700000000)
 	assert_eq(int(submitted["position"]), 1)
 	var loaded := Leaderboard.load_table(Config.Difficulty.CHAOS, PATH)

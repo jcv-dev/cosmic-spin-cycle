@@ -134,9 +134,7 @@ func test_focused_row_draws_the_measured_ring() -> void:
 	var ring := start.get_node_or_null("FocusRing") as Control
 	assert_not_null(ring, "every menu row owns a focus ring")
 	assert_eq(
-		ring.size,
-		Vector2(512, start.size.y) + Vector2(6, 6),
-		"2 px ring + 1 px gap on both sides"
+		ring.size, Vector2(512, start.size.y) + Vector2(6, 6), "2 px ring + 1 px gap on both sides"
 	)
 
 
