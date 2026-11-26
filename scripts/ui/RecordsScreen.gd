@@ -84,10 +84,17 @@ func set_tab(index: int) -> void:
 
 
 func _build() -> void:
-	add_child(UITheme.dimmer(0.72))
+	var dimmer := UITheme.dimmer(0.72)
+	dimmer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(dimmer)
 	var plaque := _panel(PLAQUE)
 	plaque.name = "Plaque"
 	add_child(plaque)
+	# Centred against the live viewport instead of pinned to 1280x720: at 16:9 this is the
+	# same 230,70, and at any other aspect the plaque stays on screen with its hitboxes
+	# aligned (reported hover/offset mismatch).
+	_centre(plaque)
+	get_viewport().size_changed.connect(_centre.bind(plaque))
 
 	var title := UITheme.label(TITLE_TEXT, UITheme.FONT_TITLE, UITheme.INK, true)
 	title.name = "Title"
@@ -136,6 +143,11 @@ func _build_tab(parent: Control, index: int) -> void:
 	tab.focus_mode = Control.FOCUS_NONE
 	tab.add_theme_font_override("font", UITheme.font_bold())
 	tab.add_theme_font_size_override("font_size", UITheme.FONT_LABEL)
+	tab.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
+	tab.add_theme_stylebox_override("hover", _tab_box(0.18))
+	tab.add_theme_stylebox_override("pressed", _tab_box(0.32))
+	tab.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	tab.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	tab.position = Vector2(TAB_X[index], TABS_Y) - PLAQUE.position
 	tab.pressed.connect(set_tab.bind(index))
 	parent.add_child(tab)
@@ -182,9 +194,12 @@ func _row_label(parent: Control, node_name: String, x: float, y: float, size: in
 func refresh() -> void:
 	for index in range(_tabs.size()):
 		var active := index == _tab
-		_tabs[index].add_theme_color_override(
-			"font_color", UITheme.ACCENT if active else Palette.METAL_2
-		)
+		var ink := UITheme.ACCENT if active else Palette.METAL_2
+		var hover := UITheme.ACCENT if active else Palette.METAL_4
+		_tabs[index].add_theme_color_override("font_color", ink)
+		_tabs[index].add_theme_color_override("font_hover_color", hover)
+		_tabs[index].add_theme_color_override("font_pressed_color", UITheme.ACCENT)
+		_tabs[index].add_theme_color_override("font_focus_color", hover)
 		_underlines[index].visible = active
 	var table := Leaderboard.load_table(_tab, records_path)
 	_empty.visible = table.is_empty()
@@ -206,6 +221,13 @@ func refresh() -> void:
 			"font_color", rank_value if rank_value is Color else Palette.METAL_1
 		)
 		_accuracies[row].text = "%d %%" % int(round(float(entry.get("accuracy", 0.0)) * 100.0))
+
+
+func _centre(plaque: Control) -> void:
+	if plaque == null or not is_instance_valid(plaque):
+		return
+	var view := get_viewport_rect().size
+	plaque.position = ((view - PLAQUE.size) * 0.5).floor().max(Vector2.ZERO)
 
 
 func _on_back_pressed() -> void:
@@ -253,3 +275,37 @@ func _style_back() -> void:
 	_back.add_theme_font_override("font", UITheme.font_bold())
 	_back.add_theme_font_size_override("font_size", UITheme.FONT_BODY)
 	_back.add_theme_color_override("font_color", UITheme.ACCENT)
+	_back.add_theme_color_override("font_hover_color", Palette.METAL_4)
+	_back.add_theme_color_override("font_pressed_color", UITheme.ACCENT)
+	_back.add_theme_stylebox_override("normal", _action_box(0.55, false))
+	_back.add_theme_stylebox_override("hover", _action_box(0.85, false))
+	_back.add_theme_stylebox_override("pressed", _action_box(1.0, true))
+	_back.add_theme_stylebox_override("focus", _empty_box())
+	_back.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+
+
+func _tab_box(alpha: float) -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(Palette.SPACE_MID, alpha)
+	box.border_color = UITheme.ACCENT
+	box.set_border_width_all(0)
+	box.border_width_bottom = 2
+	box.content_margin_left = 8.0
+	box.content_margin_right = 8.0
+	box.content_margin_top = 4.0
+	box.content_margin_bottom = 4.0
+	return box
+
+
+func _action_box(alpha: float, accent_border: bool) -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(Palette.SPACE_MID, alpha)
+	box.border_color = UITheme.ACCENT if accent_border else Palette.METAL_1
+	box.set_border_width_all(2)
+	box.set_corner_radius_all(0)
+	return box
+
+
+## A StyleBoxFlat with no colour is opaque grey, not empty: the focus box must draw nothing.
+func _empty_box() -> StyleBoxEmpty:
+	return StyleBoxEmpty.new()

@@ -386,6 +386,8 @@ func _open_records() -> void:
 	if screen == null:
 		return
 	_ui.add_child(screen)
+	# Defensive: a CanvasLayer parent gives no rect, so pin the overlay to the viewport.
+	screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_screen = screen
 	_screen_name(&"records")
 	_connect_screen(screen, {"close_requested": quit_to_menu})
