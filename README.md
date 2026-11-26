@@ -55,6 +55,55 @@ their requirement holograms, and clean items go into the central delivery chute.
 **Still open:** Windows export presets, the balance simulation and the two GDD §8.2 A/B
 questions (M9). See [`docs/PROGRESS.md`](docs/PROGRESS.md) for the honest gap list.
 
+## Cómo jugar (ES)
+
+**Objetivo.** Eres Pip, el turno nocturno de una lavandería orbital. Recoge la ropa sucia de
+las cintas, léela (color **y** patrón), llévala a la lavadora compatible y entrega lo limpio
+en la tapa verde antes de las **06:00** (480 s). Si la estabilidad del tejido cósmico llega a
+0, el turno termina en derrota.
+
+**Bucle de una partida.**
+1. **Agarra** un objeto sucio (`Espacio` / clic izquierdo).
+2. **Apunta** con el ratón: la retícula avisa `LANZAR`, `NO` o `ENTREGAR`.
+3. **Lanza a tiempo**: cuanto más cerca del beat, mejor nota (PERFECTO / BIEN / MISS). Las
+   notas suben el combo (×1 a ×8), que multiplica los puntos al entregar.
+4. **Llena** una lavadora (3 huecos) o golpéala a ritmo para arrancar el ciclo.
+5. **Entrega** el objeto limpio en la tapa verde del centro: puntos × combo y +3 de
+   estabilidad.
+6. **Esquiva** las amenazas del vacío: se anuncian en un compás y golpean en un beat.
+
+**Controles.**
+
+| Acción | Teclado / ratón | Mando |
+|---|---|---|
+| Mover | WASD / flechas | stick izquierdo |
+| Apuntar | ratón | stick derecho |
+| Agarrar / lanzar | `Espacio` / clic izquierdo | A |
+| Dash | `Shift` / clic derecho | B |
+| Estabilizar lavadora (mantener 3 s) | `E` | X |
+| Pausa / volver | `Esc` | Start |
+
+**Sistemas que conviene conocer.**
+- **Dificultad** (Opciones → Dificultad): TRANQUILO, ESTÁNDAR o CAÓTICO. Cambia densidad de
+  amenazas, daño, i-frames, velocidad de cintas, índice de vacío y tolerancia rítmica.
+- **Récords** (menú principal → RÉCORDS): top 10 por dificultad, guardado en tu equipo.
+- **Calibración de audio**: si los beats no coinciden con lo que oyes, usa el asistente de
+  10 s del menú; resta tu latencia del sistema.
+- **Tutorial**: 8 pasos sobre el nivel real, omitible con `Esc` y repetible desde el título.
+
+**Cómo ejecutarlo.**
+- **Con los binarios de la entrega**: `linux/cosmic-spin-cycle.x86_64` (dar permiso de
+  ejecución) o `windows/cosmic-spin-cycle.exe`. No requieren instalar nada.
+- **Desde el código** (Godot 4.7.2): `godot --path . --import` la primera vez y luego
+  `godot --path .` o `./tools/play.sh`.
+
+## Cómo jugar (quick start, EN)
+
+Wash and deliver before 06:00 without stability reaching zero. Grab with `Space`, aim with the
+mouse, throw on the beat for a better grade, fill a matching washer, and deliver clean items
+to the green hatch. Dodge the telegraphed void hazards. Difficulty and the top-10 records live
+in the menu; audio latency can be calibrated in 10 seconds from the options screen.
+
 ## Run
 
 ```bash
