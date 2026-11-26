@@ -225,7 +225,7 @@ const VOID_WRONG_WASHER_GAIN := 6.0
 
 # --- Records (D048) ---------------------------------------------------------
 const LEADERBOARD_SIZE := 10
-const RECORDS_PATH := "user://records.cfg"
+const RECORDS_PATH := "user://records.json"
 const RECORDS_VERSION := 1
 
 # --- Misc -------------------------------------------------------------------

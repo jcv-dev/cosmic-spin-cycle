@@ -73,7 +73,7 @@ verified. Update at each milestone. Status: **M0–M8 implemented; M9 in progres
 | §9.6 | Fast planets crossing the 30 px core are swallowed for −3 | `HazardDirector._swallow` | swallow / no-swallow tests |
 | §10 | Void index 0–100, non-lethal, collapse doubles hazards and resets to 55 | `VoidIndex`, `HUD.set_void` | threshold/collapse tests |
 | §11 | TRANQUILO/ESTÁNDAR/CAÓTICO presets, persisted | `Config.DIFFICULTY_*`, `Settings`, `OptionsScreen` | difficulty tests, options tests |
-| §12 | Top-10 records per difficulty | **pending** (`user://records.cfg`) | — |
+| §12 | Top-10 records per difficulty | `Leaderboard`, `RecordsScreen`, `user://records.json` | `test_leaderboard`, `test_records_screen`, end-screen line tests |
 | §13 | Type scale 56/40/28/22/18/16/14/12 | `UITheme` | end-screen and tutorial budget tests, screenshots |
 
 ## Reproducible verification

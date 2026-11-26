@@ -566,3 +566,19 @@ débil visualmente.
 4. **Open Design no está disponible** en esta sesión (solo hay MCP de Atlassian, Unity y
    Godot) y Track B sigue cerrado: no se añaden PNG de terceros. Todo el arte de amenazas es
    procedural y palette-locked, igual que el resto de affordances del juego.
+
+## D059 — Récords: top 10 por dificultad, en su propio archivo
+2026-11-25 · Lo que el plan llamaba «3 leaderboards».
+
+- **Tres tablas** (`TRANQUILO`/`ESTÁNDAR`/`CAÓTICO`), 10 filas cada una, en
+  `user://records.json`. Archivo propio y no `settings.cfg` porque *Restablecer* borra los
+  ajustes y no debe borrar el historial del jugador.
+- **Orden total**: puntos desc, precisión desc, turno más antiguo primero, semilla. Así la
+  tabla es estable entre guardados y máquinas.
+- **Sin duplicados**: semilla + puntos identifican un turno, de modo que reabrir la pantalla
+  final no inserta la misma partida dos veces.
+- **Robustez**: un archivo corrupto, una versión distinta o filas con tipos raros se leen como
+  tabla vacía o se descartan; nunca rompen la UI.
+- **UI**: pantalla `RÉCORDS` desde el título (misma placa, mismo tipo, mismos tintes), línea
+  `RÉCORD #n · <dificultad>` o `FUERA DEL TOP 10` en la pantalla final. El título pasa a seis
+  filas y el menú sube 12 px para no chocar con la leyenda del pie.

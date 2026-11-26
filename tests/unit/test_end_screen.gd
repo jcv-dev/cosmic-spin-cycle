@@ -135,6 +135,30 @@ func test_four_primary_stats_are_bigger_than_the_secondary_pair() -> void:
 		)
 
 
+func test_record_line_reports_the_position() -> void:
+	var result := _result()
+	result["record_position"] = 3
+	result["record_difficulty"] = Config.Difficulty.CHAOS
+	await _open(result)
+	var line := _screen.get_node("Plaque/RecordLine") as Label
+	assert_eq(line.text, "RÉCORD #3 · CAÓTICO")
+	assert_eq(line.get_theme_color("font_color"), UITheme.ACCENT)
+
+
+func test_record_line_says_when_the_top_ten_was_missed() -> void:
+	var result := _result()
+	result["record_position"] = -1
+	result["record_difficulty"] = Config.Difficulty.STANDARD
+	await _open(result)
+	var line := _screen.get_node("Plaque/RecordLine") as Label
+	assert_eq(line.text, "FUERA DEL TOP 10 · ESTÁNDAR")
+
+
+func test_previews_without_a_record_show_no_line() -> void:
+	await _open(_result())
+	assert_null(_screen.get_node_or_null("Plaque/RecordLine"), "no invented record")
+
+
 func test_secondary_stats_sit_inline_with_their_caption() -> void:
 	await _open(_result())
 	var plaque := _screen.get_node("Plaque")

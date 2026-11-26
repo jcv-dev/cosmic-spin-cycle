@@ -7,7 +7,7 @@ siendo la fuente y este addendum el registro de la decisión (ver `docs/DECISION
 Autor del GDD original: Juan Camilo Valencia. Este adendo documenta lo que el equipo
 implementó después del prototipado, no un cambio de visión.
 
-Estado: **§9–§11 y §13 implementados**, §12 aprobado y pendiente.
+Estado: **§9–§13 implementados**.
 
 ---
 
@@ -110,16 +110,18 @@ apariciones y todas las medidas del repositorio siguen siendo válidas.
 
 ---
 
-## 12. Récords del jugador (extiende §2.2 y §4.3) — aprobado, **pendiente**
+## 12. Récords del jugador (extiende §2.2 y §4.3)
 
-Tres tablas independientes, **top 10 por dificultad**, persistidas en `user://records.cfg`
+Tres tablas independientes, **top 10 por dificultad**, persistidas en `user://records.json`
 (archivo propio para que *Restablecer* no borre los récords).
 
 Cada entrada: puntos, rango, precisión, combo máximo, entregadas, semilla, fecha y dificultad.
 Orden: puntos desc, precisión desc, el turno más antiguo primero. Se mostrará el top de la
 dificultad jugada en la pantalla final y una pantalla de récords desde el título.
 
-> Estado: **no implementado**. Figuran `best_score` y `best_rank` por compatibilidad.
+La pantalla de récords cuelga del título (← → cambia de dificultad, ESC vuelve) y la
+pantalla final añade una línea con el puesto alcanzado o `FUERA DEL TOP 10`. `best_score` y
+`best_rank` se conservan por compatibilidad con el título.
 
 ---
 
@@ -140,7 +142,7 @@ sola familia (Silkscreen) y una sola tinta por intención.
 | §9.6 Pozo gravitatorio | Implementado | tests de arrastre, freno, tick y tragarse planetas |
 | §10 Índice de Vacío | Implementado | `VoidIndex`, barra en el HUD, tests de umbrales |
 | §11 Dificultad | Implementado | `Config.DIFFICULTY_*`, Opciones, persistencia |
-| §12 Récords | Pendiente | — |
+| §12 Récords | Implementado | `Leaderboard`, `RecordsScreen`, `records.json` |
 | §13 Tipografía | Implementado | `UITheme`, capturas a 1280×720 |
 
 Pendiente además, fuera de este addendum: compuerta de esquiva en el tutorial, pase de audio

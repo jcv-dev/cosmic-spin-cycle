@@ -1,5 +1,5 @@
 extends GutTest
-## Title screen contract (docs/UX_BIBLE.md §12.1): the five intent signals, the focus
+## Title screen contract (docs/UX_BIBLE.md §12.1): the six intent signals, the focus
 ## order, the record plaque rule ("never invent data") and the never-black backdrop.
 
 const TITLE_SCENE := preload("res://scenes/ui/TitleScreen.tscn")
@@ -7,11 +7,17 @@ const CONTRACT_SIGNALS := [
 	"start_requested",
 	"tutorial_requested",
 	"calibration_requested",
+	"records_requested",
 	"options_requested",
 	"quit_requested",
 ]
 const ROW_NAMES := [
-	"StartButton", "TutorialButton", "CalibrationButton", "OptionsButton", "QuitButton"
+	"StartButton",
+	"TutorialButton",
+	"CalibrationButton",
+	"RecordsButton",
+	"OptionsButton",
+	"QuitButton",
 ]
 
 var _screen: Control
@@ -60,7 +66,7 @@ func test_escape_lands_on_quit_without_quitting() -> void:
 	await wait_process_frames(1)
 	_screen.focus_quit()
 	await wait_process_frames(1)
-	var quit_row := _row(4)
+	var quit_row := _row(5)
 	assert_true(quit_row.has_focus())
 
 
@@ -81,11 +87,14 @@ func test_record_plaque_shows_rank_and_grouped_score() -> void:
 	assert_eq(plaque.get_node("BestScore").text, "12 480")
 
 
-func test_menu_rows_are_the_five_contract_labels() -> void:
+func test_menu_rows_are_the_six_contract_labels() -> void:
 	var labels: Array[String] = []
 	for index in range(ROW_NAMES.size()):
 		labels.append(_row(index).text)
-	assert_eq(labels, ["INICIAR TURNO", "TUTORIAL", "CALIBRACIÓN DE AUDIO", "OPCIONES", "SALIR"])
+	assert_eq(
+		labels,
+		["INICIAR TURNO", "TUTORIAL", "CALIBRACIÓN DE AUDIO", "RÉCORDS", "OPCIONES", "SALIR"]
+	)
 
 
 func test_backdrop_is_a_room_not_a_black_screen() -> void:
@@ -104,7 +113,7 @@ func test_backdrop_is_a_room_not_a_black_screen() -> void:
 
 func test_focus_neighbours_wrap_vertically() -> void:
 	var first := _row(0)
-	var last := _row(4)
+	var last := _row(5)
 	assert_eq(
 		first.focus_neighbor_top, first.get_path_to(last), "↑ on the first row wraps to SALIR"
 	)
@@ -115,7 +124,7 @@ func test_type_tiers_descend_from_primary_to_tertiary() -> void:
 	var sizes: Array[int] = []
 	for index in range(ROW_NAMES.size()):
 		sizes.append(_row(index).get_theme_font_size("font_size"))
-	assert_eq(sizes, [28, 20, 20, 16, 16], "one primary, two secondary, two tertiary rows")
+	assert_eq(sizes, [28, 20, 20, 16, 16, 16], "one primary, two secondary, three tertiary rows")
 
 
 func test_focused_row_draws_the_measured_ring() -> void:
@@ -124,7 +133,11 @@ func test_focused_row_draws_the_measured_ring() -> void:
 	var start := _row(0)
 	var ring := start.get_node_or_null("FocusRing") as Control
 	assert_not_null(ring, "every menu row owns a focus ring")
-	assert_eq(ring.size, Vector2(512, 52) + Vector2(6, 6), "2 px ring + 1 px gap on both sides")
+	assert_eq(
+		ring.size,
+		Vector2(512, start.size.y) + Vector2(6, 6),
+		"2 px ring + 1 px gap on both sides"
+	)
 
 
 func test_no_text_below_the_type_floor() -> void:

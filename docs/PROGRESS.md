@@ -15,7 +15,7 @@ Updated after every milestone/workstream. Times are local (America/Bogota).
 | M6 UI & flow | **done** | title, first-run, tutorial, pause, options, end, instant restart, HUD redesign |
 | M7 Art integration | **partially done early** | sprite sheets + SpriteSheet loader are live; M7 becomes polish |
 | M8 Audio | **partially done early** | four phase stems, SFX, buses live; transition modes remain |
-| M9 Balance/polish | **in progress** | D045–D058: amenazas rítmicas (vacío + meteorito), pozo gravitatorio, índice de vacío, dificultad ×3, tipografía. Faltan récords (§12), compuerta de esquiva, pase de audio y export |
+| M9 Balance/polish | **in progress** | D045–D058: amenazas rítmicas (vacío + meteorito), pozo gravitatorio, índice de vacío, dificultad ×3, tipografía. Récords (§12) hechos; faltan compuerta de esquiva, pase de audio y export |
 
 ## M0 — done
 

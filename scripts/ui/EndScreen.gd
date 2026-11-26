@@ -56,6 +56,7 @@ const RING_GAP := 1.0
 const LADDER_CAPTION_Y := 340.0
 const LADDER_Y := 354.0
 const LADDER_STEP := 26.0
+const RECORD_Y := 372.0
 const RHYTHM_Y := 404.0
 const RULE_2_Y := 428.0
 const BUTTON_Y := 492.0
@@ -184,6 +185,7 @@ func _build() -> void:
 	rhythm.position = Vector2(CONTENT_X, RHYTHM_Y) - PLAQUE.position
 	plaque.add_child(rhythm)
 
+	_build_record_line(plaque, data)
 	_rule(plaque, RULE_2_Y)
 
 	var retry := UITheme.action(RETRY_TEXT, 200, true)
@@ -228,6 +230,25 @@ func _build() -> void:
 	hint.name = "Hint"
 	hint.position = Vector2(CONTENT_X, HINT_Y) - PLAQUE.position
 	plaque.add_child(hint)
+
+
+## One line: where this run landed in the difficulty table, or that it missed the top ten.
+## The full table lives on the records screen; the end screen only answers "was this good?".
+func _build_record_line(parent: Control, data: Dictionary) -> void:
+	if not data.has("record_position"):
+		return
+	var position := int(data.get("record_position", -1))
+	var difficulty := Config.difficulty_index(int(data.get("record_difficulty", 0)))
+	var label_text := tr(Config.DIFFICULTY_LABEL_KEYS[difficulty])
+	var color := UITheme.ACCENT
+	var text := "RÉCORD #%d · %s" % [position, label_text]
+	if position <= 0:
+		color = Palette.METAL_2
+		text = "FUERA DEL TOP 10 · %s" % label_text
+	var label := UITheme.label(text, UITheme.FONT_LABEL, color, position > 0)
+	label.name = "RecordLine"
+	label.position = Vector2(CONTENT_X, RECORD_Y) - PLAQUE.position
+	parent.add_child(label)
 
 
 ## Panel border in `metal_1` (3.9:1): `metal_0` measures 2.34:1 and fails the 3:1 floor.

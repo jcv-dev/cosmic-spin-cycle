@@ -16,6 +16,7 @@ const FIRST_RUN_SCENE := "res://scenes/ui/FirstRunPrompt.tscn"
 const PAUSE_SCENE := "res://scenes/ui/PauseOverlay.tscn"
 const END_SCENE := "res://scenes/ui/EndScreen.tscn"
 const OPTIONS_SCENE := "res://scenes/ui/OptionsScreen.tscn"
+const RECORDS_SCENE := "res://scenes/ui/RecordsScreen.tscn"
 const CALIBRATION_SCENE := "res://scenes/ui/CalibrationModal.tscn"
 const TUTORIAL_SCENE := "res://scenes/main/Tutorial.tscn"
 const SCORE_RULES := "res://scripts/logic/ScoreRules.gd"
@@ -100,6 +101,7 @@ func show_title(instant: bool = false) -> void:
 			"tutorial_requested": _on_title_tutorial,
 			"options_requested": _on_title_options,
 			"calibration_requested": _on_title_calibration,
+			"records_requested": _open_records,
 			"quit_requested": _on_title_quit,
 		}
 	)
@@ -232,6 +234,9 @@ func _on_shift_finished(result: Dictionary) -> void:
 	last_result = result.duplicate(true)
 	last_result["rank"] = _rank_for(last_result)
 	Settings.record_result(int(result.get("score", 0)), String(last_result.get("rank", "C")))
+	var record := Leaderboard.submit(last_result, Settings.difficulty)
+	last_result["record_position"] = int(record.get("position", -1))
+	last_result["record_difficulty"] = Settings.difficulty
 	_show_end(last_result)
 
 
@@ -371,6 +376,20 @@ func _open_options(_from_pause: bool) -> void:
 	)
 	if options.has_method("focus_first"):
 		options.call_deferred("focus_first")
+
+
+## Records hang off the title; ESC or VOLVER returns there (no dead ends).
+func _open_records() -> void:
+	if current_screen == &"records":
+		return
+	var screen := _instance(RECORDS_SCENE)
+	if screen == null:
+		return
+	_ui.add_child(screen)
+	_screen = screen
+	_screen_name(&"records")
+	_connect_screen(screen, {"close_requested": quit_to_menu})
+	_focus_first(screen)
 
 
 func _close_options() -> void:

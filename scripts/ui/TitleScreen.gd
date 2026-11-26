@@ -7,12 +7,13 @@ extends Control
 ## row emits an intent signal and `App` decides what happens.
 ##
 ## Focus order (keyboard and gamepad share it): INICIAR TURNO → TUTORIAL → CALIBRACIÓN DE
-## AUDIO → OPCIONES → SALIR. Mouse hover moves focus onto the hovered row.
+## AUDIO → RÉCORDS → OPCIONES → SALIR. Mouse hover moves focus onto the hovered row.
 
 signal start_requested
 signal tutorial_requested
 signal options_requested
 signal calibration_requested
+signal records_requested
 signal quit_requested
 
 const TAGLINE := "LAVANDERÍA AL BORDE DEL VACÍO"
@@ -24,10 +25,10 @@ const LEGEND_LINES: Array[String] = [
 	"ESC pausa · ENTER confirmar · flechas mover el foco",
 ]
 const MENU_ROWS: Array[String] = [
-	"INICIAR TURNO", "TUTORIAL", "CALIBRACIÓN DE AUDIO", "OPCIONES", "SALIR"
+	"INICIAR TURNO", "TUTORIAL", "CALIBRACIÓN DE AUDIO", "RÉCORDS", "OPCIONES", "SALIR"
 ]
 ## Typographic tiers (UX_RESEARCH §9, §13): one primary action, two secondary, two tertiary.
-const MENU_SIZES: Array[int] = [28, 20, 20, 16, 16]
+const MENU_SIZES: Array[int] = [28, 20, 20, 16, 16, 16]
 ## Tier 3 is dimmed by ink alpha, not by a darker palette slot: 82 % `metal_2` still measures
 ## ~5.2:1 on the plate, while `metal_1` would land at 3.9:1 and miss the 4.5:1 text floor.
 const MENU_INKS: Array[Color] = [
@@ -36,16 +37,23 @@ const MENU_INKS: Array[Color] = [
 	Palette.METAL_3,
 	Color(Palette.METAL_3, 0.86),
 	Color(Palette.METAL_3, 0.86),
+	Color(Palette.METAL_3, 0.86),
 ]
 const MENU_ACTIONS: Array[StringName] = [
 	&"start_requested",
 	&"tutorial_requested",
 	&"calibration_requested",
+	&"records_requested",
 	&"options_requested",
 	&"quit_requested",
 ]
 const BUTTON_NAMES: Array[StringName] = [
-	"StartButton", "TutorialButton", "CalibrationButton", "OptionsButton", "QuitButton"
+	"StartButton",
+	"TutorialButton",
+	"CalibrationButton",
+	"RecordsButton",
+	"OptionsButton",
+	"QuitButton",
 ]
 
 # --- Layout (1280x720 fixed canvas, §12.1) ---------------------------------
@@ -55,9 +63,10 @@ const TAGLINE_POS := Vector2(96, 266)
 const MISSION_CHIP := Rect2(96, 292, 480, 26)
 const PLATE_RECT := Rect2(96, 336, 560, 300)
 const MENU_X := 120.0
-const MENU_Y := 356.0
+const MENU_Y := 344.0
 const MENU_WIDTH := 512.0
-const MENU_ROW_HEIGHT := 52
+## 46 keeps six rows clear of the footer legend; the primary row still floors at 52.
+const MENU_ROW_HEIGHT := 46
 const RECORD_RECT := Rect2(952, 32, 264, 92)
 const LEGEND_X := 96.0
 const LEGEND_Y := 650.0
@@ -549,7 +558,14 @@ func _focus_ring(control: Control, size: Vector2) -> void:
 	ring.draw.connect(_draw_focus_ring.bind(ring, control))
 	control.focus_entered.connect(ring.queue_redraw)
 	control.focus_exited.connect(ring.queue_redraw)
+	# Six rows share one row height, but the button chrome floors the primary row taller, so
+	# the ring follows the resolved size instead of the requested one.
+	control.resized.connect(_resize_focus_ring.bind(ring, control))
 	control.add_child(ring)
+
+
+func _resize_focus_ring(ring: Control, control: Control) -> void:
+	ring.size = control.size + Vector2(RING_GAP + RING_WIDTH, RING_GAP + RING_WIDTH) * 2.0
 
 
 func _draw_focus_ring(ring: Control, control: Control) -> void:
