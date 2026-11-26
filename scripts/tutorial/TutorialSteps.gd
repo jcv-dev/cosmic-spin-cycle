@@ -1,6 +1,6 @@
 class_name TutorialSteps
 extends RefCounted
-## Pure seven-gate tutorial table and gating logic (docs/UX_BIBLE.md §16.1).
+## Pure eight-gate tutorial table and gating logic (docs/UX_BIBLE.md §16.1).
 ##
 ## No scene, node or audio dependency: the director feeds one event in and gets the new
 ## state out, so every threshold, window widening and fail-forward path is unit-tested
@@ -19,7 +19,7 @@ extends RefCounted
 ##   rejected     int   wrong-mouth bounces since the last advance (feedback only)
 ##   feedback     StringName short tag the director turns into audio/visual feedback
 
-const STEP_COUNT := 7
+const STEP_COUNT := 8
 
 ## Gate 1 — 200 px travelled; a dotted circle at 120 px appears after 4 s.
 const TRAVEL_TARGET_PX := 200.0
@@ -39,13 +39,15 @@ const BEAT_WIDEN_FACTOR := 1.5
 ## Gate 6 — the scripted washer can never explode: re-force turbulence, then assist.
 const STRIKE_HINT_AFTER_S := 10.0
 const STRIKE_ASSIST_AFTER_S := 20.0
+## Gate 8 — the void vent is announced for this long; step out before it bites.
+const DODGE_HINT_AFTER_S := 6.0
 ## Gate 7 — beacon pulse period.
 const BEACON_PERIOD_S := 2.0
 ## Rhythm gates grade with the tutorial tolerance, not the shift tolerance.
 const STRIKE_WINDOW_SCALE := 2.0
 
 
-## The seven gates in play order. Copy is frozen by docs/UX_BIBLE.md §16.1; prompts stay
+## The eight gates in play order. Copy is frozen by docs/UX_BIBLE.md §16.1; prompts stay
 ## inside 24 characters so the world-space chip never wraps (docs/UX_BIBLE.md §12.10).
 static func steps() -> Array[Dictionary]:
 	return [
@@ -104,6 +106,14 @@ static func steps() -> Array[Dictionary]:
 			"kind": &"deliver",
 			"max_words": 7,
 			"hint_after_s": GRAB_HINT_AFTER_S,
+		},
+		{
+			"id": &"dodge",
+			"title": "ESQUIVA EL VACÍO",
+			"prompt": "Sal del círculo morado",
+			"kind": &"dodge",
+			"max_words": 5,
+			"hint_after_s": DODGE_HINT_AFTER_S,
 		},
 	]
 
@@ -247,6 +257,9 @@ static func advance(state: Dictionary, event: Dictionary) -> Dictionary:
 			_apply_strike(state, ev, event)
 		&"deliver":
 			_apply_deliver(state, ev, event)
+		&"dodge":
+			if ev == &"dodge" and bool(event.get("escaped", false)):
+				_grant(state)
 		_:
 			pass
 	return state

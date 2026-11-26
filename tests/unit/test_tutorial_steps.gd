@@ -1,6 +1,6 @@
 # gdlint: disable=max-public-methods
 extends GutTest
-## Pure gating logic for the seven-gate tutorial (docs/UX_BIBLE.md §16.1).
+## Pure gating logic for the eight-gate tutorial (docs/UX_BIBLE.md §16.1).
 
 const STEPS := preload("res://scripts/tutorial/TutorialSteps.gd")
 const GOOD := RhythmEvaluator.Grade.GOOD
@@ -27,10 +27,10 @@ func _state_at(id: StringName) -> Dictionary:
 # --- Table ------------------------------------------------------------------
 
 
-func test_table_has_seven_gates_in_the_binding_order() -> void:
+func test_table_has_eight_gates_in_the_binding_order() -> void:
 	var steps := STEPS.steps()
 	assert_eq(steps.size(), STEPS.STEP_COUNT)
-	assert_eq(steps.size(), 7)
+	assert_eq(steps.size(), 8)
 	var ids: Array[StringName] = []
 	for entry in steps:
 		ids.append(StringName(entry["id"]))
@@ -41,6 +41,7 @@ func test_table_has_seven_gates_in_the_binding_order() -> void:
 	assert_eq(ids[4], &"match")
 	assert_eq(ids[5], &"strike")
 	assert_eq(ids[6], &"deliver")
+	assert_eq(ids[7], &"dodge")
 
 
 func test_titles_match_the_frozen_copy() -> void:
@@ -51,6 +52,7 @@ func test_titles_match_the_frozen_copy() -> void:
 	assert_eq(STEPS.title_for(4), "LAVADORA ROJA")
 	assert_eq(STEPS.title_for(5), "LAVADORA AGITADA")
 	assert_eq(STEPS.title_for(6), "ENTREGA EN LA TAPA")
+	assert_eq(STEPS.title_for(7), "ESQUIVA EL VACÍO")
 
 
 func test_every_prompt_fits_the_world_chip() -> void:
@@ -65,16 +67,17 @@ func test_every_prompt_fits_the_world_chip() -> void:
 		assert_false(prompt.ends_with("!"), "no shouting in tutorial copy")
 
 
-func test_chip_text_reads_step_n_of_seven() -> void:
-	assert_eq(STEPS.chip_text(0), "PASO 1/7 · MUÉVETE AL PLANETA")
-	assert_eq(STEPS.chip_text(1), "PASO 2/7 · AGARRA EL PLANETA")
-	assert_eq(STEPS.chip_text(6), "PASO 7/7 · ENTREGA EN LA TAPA")
+func test_chip_text_reads_step_n_of_eight() -> void:
+	assert_eq(STEPS.chip_text(0), "PASO 1/8 · MUÉVETE AL PLANETA")
+	assert_eq(STEPS.chip_text(1), "PASO 2/8 · AGARRA EL PLANETA")
+	assert_eq(STEPS.chip_text(6), "PASO 7/8 · ENTREGA EN LA TAPA")
+	assert_eq(STEPS.chip_text(7), "PASO 8/8 · ESQUIVA EL VACÍO")
 
 
 func test_out_of_range_index_is_clamped() -> void:
 	assert_eq(STEPS.clamp_index(-4), 0)
 	assert_eq(STEPS.clamp_index(99), STEPS.STEP_COUNT - 1)
-	assert_eq(StringName(STEPS.step(99)["id"]), &"deliver")
+	assert_eq(StringName(STEPS.step(99)["id"]), &"dodge")
 
 
 # --- Gate 1: travel ---------------------------------------------------------

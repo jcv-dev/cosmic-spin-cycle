@@ -24,6 +24,7 @@ const PLAYER_HEAD_OFFSET := Vector2(0, -96)
 const CLEAN_FALLBACK_S := 8.0
 const WASHER_FORCE_FINISH_S := 4.0
 const PROMPT_AVOID_X := 170.0
+const HAZARD_SCENE := "res://scenes/environment/Hazard.tscn"
 
 ## Debug/evidence hook: walk the gates on a timer so a screenshot can be deterministic.
 @export var autoplay := false
@@ -57,6 +58,8 @@ var _strike_stage := 0
 var _autoplay_left := 0.0
 var _hint_shown := false
 var _plaque_open := false
+var _dodge_node: Hazard = null
+var _dodge_center := Vector2.ZERO
 
 
 func _ready() -> void:
@@ -207,6 +210,7 @@ func _go_to_step(index: int) -> void:
 	_advance_left = -1.0
 	_autoplay_left = AUTOPLAY_STEP_S
 	_hint_shown = false
+	_clear_dodge()
 	_strike_stage = 0
 	_respawn_left = -1.0
 	_clean_item = null
@@ -247,8 +251,43 @@ func _stage_gate(index: int) -> void:
 			_stage_strike()
 		&"deliver":
 			_stage_deliver()
+		&"dodge":
+			_stage_dodge()
 		_:
 			pass
+
+
+## Gate 8: one scripted void vent, announced for six seconds. The gate passes the moment the
+## player is outside the danger radius; no damage can happen because hazard spawning is off
+## in tutorial mode and this node never resolves a hit.
+func _stage_dodge() -> void:
+	clear_gate_items()
+	# The zone opens under Pip on purpose: the gate teaches "get out of the circle", and the
+	# scripted vent never resolves a hit, so standing there for a second costs nothing.
+	_dodge_center = _player_anchor()
+	var packed: PackedScene = load(HAZARD_SCENE) as PackedScene
+	if packed == null:
+		return
+	_dodge_node = packed.instantiate() as Hazard
+	if _dodge_node == null:
+		return
+	add_child(_dodge_node)
+	_dodge_node.setup(Config.HazardKind.VOID_VENT, _dodge_center, 0.0, 6.0)
+	show_gate_prompt(_dodge_center)
+
+
+func _update_dodge() -> void:
+	if _dodge_center == Vector2.ZERO:
+		return
+	if _player_body().distance_to(_dodge_center) > Config.HAZARD_VENT_RADIUS_PX + 16.0:
+		_feed({"kind": "dodge", "escaped": true})
+
+
+func _clear_dodge() -> void:
+	_dodge_center = Vector2.ZERO
+	if _dodge_node != null and is_instance_valid(_dodge_node):
+		_dodge_node.queue_free()
+	_dodge_node = null
 
 
 ## Gate 5: only the compatible washer is lit; the rest stay locked.
@@ -326,6 +365,8 @@ func _update_gate(delta: float) -> void:
 			_update_strike()
 		&"deliver":
 			_update_deliver(delta)
+		&"dodge":
+			_update_dodge()
 		_:
 			pass
 	_sync_beat_marker()

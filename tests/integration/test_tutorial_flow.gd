@@ -1,6 +1,6 @@
 # gdlint: disable=max-public-methods
 extends GutTest
-## End-to-end: `Tutorial.tscn` boots the real MainLevel, gates the seven steps and re-emits
+## End-to-end: `Tutorial.tscn` boots the real MainLevel, gates the eight steps and re-emits
 ## the intents `App.gd` listens for (docs/UX_BIBLE.md §16.1).
 
 const TUTORIAL_SCENE := preload("res://scenes/main/Tutorial.tscn")
@@ -56,7 +56,7 @@ func test_director_starts_on_gate_one_with_the_chip() -> void:
 	var director := root.director()
 	assert_eq(director.current_step(), 0)
 	assert_true(director.is_active())
-	assert_eq(root.overlay().chip_step_text(), "PASO 1/7")
+	assert_eq(root.overlay().chip_step_text(), "PASO 1/8")
 	assert_eq(root.overlay().chip_title_text(), "MUÉVETE AL PLANETA")
 	assert_true(root.overlay().prompt_visible(), "gate 1 must show its prompt immediately")
 
@@ -153,9 +153,9 @@ func test_autoplay_walks_the_real_scene_to_the_completion_plaque() -> void:
 		director._process(0.05)
 		if not director.is_active():
 			break
-	assert_false(director.is_active(), "autoplay must clear all seven gates")
+	assert_false(director.is_active(), "autoplay must clear all eight gates")
 	assert_true(root.overlay().is_completion_open())
-	assert_eq(root.overlay().chip_step_text(), "PASO 7/7")
+	assert_eq(root.overlay().chip_step_text(), "PASO 8/8")
 
 
 # --- Input routing ----------------------------------------------------------

@@ -218,7 +218,7 @@ func test_director_starts_on_the_first_gate_and_protects_stability() -> void:
 	assert_true(director.is_active())
 	assert_eq(director.current_step(), 0)
 	assert_true(GameState.stability_protected)
-	assert_eq(TutorialSteps.chip_text(director.current_step()), "PASO 1/7 · MUÉVETE AL PLANETA")
+	assert_eq(TutorialSteps.chip_text(director.current_step()), "PASO 1/8 · MUÉVETE AL PLANETA")
 
 
 func test_director_stages_a_throwable_item_on_the_grab_gate() -> void:
@@ -370,7 +370,18 @@ func test_deliver_gate_ends_the_protection_and_needs_a_clean_item() -> void:
 	assert_true(bool(director.current_state()["granted"]))
 	for _i in range(40):
 		director._process(0.016)
-	assert_false(director.is_active(), "the last gate ends the run, not a gate 8")
+	assert_eq(director.current_step(), 7, "deliver hands over to the dodge gate")
+
+
+func test_dodge_gate_needs_the_player_to_leave_the_circle() -> void:
+	var level := _make_level()
+	var started := _start(level)
+	var director: TutorialDirector = started[0]
+	director.debug_goto(7)
+	assert_false(bool(director.current_state()["granted"]), "standing inside is not a dodge")
+	level.player.global_position = Vector2(2000, 2000)
+	director._process(0.016)
+	assert_true(bool(director.current_state()["granted"]), "stepping out grants the gate")
 
 
 # --- Fail-forward and soft skip --------------------------------------------
@@ -445,5 +456,5 @@ func test_autoplay_walks_every_gate() -> void:
 		director._process(0.05)
 		if not director.is_active():
 			break
-	assert_false(director.is_active(), "autoplay must walk all seven gates")
+	assert_false(director.is_active(), "autoplay must walk all eight gates")
 	assert_signal_emitted(director, "finished")
