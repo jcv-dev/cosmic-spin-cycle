@@ -15,6 +15,8 @@ const TITLE_Y := 96.0
 const CAPTION_Y := 146.0
 const TABS_Y := 186.0
 const TAB_X: Array[float] = [262.0, 430.0, 612.0]
+const TAB_PAD := 10.0
+const TAB_H := 30.0
 const HEADER_Y := 232.0
 const ROW_Y := 262.0
 const ROW_STEP := 28.0
@@ -139,28 +141,45 @@ func _build_tab(parent: Control, index: int) -> void:
 	var tab := Button.new()
 	tab.name = "Tab%d" % index
 	tab.text = tr(Config.DIFFICULTY_LABEL_KEYS[index])
-	tab.flat = true
 	tab.focus_mode = Control.FOCUS_NONE
 	tab.add_theme_font_override("font", UITheme.font_bold())
 	tab.add_theme_font_size_override("font_size", UITheme.FONT_LABEL)
+	# Every state shares zero content margins: a hover box with margins used to resize the
+	# button and clip the glyphs on the left.
 	tab.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
 	tab.add_theme_stylebox_override("hover", _tab_box(0.18))
 	tab.add_theme_stylebox_override("pressed", _tab_box(0.32))
 	tab.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	tab.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	# Size the tab from the real font metrics so the label never clips.
+	var label_width := _text_width(tab.text)
+	tab.custom_minimum_size = Vector2(label_width + TAB_PAD * 2.0, TAB_H)
+	tab.size = tab.custom_minimum_size
 	tab.position = Vector2(TAB_X[index], TABS_Y) - PLAQUE.position
 	tab.pressed.connect(set_tab.bind(index))
 	parent.add_child(tab)
 	_tabs.append(tab)
 
+	# The selected bar is a child of the tab and centred on the label, so it follows the
+	# button instead of guessing at coordinates.
 	var underline := ColorRect.new()
-	underline.name = "Underline%d" % index
+	underline.name = "Underline"
 	underline.color = UITheme.ACCENT
-	underline.position = Vector2(TAB_X[index], TABS_Y + 28.0) - PLAQUE.position
-	underline.size = Vector2(maxf(float(tab.text.length()) * 10.0, 40.0), 2.0)
+	underline.size = Vector2(label_width, 2.0)
+	underline.position = Vector2((tab.size.x - label_width) * 0.5, TAB_H - 2.0)
 	underline.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	parent.add_child(underline)
+	tab.add_child(underline)
 	_underlines.append(underline)
+
+
+## Width of `text` in the tab font, in pixels.
+func _text_width(text: String) -> float:
+	return (
+		UITheme
+		. font_bold()
+		. get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, UITheme.FONT_LABEL)
+		. x
+	)
 
 
 func _build_header(parent: Control, index: int) -> void:
@@ -290,10 +309,7 @@ func _tab_box(alpha: float) -> StyleBoxFlat:
 	box.border_color = UITheme.ACCENT
 	box.set_border_width_all(0)
 	box.border_width_bottom = 2
-	box.content_margin_left = 8.0
-	box.content_margin_right = 8.0
-	box.content_margin_top = 4.0
-	box.content_margin_bottom = 4.0
+	box.set_content_margin_all(0.0)
 	return box
 
 

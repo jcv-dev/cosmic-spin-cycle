@@ -46,6 +46,29 @@ func test_three_difficulty_tabs_exist() -> void:
 	assert_eq(int(_screen.call("current_tab")), Config.Difficulty.CALM, "opens on the first tab")
 
 
+func test_the_selected_bar_is_centred_on_its_label() -> void:
+	for index in range(Config.DIFFICULTY_KEYS.size()):
+		var tab := _plaque().get_node("Tab%d" % index) as Button
+		var bar := tab.get_node("Underline") as ColorRect
+		assert_gt(bar.size.x, 0.0, "tab %d has a measurable bar" % index)
+		assert_almost_eq(
+			bar.position.x + bar.size.x * 0.5,
+			tab.size.x * 0.5,
+			0.01,
+			"tab %d bar is centred on the text" % index
+		)
+
+
+func test_hover_cannot_resize_a_tab() -> void:
+	# Different content margins per state used to grow the button and clip the label.
+	for index in range(Config.DIFFICULTY_KEYS.size()):
+		var tab := _plaque().get_node("Tab%d" % index) as Button
+		for state: String in ["normal", "hover", "pressed", "focus"]:
+			var box := tab.get_theme_stylebox(state)
+			assert_eq(box.get_margin(SIDE_LEFT), 0.0, "tab %d %s left margin" % [index, state])
+			assert_eq(box.get_margin(SIDE_RIGHT), 0.0, "tab %d %s right margin" % [index, state])
+
+
 func test_the_stored_run_is_shown_in_its_own_table() -> void:
 	var standard := Config.Difficulty.STANDARD
 	_screen.call("set_tab", standard)
