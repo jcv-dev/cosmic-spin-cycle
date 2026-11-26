@@ -1,7 +1,8 @@
 # GDD / rubric traceability
 
 Living matrix: every GDD requirement and course-rubric item → where it lives → how it is
-verified. Update at each milestone. Status: **M0–M3 implemented; M4+ planned.**
+verified. Update at each milestone. Status: **M0–M8 implemented; M9 in progress** (see
+`docs/GDD_ADDENDUM.md` for the systems added after the original GDD).
 
 ## Course rubric
 
@@ -61,6 +62,20 @@ verified. Update at each milestone. Status: **M0–M3 implemented; M4+ planned.*
 | §A6 #16 | BeatConductor is a scene autoload | `project.godot`, `scenes/main/BeatConductor.tscn` | beat tests |
 | §A6 #17 | Friction interpretation | `Config.PLAYER_FRICTION`, `Player` | friction test |
 
+## Addendum §9–§13 (systems added in M9)
+
+| Ref | Requirement | Implementation | Verification |
+|---|---|---|---|
+| §9.1–9.4 | One announced hazard per measure, resolved on a beat; void vent + meteorite in rotation | `HazardPlanner`, `HazardDirector`, `Hazard`, `Config.HAZARD_*` | `test_hazard_planner`, `test_hazard_director` |
+| §9.3 | Placement only inside the washer arena, off belts/furniture/chute, 24 px from the player | `HazardPlanner.arena_rect`, `is_valid_point` | 200-sample placement tests against `data/layout.json` |
+| §9.5 | On-beat dodge pays +25; early dodge is safe and silent-rewarded | `HazardDirector._resolve` | dodge tests |
+| §9.6 | Void gravity: 155 px/s drag, 55 % speed cap, 0.5 s damage tick, 3 beats | `HazardDirector._physics_process`, `Player.field_velocity` | drag/slow/tick tests |
+| §9.6 | Fast planets crossing the 30 px core are swallowed for −3 | `HazardDirector._swallow` | swallow / no-swallow tests |
+| §10 | Void index 0–100, non-lethal, collapse doubles hazards and resets to 55 | `VoidIndex`, `HUD.set_void` | threshold/collapse tests |
+| §11 | TRANQUILO/ESTÁNDAR/CAÓTICO presets, persisted | `Config.DIFFICULTY_*`, `Settings`, `OptionsScreen` | difficulty tests, options tests |
+| §12 | Top-10 records per difficulty | **pending** (`user://records.cfg`) | — |
+| §13 | Type scale 56/40/28/22/18/16/14/12 | `UITheme` | end-screen and tutorial budget tests, screenshots |
+
 ## Reproducible verification
 
 ```bash
@@ -72,9 +87,11 @@ verified. Update at each milestone. Status: **M0–M3 implemented; M4+ planned.*
 
 ## Known gaps (honest)
 
-- M4–M9 systems are not implemented yet; rows marked "pending" are the roadmap, not claims.
+- Rows above marked "pending" that belong to M4–M8 predate this update; the shipped systems
+  are listed in `docs/PROGRESS.md`, which is the authoritative status.
+- §12 (top-10 records), the tutorial dodge gate, the audio bus pass and the export presets
+  are still open.
 - Windows audio latency and gamepad feel need the owner's hardware (documented protocol).
-- The public GitHub remote is not configured in this checkout; the owner must create/push.
 
 ## Status 2026-11-24 — M0–M3 evidence
 

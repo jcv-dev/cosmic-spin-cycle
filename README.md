@@ -37,6 +37,8 @@ their requirement holograms, and clean items go into the central delivery chute.
 - **The floor** — three conveyor belts with a pure 16-measure reversal schedule in phase 3,
   three vacuum shredders (−8 % stability each), deterministic phase-driven spawning
   (19/29/37/13 = 98 items over 480 s, retuned across four playtests), the 480 s shift spine and a functional HUD.
+- **Challenge** — beat-synced hazards (void vent + meteorite), a non-lethal void index that
+  collapses into double hazards, and three difficulty presets stored in `settings.cfg`.
 - **HUD & affordances** — two corner plaques + a mission ribbon (no bottom instruction
   strip), segmented stability with numeric value and glyph, beat dots, a two-beat pulse ring
   around Pip, a four-state aim reticle (`LANZAR` / `NO` / `ENTREGAR`), contextual prompts and
@@ -118,6 +120,7 @@ completo, audio, demo y sustentación) está en [`docs/DELIVERY.md`](docs/DELIVE
 | [`docs/DECISIONS.md`](docs/DECISIONS.md) | every deviation/default, numbered |
 | [`docs/PROGRESS.md`](docs/PROGRESS.md) | milestone status, measurements, known issues |
 | [`docs/GDD_TRACEABILITY.md`](docs/GDD_TRACEABILITY.md) | GDD & rubric → code → test matrix |
+| [`docs/GDD_ADDENDUM.md`](docs/GDD_ADDENDUM.md) | M9 systems that extend the GDD (§9–§13) |
 | [`docs/PROVENANCE.md`](docs/PROVENANCE.md) | every third-party asset, licence and transform |
 | [`docs/AUDIO.md`](docs/AUDIO.md) | stems, bus plan, measurements |
 | [`docs/CALIBRATION.md`](docs/CALIBRATION.md) | latency protocol and wizard |
