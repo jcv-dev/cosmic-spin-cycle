@@ -100,6 +100,7 @@ func register_grade(grade: int) -> void:
 	rhythm_actions += 1
 	if grade == RhythmEvaluator.Grade.PERFECT:
 		perfect_count += 1
+		Settings.duck_music(-3.0, 0.12)
 		combo = mini(combo + int(Config.COMBO_GAIN["PERFECT"]), Config.COMBO_MAX)
 	elif grade == RhythmEvaluator.Grade.GOOD:
 		good_count += 1

@@ -103,7 +103,7 @@ var _mouth: Area2D
 var _body_shape: CollisionShape2D
 var _mouth_shape: CollisionShape2D
 
-var _audio: AudioStreamPlayer
+var _audio: AudioStreamPlayer2D
 var _oneshots: Array[AudioStreamPlayer] = []
 var _oneshot_index := 0
 var _buzz_player: AudioStreamPlayer
@@ -1001,12 +1001,18 @@ func _ensure_bubbles() -> void:
 
 
 func _ensure_audio() -> void:
-	_audio = get_node_or_null(^"Audio") as AudioStreamPlayer
+	_audio = get_node_or_null(^"Audio") as AudioStreamPlayer2D
 	if _audio == null:
-		_audio = AudioStreamPlayer.new()
+		_audio = AudioStreamPlayer2D.new()
 		_audio.name = "Audio"
 		add_child(_audio)
-	if AudioServer.get_bus_index("SFX") >= 0:
+	# The machine loop is positional (panning by room position) and lives on `Loops`.
+	_audio.max_distance = 1400.0
+	_audio.attenuation = 0.35
+	_audio.panning_strength = 1.0
+	if AudioServer.get_bus_index("Loops") >= 0:
+		_audio.bus = "Loops"
+	elif AudioServer.get_bus_index("SFX") >= 0:
 		_audio.bus = "SFX"
 	_sfx = {
 		"drum": _load_stream("washer_drum", true),

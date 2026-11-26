@@ -28,7 +28,7 @@ monitorable = false
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Mouth"]
 shape = SubResource("CircleShape2D_mouth")
 
-[node name="Audio" type="AudioStreamPlayer" parent="."]
+[node name="Audio" type="AudioStreamPlayer2D" parent="."]
 bus = &"SFX"
 
 [node name="SteamAnchor" type="Marker2D" parent="."]

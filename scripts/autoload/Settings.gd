@@ -25,9 +25,13 @@ var best_score := 0
 var best_rank := ""
 
 var _loaded := false
+## Music ducking: a short dip on big hits so the impact reads (D060).
+var _duck_left := 0.0
+var _duck_db := 0.0
 
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	_ensure_buses()
 	load_settings()
 	apply()
@@ -39,6 +43,25 @@ func _ensure_buses() -> void:
 	_ensure_bus("Music", "Master", music_volume_db)
 	_ensure_bus("SFX", "Master", sfx_volume_db)
 	_ensure_bus("UI", "Master", -6.0)
+	# Continuous machine loops live on their own bus so they can sit under the mix (D060).
+	_ensure_bus("Loops", "Master", -10.0)
+	_ensure_master_limiter()
+
+
+## A limiter on Master is the safety net the docs asked for: four washers, an explosion and
+## the alarm can overlap, and the mix must never clip. Idempotent.
+func _ensure_master_limiter() -> void:
+	var master := AudioServer.get_bus_index("Master")
+	if master < 0:
+		return
+	for index in range(AudioServer.get_bus_effect_count(master)):
+		if AudioServer.get_bus_effect(master, index) is AudioEffectLimiter:
+			return
+	var limiter := AudioEffectLimiter.new()
+	limiter.threshold_db = -3.0
+	limiter.ceiling_db = -1.0
+	limiter.soft_clip_db = 0.0
+	AudioServer.add_bus_effect(master, limiter)
 
 
 func _ensure_bus(bus_name: String, send: String, volume_db: float) -> void:
@@ -104,6 +127,29 @@ func save_settings() -> Error:
 	return cfg.save(PATH)
 
 
+## Dips the Music bus for `seconds` (negative `db`). Used by PERFECT throws and hazard
+## impacts; restoring is automatic and never fights the user's volume setting.
+func duck_music(db: float = -3.0, seconds: float = 0.12) -> void:
+	_duck_db = minf(db, 0.0)
+	_duck_left = maxf(seconds, 0.0)
+	_apply_music_volume()
+
+
+func _process(delta: float) -> void:
+	if _duck_left <= 0.0:
+		return
+	_duck_left = maxf(_duck_left - delta, 0.0)
+	_apply_music_volume()
+
+
+func _apply_music_volume() -> void:
+	var music_bus := AudioServer.get_bus_index("Music")
+	if music_bus < 0:
+		return
+	var offset := _duck_db if _duck_left > 0.0 else 0.0
+	AudioServer.set_bus_volume_db(music_bus, music_volume_db + offset)
+
+
 func calibration_offset_ms() -> float:
 	return user_calibration_offset * 1000.0
 
@@ -130,9 +176,7 @@ func apply() -> void:
 			)
 		)
 	AudioServer.set_bus_volume_db(0, master_volume_db)
-	var music_bus := AudioServer.get_bus_index("Music")
-	if music_bus >= 0:
-		AudioServer.set_bus_volume_db(music_bus, music_volume_db)
+	_apply_music_volume()
 	var sfx_bus := AudioServer.get_bus_index("SFX")
 	if sfx_bus >= 0:
 		AudioServer.set_bus_volume_db(sfx_bus, sfx_volume_db)

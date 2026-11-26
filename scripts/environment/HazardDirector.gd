@@ -372,6 +372,7 @@ func _hit(kind: int) -> void:
 	else:
 		Juice.hitstop(0.05)
 	Juice.shake(0.45, 0.3)
+	Settings.duck_music(-4.0, 0.15)
 	_play(_impact, 0.95, -8.0)
 
 

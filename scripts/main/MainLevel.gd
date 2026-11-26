@@ -752,7 +752,9 @@ func _build_ambience() -> void:
 		_belt_hum.name = "BeltHum"
 		_belt_hum.stream = stream
 		_belt_hum.volume_db = -24.0
-		if AudioServer.get_bus_index("SFX") >= 0:
+		if AudioServer.get_bus_index("Loops") >= 0:
+			_belt_hum.bus = "Loops"
+		elif AudioServer.get_bus_index("SFX") >= 0:
 			_belt_hum.bus = "SFX"
 		add_child(_belt_hum)
 		_belt_hum.play()
