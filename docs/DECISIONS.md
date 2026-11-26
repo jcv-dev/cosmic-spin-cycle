@@ -582,3 +582,27 @@ débil visualmente.
 - **UI**: pantalla `RÉCORDS` desde el título (misma placa, mismo tipo, mismos tintes), línea
   `RÉCORD #n · <dificultad>` o `FUERA DEL TOP 10` en la pantalla final. El título pasa a seis
   filas y el menú sube 12 px para no chocar con la leyenda del pie.
+
+## D060 — Mezcla: bus Loops, limiter en Master y ducking
+2026-11-25 · El plan de audio de `docs/AUDIO.md` §4 estaba escrito pero no implementado.
+- **Bus `Loops`** (−10 dB) para las máquinas y la cinta; el zumbido y el tambor dejan de
+  competir en el bus de efectos.
+- **Limiter en Master** (threshold −3 dB, ceiling −1 dB): cuatro lavadoras, una explosión y
+  la alarma pueden coincidir y la mezcla no debe clipar. Idempotente.
+- **Ducking**: la música baja 3 dB durante 120 ms en un PERFECT y 4 dB durante 150 ms en un
+  impacto de amenaza. `Settings.duck_music()` restaura solo y nunca pisa el volumen del
+  usuario.
+- **Paneo**: el loop de cada lavadora pasa a `AudioStreamPlayer2D` (atenuación 0.35, distancia
+  1400 px), así que las cuatro máquinas se separan en estéreo por posición.
+
+## D061 — Octava compuerta del tutorial: esquiva
+2026-11-25 · El tutorial enseñaba a lavar pero no el sistema nuevo. Se añade `dodge` al final:
+un `Hazard` de vacío **inocuo** (nunca resuelve daño) se abre bajo Pip con 6 s de aviso; la
+compuerta se concede al salir del radio. Las otras siete no cambian de orden ni de copia.
+
+## D062 — Presets de exportación y plantillas
+2026-11-25 · `export_presets.cfg` con **Linux** y **Windows Desktop**, PCK embebido en el
+binario, `build/` ignorado por git. Se excluyen tests, `.work`, fuentes de arte, docs y GUT;
+`art/palette.json` **sí** se incluye porque `EnvironmentPalette` lo lee en runtime (sin él el
+build arrancaba con aviso y colores de reserva). Salidas: `build/linux/` (~75 MB) y
+`build/windows/` (~110 MB). Plantillas 4.7.2 instaladas en el perfil del usuario.

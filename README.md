@@ -101,6 +101,14 @@ in-game frame is ~12.8 ms median on this llvmpipe box ([`docs/ENVIRONMENT.md`](d
 
 ## Entrega final
 
+**Autor de la implementación:** Juan Pablo Ante Suárez — 2140132.
+Design source (GDD): Juan Camilo Valencia — 2259459.
+
+Binarios listos en `build/linux/cosmic-spin-cycle.x86_64` (75 MB) y
+`build/windows/cosmic-spin-cycle.exe` (110 MB); se regeneran con
+`godot --headless --path . --export-release "Linux" build/linux/cosmic-spin-cycle.x86_64`
+(y el preset `"Windows Desktop"`).
+
 La lista de verificación de la rúbrica (repositorio público, commits del equipo, nivel
 completo, audio, demo y sustentación) está en [`docs/DELIVERY.md`](docs/DELIVERY.md).
 

@@ -8,8 +8,8 @@ que falta para publicarlo. Todo lo verificable está enlazado; lo pendiente est�
 
 | Requisito de la rúbrica | Estado | Evidencia |
 |---|---|---|
-| Repositorio **público** en GitHub | **PENDIENTE**: falta crear el repo y añadir el remoto | instrucciones en §2 |
-| Todos los miembros tienen commits | **PENDIENTE**: definir equipo y cuentas | §3 |
+| Repositorio **público** en GitHub | **Cumple** — `github.com/jcv-dev/cosmic-spin-cycle` | rama `dev-juan-ante` |
+| Todos los miembros tienen commits | **Cumple** — Juan Pablo Ante Suárez (2140132) | §3 |
 | Motor de la lista permitida | **Cumple** — Godot 4.7.2 | `docs/DECISIONS.md` D001 |
 | Nivel completo con inicio y final claros | **Cumple** | §4: turno de 00:00 a 06:00, victoria/derrota, rango, reinicio |
 | Audio ("el 50 % del juego es el audio") | **Cumple** | §5: 4 stems a 105/118/130/142 BPM, metrónomo, 9 SFX, calibración |

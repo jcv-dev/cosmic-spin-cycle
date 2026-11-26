@@ -4,10 +4,11 @@ Extiende `docs/GDD.pdf` **sin sustituirlo**. La numeración continúa desde §8 
 original; cada sección indica a qué apartado extiende. Cuando hay conflicto, el PDF sigue
 siendo la fuente y este addendum el registro de la decisión (ver `docs/DECISIONS.md`).
 
-Autor del GDD original: Juan Camilo Valencia. Este adendo documenta lo que el equipo
-implementó después del prototipado, no un cambio de visión.
+Autor del GDD original: Juan Camilo Valencia. Implementación y sistemas añadidos:
+**Juan Pablo Ante Suárez (2140132)**. Este adendo documenta lo que el equipo implementó
+después del prototipado, no un cambio de visión.
 
-Estado: **§9–§13 implementados**.
+Estado: **§9–§17 implementados**.
 
 ---
 
@@ -134,7 +135,28 @@ sola familia (Silkscreen) y una sola tinta por intención.
 
 ---
 
-## 14. Estado de este addendum
+## 14. Mezcla de audio (extiende §1.8 y §7.1)
+
+- Bus **Loops** (−10 dB) para las máquinas y la cinta; **limiter** en Master (−3/−1 dB) para
+  que cuatro lavadoras, una explosión y la alarma nunca clipeen.
+- **Ducking** de la música: −3 dB / 120 ms en un PERIODO perfecto y −4 dB / 150 ms en un
+  impacto de amenaza.
+- El loop de cada lavadora es posicional (`AudioStreamPlayer2D`), así que las cuatro máquinas
+  se separan en estéreo por su posición en la sala.
+
+## 15. Octava compuerta del tutorial (extiende §4.3 y §5.1)
+
+Tras «entrega en la tapa» el tutorial añade **ESQUIVA EL VACÍO**: una fuga de vacío inocua se
+abre bajo Pip con 6 s de aviso y la compuerta se concede al salir del radio. No hace daño
+(las amenazas están desactivadas en modo tutorial) y enseña el sistema nuevo sin riesgo.
+
+## 16. Exportación (extiende §1.9 y §7.2)
+
+Presets **Linux** y **Windows Desktop** con el PCK embebido en el binario. `build/` queda
+fuera de git. El filtro de exportación deja fuera tests, fuentes de arte y documentación,
+pero **incluye `art/palette.json`**, que el juego lee en runtime.
+
+## 17. Estado de este addendum
 
 | Sección | Estado | Evidencia |
 |---|---|---|
@@ -144,6 +166,9 @@ sola familia (Silkscreen) y una sola tinta por intención.
 | §11 Dificultad | Implementado | `Config.DIFFICULTY_*`, Opciones, persistencia |
 | §12 Récords | Implementado | `Leaderboard`, `RecordsScreen`, `records.json` |
 | §13 Tipografía | Implementado | `UITheme`, capturas a 1280×720 |
+| §14 Mezcla de audio | Implementado | `Settings` (Loops, limiter, ducking), `test_audio_buses` |
+| §15 Tutorial, 8 compuertas | Implementado | `TutorialSteps`, `TutorialDirector`, tests de flujo |
+| §16 Exportación | Implementado | `export_presets.cfg`, `build/linux`, `build/windows` |
 
-Pendiente además, fuera de este addendum: compuerta de esquiva en el tutorial, pase de audio
-(buses/limiter/paneo) y presets de exportación.
+Todo lo planificado para M9 queda implementado. Pendiente solo la publicación final del
+repositorio y la sustentación.
